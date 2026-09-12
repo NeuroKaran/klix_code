@@ -8,8 +8,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -168,6 +171,13 @@ class MainActivity : ComponentActivity() {
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.klix_logo),
+                                            contentDescription = "Klix Logo",
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .clip(RoundedCornerShape(5.dp))
+                                        )
                                         Text(
                                             text = currentProject?.name ?: "KlixCode",
                                             fontSize = 15.sp,
@@ -396,11 +406,12 @@ class MainActivity : ComponentActivity() {
                                         verticalArrangement = Arrangement.spacedBy(14.dp),
                                         modifier = Modifier.padding(24.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.FolderOpen,
-                                            contentDescription = null,
-                                            tint = TextMuted,
-                                            modifier = Modifier.size(54.dp)
+                                        Image(
+                                            painter = painterResource(id = R.drawable.klix_logo),
+                                            contentDescription = "Klix Logo",
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                                .clip(RoundedCornerShape(18.dp))
                                         )
 
                                         Text(
