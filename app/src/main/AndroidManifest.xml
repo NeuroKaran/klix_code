@@ -25,6 +25,54 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Hub Widget -->
+        <receiver
+            android:name=".widget.KlixHubWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_hub_info" />
+        </receiver>
+
+        <!-- Recent Projects Widget -->
+        <receiver
+            android:name=".widget.KlixRecentProjectsWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_recent_projects_info" />
+        </receiver>
+
+        <!-- Streak Widget -->
+        <receiver
+            android:name=".widget.KlixStreakWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_streak_info" />
+        </receiver>
+
+        <!-- Companion Widget -->
+        <receiver
+            android:name=".widget.KlixCompanionWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_companion_info" />
+        </receiver>
     </application>
 
 </manifest>

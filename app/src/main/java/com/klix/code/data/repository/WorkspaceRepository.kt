@@ -11,6 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import com.klix.code.data.stats.StreakManager
+import com.klix.code.widget.KlixWidgets
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -53,6 +55,7 @@ class WorkspaceRepositoryImpl(
         } else {
             projects.add(0, ProjectItem(uri = uri, name = name, lastOpened = System.currentTimeMillis()))
         }
+        StreakManager.recordActivity(context)
         saveRecentProjects(projects)
     }
 
@@ -90,6 +93,7 @@ class WorkspaceRepositoryImpl(
             jsonArray.put(obj)
         }
         prefs.edit().putString("recent_projects", jsonArray.toString()).apply()
+        KlixWidgets.updateAll(context)
     }
 
     override suspend fun loadTree(treeUri: Uri): FileNode? = withContext(Dispatchers.IO) {
@@ -132,6 +136,7 @@ class WorkspaceRepositoryImpl(
             outputStream.write(content.toByteArray(Charsets.UTF_8))
             outputStream.flush()
         } ?: throw IllegalStateException("Unable to open output stream for $fileUri")
+        StreakManager.recordActivity(context)
     }
 
     override suspend fun createFile(parentDirUri: Uri, name: String): Uri? = withContext(Dispatchers.IO) {

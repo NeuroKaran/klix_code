@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">KlixCode</string>
+    <string name="widget_hub_desc">Quickly launch projects, open folders, and chat with AI Agent</string>
+    <string name="widget_recent_desc">Quick access to your recent workspaces and code projects</string>
+    <string name="widget_streak_desc">Track your daily coding consistency and streak</string>
+    <string name="widget_companion_desc">Inspirational mascot companion to keep you building</string>
 </resources>

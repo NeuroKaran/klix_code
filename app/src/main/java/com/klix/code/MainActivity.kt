@@ -50,13 +50,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.klix.code.data.stats.StreakManager
+import com.klix.code.widget.KlixWidgets
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -89,9 +95,42 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: EditorViewModel by viewModels()
 
+    private var pendingWidgetAction by mutableStateOf<String?>(null)
+    private var pendingProjectToOpen by mutableStateOf<Pair<Uri, String>?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        parseWidgetIntent(intent)
+    }
+
+    private fun parseWidgetIntent(intent: Intent?) {
+        if (intent == null) return
+        when (intent.action) {
+            KlixWidgets.ACTION_OPEN_PROJECT -> {
+                val uriStr = intent.getStringExtra(KlixWidgets.EXTRA_PROJECT_URI)
+                val name = intent.getStringExtra(KlixWidgets.EXTRA_PROJECT_NAME) ?: "Project"
+                if (!uriStr.isNullOrEmpty() && uriStr != "null") {
+                    val uri = Uri.parse(uriStr)
+                    if (uri != Uri.EMPTY) {
+                        pendingProjectToOpen = Pair(uri, name)
+                    }
+                }
+            }
+            KlixWidgets.ACTION_NEW_PROJECT,
+            KlixWidgets.ACTION_OPEN_FOLDER,
+            KlixWidgets.ACTION_SEE_ALL_PROJECTS,
+            KlixWidgets.ACTION_ASK_AGENT -> {
+                pendingWidgetAction = intent.action
+            }
+        }
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        StreakManager.recordActivity(this)
+        parseWidgetIntent(intent)
 
         setContent {
             KlixTheme {
@@ -125,6 +164,32 @@ class MainActivity : ComponentActivity() {
                         val docFile = DocumentFile.fromTreeUri(this@MainActivity, uri)
                         val folderName = docFile?.name ?: "Workspace"
                         viewModel.openProject(uri, folderName)
+                    }
+                }
+
+                var showAgentPromptDialog by remember { mutableStateOf(false) }
+                var agentPromptText by remember { mutableStateOf("") }
+
+                // Handle Widget Actions
+                LaunchedEffect(pendingWidgetAction) {
+                    when (pendingWidgetAction) {
+                        KlixWidgets.ACTION_NEW_PROJECT, KlixWidgets.ACTION_OPEN_FOLDER -> {
+                            folderPickerLauncher.launch(null)
+                        }
+                        KlixWidgets.ACTION_SEE_ALL_PROJECTS -> {
+                            showRecentProjectsDialog = true
+                        }
+                        KlixWidgets.ACTION_ASK_AGENT -> {
+                            showAgentPromptDialog = true
+                        }
+                    }
+                    pendingWidgetAction = null
+                }
+
+                LaunchedEffect(pendingProjectToOpen) {
+                    pendingProjectToOpen?.let { (uri, name) ->
+                        viewModel.openProject(uri, name)
+                        pendingProjectToOpen = null
                     }
                 }
 
@@ -470,6 +535,66 @@ class MainActivity : ComponentActivity() {
                         diff = diff,
                         onApply = { viewModel.applyActiveDiff() },
                         onDiscard = { viewModel.discardActiveDiff() }
+                    )
+                }
+
+                // Ask Agent Dialog (triggered from widget or in-app)
+                if (showAgentPromptDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showAgentPromptDialog = false },
+                        containerColor = DarkBg,
+                        icon = {
+                            Image(
+                                painter = painterResource(id = R.drawable.klix_logo),
+                                contentDescription = "Klix Robot",
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                            )
+                        },
+                        title = {
+                            Text(
+                                text = "Hey! What shall we build?",
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "Describe a feature, bugfix, or command for Klix AI Agent:",
+                                    color = TextSecondary,
+                                    fontSize = 12.sp
+                                )
+                                OutlinedTextField(
+                                    value = agentPromptText,
+                                    onValueChange = { agentPromptText = it },
+                                    placeholder = { Text("e.g. Add unit tests for user authentication", color = TextMuted) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    maxLines = 4
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    if (agentPromptText.isNotBlank()) {
+                                        // Prepared for Phase 2 Agent loop
+                                        showAgentPromptDialog = false
+                                        agentPromptText = ""
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
+                            ) {
+                                Text("Plan & Run")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showAgentPromptDialog = false }) {
+                                Text("Cancel", color = TextSecondary)
+                            }
+                        }
                     )
                 }
             }
