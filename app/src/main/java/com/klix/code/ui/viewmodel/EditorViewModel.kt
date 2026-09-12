@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class EditorViewModel(
+class EditorViewModel @JvmOverloads constructor(
     application: Application,
     private val repository: WorkspaceRepository = WorkspaceRepositoryImpl(application)
 ) : AndroidViewModel(application) {
