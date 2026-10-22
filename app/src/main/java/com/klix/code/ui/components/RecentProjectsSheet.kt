@@ -20,21 +20,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.data.model.ProjectItem
 import com.klix.code.ui.theme.AccentPrimary
+import com.klix.code.ui.theme.AccentSecondary
 import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurfaceVariant
@@ -77,6 +81,7 @@ fun RecentProjectsDialog(
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
             ) {
+                val context = LocalContext.current
                 Button(
                     onClick = onOpenNewFolder,
                     modifier = Modifier
@@ -91,7 +96,30 @@ fun RecentProjectsDialog(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Choose Project Folder (SAF)", fontWeight = FontWeight.SemiBold)
+                    Text("Choose External Folder (SAF)", fontWeight = FontWeight.SemiBold)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        val sandboxWorkspace = java.io.File(context.filesDir, "sandbox/rootfs/workspace").apply { mkdirs() }
+                        onSelectProject(Uri.fromFile(sandboxWorkspace), "Sandbox Workspace")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(6.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentSecondary)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Terminal,
+                        contentDescription = null,
+                        tint = AccentSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Sandbox Workspace (/workspace)", color = TextPrimary, fontWeight = FontWeight.SemiBold)
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))

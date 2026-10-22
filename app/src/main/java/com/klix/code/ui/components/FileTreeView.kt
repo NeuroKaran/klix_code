@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,9 +33,14 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,6 +74,9 @@ import com.klix.code.ui.theme.TextSecondary
 fun FileTreeView(
     rootNode: FileNode?,
     activeFileUri: Uri?,
+    currentProjectName: String? = null,
+    onOpenSandboxWorkspace: (() -> Unit)? = null,
+    onOpenFolderPicker: (() -> Unit)? = null,
     onFileClick: (FileNode) -> Unit,
     onCreateFile: (parentUri: Uri, fileName: String) -> Unit,
     onCreateDirectory: (parentUri: Uri, dirName: String) -> Unit,
@@ -165,18 +176,116 @@ fun FileTreeView(
             }
         }
 
+        // Active Workspace sub-bar
+        val displayName = currentProjectName ?: rootNode?.name ?: "No Workspace"
+        val isSandbox = rootNode?.uri?.toString()?.contains("sandbox") == true
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(DarkSurfaceVariant.copy(alpha = 0.45f))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
+                Icon(
+                    imageVector = if (isSandbox) Icons.Default.Terminal else Icons.Default.Folder,
+                    contentDescription = null,
+                    tint = if (isSandbox) AccentPrimary else AccentSecondary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = displayName.uppercase(),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            if (!isSandbox && onOpenSandboxWorkspace != null) {
+                TextButton(
+                    onClick = onOpenSandboxWorkspace,
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                    modifier = Modifier.height(24.dp)
+                ) {
+                    Text(
+                        text = "Sandbox",
+                        fontSize = 10.sp,
+                        color = AccentPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(color = DarkBorder, thickness = 1.dp)
+
         if (rootNode == null) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
+                Icon(
+                    imageVector = Icons.Default.FolderOpen,
+                    contentDescription = null,
+                    tint = TextMuted,
+                    modifier = Modifier.size(44.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "No folder open",
-                    color = TextMuted,
-                    fontSize = 13.sp
+                    color = TextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Open the sandbox workspace or pick a device folder to start coding.",
+                    color = TextMuted,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                if (onOpenSandboxWorkspace != null) {
+                    Button(
+                        onClick = onOpenSandboxWorkspace,
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Terminal,
+                            contentDescription = null,
+                            tint = DarkSurface,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Open Sandbox Workspace",
+                            color = DarkSurface,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                if (onOpenFolderPicker != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = onOpenFolderPicker,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Pick Device Folder", fontSize = 12.sp, color = TextPrimary)
+                    }
+                }
             }
         } else {
             // Flatten the hierarchy based on expanded states
@@ -184,40 +293,137 @@ fun FileTreeView(
                 flattenTree(rootNode, expandedMap)
             }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 4.dp)
-            ) {
-                items(flattenedList, key = { it.uri.toString() }) { node ->
-                    FileTreeRow(
-                        node = node,
-                        isSelected = node.uri == activeFileUri,
-                        isExpanded = expandedMap[node.uri.toString()] ?: false,
-                        onToggleExpand = {
-                            val curr = expandedMap[node.uri.toString()] ?: false
-                            expandedMap[node.uri.toString()] = !curr
-                        },
-                        onClick = {
-                            if (node.isDirectory) {
+            if (flattenedList.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = TextMuted,
+                        modifier = Modifier.size(44.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "${rootNode.name} is empty",
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    if (!isSandbox) {
+                        Text(
+                            text = "Files or directories created in the terminal reside in the Sandbox Workspace (/workspace).",
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        if (onOpenSandboxWorkspace != null) {
+                            Button(
+                                onClick = onOpenSandboxWorkspace,
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Terminal,
+                                    contentDescription = null,
+                                    tint = DarkSurface,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Switch to Sandbox Workspace",
+                                    color = DarkSurface,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "Sandbox workspace is ready. Create a file or use the terminal to get started.",
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                dialogInputText = ""
+                                showCreateFileDialog = rootNode.uri
+                            },
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.NoteAdd,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New File", fontSize = 12.sp, color = TextPrimary)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                dialogInputText = ""
+                                showCreateDirDialog = rootNode.uri
+                            },
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CreateNewFolder,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New Folder", fontSize = 12.sp, color = TextPrimary)
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 4.dp)
+                ) {
+                    items(flattenedList, key = { it.uri.toString() }) { node ->
+                        FileTreeRow(
+                            node = node,
+                            isSelected = node.uri == activeFileUri,
+                            isExpanded = expandedMap[node.uri.toString()] ?: false,
+                            onToggleExpand = {
                                 val curr = expandedMap[node.uri.toString()] ?: false
                                 expandedMap[node.uri.toString()] = !curr
-                            } else {
-                                onFileClick(node)
+                            },
+                            onClick = {
+                                if (node.isDirectory) {
+                                    val curr = expandedMap[node.uri.toString()] ?: false
+                                    expandedMap[node.uri.toString()] = !curr
+                                } else {
+                                    onFileClick(node)
+                                }
+                            },
+                            onAddFileInDir = {
+                                dialogInputText = ""
+                                showCreateFileDialog = node.uri
+                            },
+                            onRename = {
+                                dialogInputText = node.name
+                                nodeToRename = node
+                            },
+                            onDelete = {
+                                nodeToDelete = node
                             }
-                        },
-                        onAddFileInDir = {
-                            dialogInputText = ""
-                            showCreateFileDialog = node.uri
-                        },
-                        onRename = {
-                            dialogInputText = node.name
-                            nodeToRename = node
-                        },
-                        onDelete = {
-                            nodeToDelete = node
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

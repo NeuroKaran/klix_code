@@ -37,6 +37,11 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
@@ -57,6 +62,7 @@ dependencies {
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.security.crypto)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.okhttp)
 
     // Sora Editor
     implementation(libs.sora.editor)
@@ -64,5 +70,6 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.mockito.core)
+    testImplementation("org.json:json:20240303")
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

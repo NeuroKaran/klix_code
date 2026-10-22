@@ -71,11 +71,21 @@ class EditorViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             val list = repository.getRecentProjects()
             _recentProjects.value = list
-            if (_currentProject.value == null && list.isNotEmpty()) {
-                // Restore the most recent project automatically across app restarts
-                openProject(list.first().uri, list.first().name)
+            if (_currentProject.value == null) {
+                if (list.isNotEmpty()) {
+                    // Restore the most recent project automatically across app restarts
+                    openProject(list.first().uri, list.first().name)
+                } else {
+                    // Open default Local Sandbox Workspace so terminal and GUI share the same folder
+                    openSandboxWorkspace()
+                }
             }
         }
+    }
+
+    fun openSandboxWorkspace() {
+        val sandboxWorkspace = java.io.File(getApplication<Application>().filesDir, "sandbox/rootfs/workspace").apply { mkdirs() }
+        openProject(Uri.fromFile(sandboxWorkspace), "Sandbox Workspace")
     }
 
     fun openProject(uri: Uri, name: String) {

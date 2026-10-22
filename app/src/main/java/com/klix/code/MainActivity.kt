@@ -33,16 +33,20 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.WrapText
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
@@ -50,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -62,6 +67,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.klix.code.data.stats.StreakManager
+import com.klix.code.ui.components.agent.AgentChatPanel
+import com.klix.code.ui.components.agent.AgentSettingsDialog
+import com.klix.code.ui.components.sandbox.SandboxSetupDialog
+import com.klix.code.ui.components.terminal.TerminalView
+import com.klix.code.ui.terminal.TerminalViewModel
+import com.klix.code.ui.viewmodel.AgentViewModel
 import com.klix.code.widget.KlixWidgets
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,6 +91,7 @@ import com.klix.code.ui.components.RecentProjectsDialog
 import com.klix.code.ui.components.SoraEditorView
 import com.klix.code.ui.components.rememberEditorController
 import com.klix.code.ui.theme.AccentPrimary
+import com.klix.code.ui.theme.AccentSecondary
 import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
@@ -94,6 +106,8 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private val viewModel: EditorViewModel by viewModels()
+    private val agentViewModel: AgentViewModel by viewModels()
+    private val terminalViewModel: TerminalViewModel by viewModels()
 
     private var pendingWidgetAction by mutableStateOf<String?>(null)
     private var pendingProjectToOpen by mutableStateOf<Pair<Uri, String>?>(null)
@@ -153,8 +167,39 @@ class MainActivity : ComponentActivity() {
                 val isLoading by viewModel.isLoading.collectAsState()
 
                 var showRecentProjectsDialog by remember { mutableStateOf(false) }
+                var isAgentPanelOpen by remember { mutableStateOf(false) }
+                var isTerminalOpen by remember { mutableStateOf(false) }
+
+                val agentMessages by agentViewModel.messages.collectAsState()
+                val agentStatus by agentViewModel.status.collectAsState()
+                val agentStatusMessage by agentViewModel.statusMessage.collectAsState()
+                val agentPendingApproval by agentViewModel.pendingApproval.collectAsState()
+                val agentPromptTokens by agentViewModel.totalPromptTokens.collectAsState()
+                val agentCompletionTokens by agentViewModel.totalCompletionTokens.collectAsState()
+                val agentSettings by agentViewModel.settings.collectAsState()
+                val agentDiffToReview by agentViewModel.activeDiffToReview.collectAsState()
+                val isAgentSettingsOpen by agentViewModel.isSettingsOpen.collectAsState()
+                val showSandboxSetup by terminalViewModel.showSetupDialog.collectAsState()
 
                 val editorController = rememberEditorController()
+
+                // Sync workspace context with Agent
+                LaunchedEffect(currentProject, activeTabUri, openTabs) {
+                    val activeTab = openTabs.find { it.uri == activeTabUri }
+                    agentViewModel.updateWorkspaceContext(
+                        workspaceUri = currentProject?.uri,
+                        workspaceName = currentProject?.name ?: "Workspace",
+                        activeFileName = activeTab?.name,
+                        activeFileContent = activeTab?.content
+                    )
+                }
+
+                // Sync terminal file changes to GUI when terminal closes
+                LaunchedEffect(isTerminalOpen) {
+                    if (!isTerminalOpen) {
+                        viewModel.refreshTree()
+                    }
+                }
 
                 // SAF Folder Picker Launcher
                 val folderPickerLauncher = rememberLauncherForActivityResult(
@@ -180,7 +225,7 @@ class MainActivity : ComponentActivity() {
                             showRecentProjectsDialog = true
                         }
                         KlixWidgets.ACTION_ASK_AGENT -> {
-                            showAgentPromptDialog = true
+                            isAgentPanelOpen = true
                         }
                     }
                     pendingWidgetAction = null
@@ -193,8 +238,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                val agentSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                val terminalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
                 ModalNavigationDrawer(
                     drawerState = drawerState,
+                    gesturesEnabled = drawerState.isOpen,
                     drawerContent = {
                         ModalDrawerSheet(
                             modifier = Modifier
@@ -205,6 +254,13 @@ class MainActivity : ComponentActivity() {
                             FileTreeView(
                                 rootNode = fileTree,
                                 activeFileUri = activeTabUri,
+                                currentProjectName = currentProject?.name,
+                                onOpenSandboxWorkspace = {
+                                    viewModel.openSandboxWorkspace()
+                                },
+                                onOpenFolderPicker = {
+                                    folderPickerLauncher.launch(null)
+                                },
                                 onFileClick = { fileNode ->
                                     viewModel.openFile(fileNode)
                                     scope.launch { drawerState.close() }
@@ -295,6 +351,24 @@ class MainActivity : ComponentActivity() {
                                             imageVector = Icons.AutoMirrored.Filled.WrapText,
                                             contentDescription = "Toggle Word Wrap",
                                             tint = if (isWordWrap) AccentPrimary else TextSecondary
+                                        )
+                                    }
+
+                                    // Klix AI Agent
+                                    IconButton(onClick = { isAgentPanelOpen = !isAgentPanelOpen }) {
+                                        Icon(
+                                            imageVector = Icons.Default.SmartToy,
+                                            contentDescription = "Klix AI Agent",
+                                            tint = if (isAgentPanelOpen) AccentPrimary else TextSecondary
+                                        )
+                                    }
+
+                                    // Terminal
+                                    IconButton(onClick = { isTerminalOpen = !isTerminalOpen }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Terminal,
+                                            contentDescription = "Terminal",
+                                            tint = if (isTerminalOpen) AccentSecondary else TextSecondary
                                         )
                                     }
 
@@ -495,7 +569,21 @@ class MainActivity : ComponentActivity() {
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Open Project Folder")
+                                            Text("Open Project Folder (SAF)")
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = { viewModel.openSandboxWorkspace() },
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, AccentSecondary)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Terminal,
+                                                contentDescription = null,
+                                                tint = AccentSecondary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Open Sandbox Workspace (/workspace)", color = TextPrimary)
                                         }
 
                                         if (recentProjects.isNotEmpty()) {
@@ -580,9 +668,11 @@ class MainActivity : ComponentActivity() {
                             Button(
                                 onClick = {
                                     if (agentPromptText.isNotBlank()) {
-                                        // Prepared for Phase 2 Agent loop
+                                        val prompt = agentPromptText.trim()
                                         showAgentPromptDialog = false
                                         agentPromptText = ""
+                                        isAgentPanelOpen = true
+                                        agentViewModel.sendPrompt(prompt)
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
@@ -595,6 +685,97 @@ class MainActivity : ComponentActivity() {
                                 Text("Cancel", color = TextSecondary)
                             }
                         }
+                    )
+                }
+
+                // Agent Chat Panel (Modal Bottom Sheet)
+                if (isAgentPanelOpen) {
+                    ModalBottomSheet(
+                        onDismissRequest = { isAgentPanelOpen = false },
+                        sheetState = agentSheetState,
+                        containerColor = DarkBg,
+                        dragHandle = null,
+                        modifier = Modifier.fillMaxHeight(0.92f)
+                    ) {
+                        AgentChatPanel(
+                            messages = agentMessages,
+                            status = agentStatus,
+                            statusMessage = agentStatusMessage,
+                            pendingApproval = agentPendingApproval,
+                            settings = agentSettings,
+                            totalTokens = agentPromptTokens + agentCompletionTokens,
+                            onSendPrompt = { prompt -> agentViewModel.sendPrompt(prompt) },
+                            onApproveTool = {
+                                agentViewModel.approvePendingTool()
+                                viewModel.refreshTree()
+                            },
+                            onRejectTool = { agentViewModel.rejectPendingTool() },
+                            onCancelTask = { agentViewModel.cancelTask() },
+                            onClearChat = { agentViewModel.clearChat() },
+                            onOpenSettings = { agentViewModel.toggleSettings() },
+                            onReviewDiff = { diff -> agentViewModel.openReviewDiff(diff) },
+                            onClose = { isAgentPanelOpen = false }
+                        )
+                    }
+                }
+
+                // Agent Diff Review Dialog
+                agentDiffToReview?.let { diff ->
+                    DiffViewerDialog(
+                        diff = diff,
+                        onApply = {
+                            agentViewModel.approvePendingTool()
+                            agentViewModel.closeReviewDiff()
+                            viewModel.refreshTree()
+                            diff.fileUri?.let { uri ->
+                                val tab = openTabs.find { it.uri == uri }
+                                if (tab != null) {
+                                    viewModel.updateActiveTabContent(diff.modifiedText)
+                                }
+                            }
+                        },
+                        onDiscard = {
+                            agentViewModel.closeReviewDiff()
+                        }
+                    )
+                }
+
+                // Agent Settings Dialog
+                if (isAgentSettingsOpen) {
+                    AgentSettingsDialog(
+                        currentSettings = agentSettings,
+                        onGetApiKey = { provider -> agentViewModel.getApiKey(provider) },
+                        onSaveApiKey = { provider, key -> agentViewModel.saveApiKey(provider, key) },
+                        onSaveSettings = { updated -> agentViewModel.updateSettings(updated) },
+                        onDismiss = { agentViewModel.toggleSettings() }
+                    )
+                }
+
+                // Terminal Bottom Sheet
+                if (isTerminalOpen) {
+                    ModalBottomSheet(
+                        onDismissRequest = { isTerminalOpen = false },
+                        sheetState = terminalSheetState,
+                        containerColor = DarkBg,
+                        dragHandle = null,
+                        modifier = Modifier.fillMaxHeight(0.92f)
+                    ) {
+                        TerminalView(
+                            viewModel = terminalViewModel,
+                            onClose = { isTerminalOpen = false }
+                        )
+                    }
+                }
+
+                // Sandbox Setup Dialog
+                if (showSandboxSetup) {
+                    SandboxSetupDialog(
+                        sandboxManager = terminalViewModel.sandboxManager,
+                        onRunCommandInTerminal = { cmd ->
+                            isTerminalOpen = true
+                            terminalViewModel.executeCommand(cmd)
+                        },
+                        onDismiss = { terminalViewModel.closeSetupDialog() }
                     )
                 }
             }
