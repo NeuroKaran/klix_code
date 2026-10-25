@@ -1,0 +1,26 @@
+{
+  "name": "Klix Code — Autonomous AI Agent IDE for Android",
+  "short_name": "Klix Code",
+  "description": "Cursor & Claude Code for your pocket. Autonomous multi-step agent coding on Android.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07080c",
+  "theme_color": "#07080c",
+  "orientation": "portrait",
+  "categories": ["developer", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/app_logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

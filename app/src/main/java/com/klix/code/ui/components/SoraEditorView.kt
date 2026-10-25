@@ -5,7 +5,10 @@ import android.graphics.Typeface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -17,6 +20,25 @@ import io.github.rosemoe.sora.widget.EditorSearcher
 class EditorController {
     var editor: CodeEditor? = null
         internal set
+
+    fun insertText(text: String) {
+        val ed = editor ?: return
+        try {
+            ed.insertText(text, text.length)
+        } catch (_: Exception) {}
+    }
+
+    fun undo() {
+        try {
+            editor?.undo()
+        } catch (_: Exception) {}
+    }
+
+    fun redo() {
+        try {
+            editor?.redo()
+        } catch (_: Exception) {}
+    }
 
     fun search(query: String, matchCase: Boolean = false) {
         val ed = editor ?: return
@@ -71,6 +93,8 @@ fun SoraEditorView(
     controller: EditorController = rememberEditorController()
 ) {
     val context = LocalContext.current
+    var lastKnownText by remember { mutableStateOf(content) }
+    var lastExtension by remember { mutableStateOf(extension) }
 
     LaunchedEffect(Unit) {
         TextMateHelper.init(context)
@@ -86,6 +110,14 @@ fun SoraEditorView(
                 setTextSize(fontSizeSp)
                 this.isWordwrap = isWordWrap
 
+                // Configure inputType to prevent soft keyboards (e.g. Gboard) from treating
+                // code as English prose with auto-suggestions, word corrections, or auto-reverting
+                // layout from numbers/symbols back to letters on every digit/symbol typed.
+                inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                        android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+                        android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                props.disallowSuggestions = true
+
                 // Apply syntax highlighting
                 val lang = TextMateHelper.getLanguageForExtension(extension)
                 if (lang != null) {
@@ -93,6 +125,7 @@ fun SoraEditorView(
                 }
 
                 setText(content)
+                lastKnownText = content
 
                 // Cursor position listener
                 subscribeEvent(SelectionChangeEvent::class.java) { _, _ ->
@@ -103,13 +136,17 @@ fun SoraEditorView(
                 // Text modification listener
                 subscribeEvent(ContentChangeEvent::class.java) { _, _ ->
                     val currentText = text.toString()
+                    lastKnownText = currentText
                     onContentChange(currentText)
                 }
             }
         },
         update = { editor ->
             controller.editor = editor
-            if (editor.text.toString() != content) {
+            // Only update text externally if it changed outside of user keystrokes (e.g. diff or reload)
+            // to avoid restarting IME input connection and dropping keyboard mode
+            if (content != lastKnownText && editor.text.toString() != content) {
+                lastKnownText = content
                 editor.setText(content)
             }
             if (editor.isWordwrap != isWordWrap) {
@@ -118,8 +155,12 @@ fun SoraEditorView(
             if (editor.textSizePx != fontSizeSp) {
                 editor.setTextSize(fontSizeSp)
             }
-            val lang = TextMateHelper.getLanguageForExtension(extension)
-            editor.setEditorLanguage(lang)
+            // Only update editor language when file extension changes, not on every keystroke
+            if (lastExtension != extension) {
+                lastExtension = extension
+                val lang = TextMateHelper.getLanguageForExtension(extension)
+                editor.setEditorLanguage(lang)
+            }
         },
         modifier = modifier
     )

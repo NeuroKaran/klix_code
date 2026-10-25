@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import com.klix.code.ui.components.DiffViewerDialog
+import com.klix.code.ui.components.EditorAccessoryBar
 import com.klix.code.ui.components.EditorTabBar
 import com.klix.code.ui.components.FileTreeView
 import com.klix.code.ui.components.FindReplaceBar
@@ -387,90 +388,99 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         bottomBar = {
-                            // Bottom Status Bar
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(28.dp)
-                                    .background(DarkSurfaceVariant)
-                                    .border(width = 0.5.dp, color = DarkBorder)
-                                    .padding(horizontal = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    if (isLoading) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(12.dp),
-                                            strokeWidth = 1.5.dp,
-                                            color = AccentPrimary
-                                        )
-                                    }
-                                    Text(
-                                        text = statusMessage ?: "Ready",
-                                        fontSize = 11.sp,
-                                        color = TextSecondary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                if (openTabs.isNotEmpty() && activeTabUri != null) {
+                                    EditorAccessoryBar(
+                                        controller = editorController,
+                                        modifier = Modifier.fillMaxWidth()
                                     )
                                 }
 
+                                // Bottom Status Bar
                                 Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(28.dp)
+                                        .background(DarkSurfaceVariant)
+                                        .border(width = 0.5.dp, color = DarkBorder)
+                                        .padding(horizontal = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    val activeTab = openTabs.find { it.uri == activeTabUri }
-                                    if (activeTab != null) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        if (isLoading) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(12.dp),
+                                                strokeWidth = 1.5.dp,
+                                                color = AccentPrimary
+                                            )
+                                        }
                                         Text(
-                                            text = activeTab.extension.uppercase().ifEmpty { "TEXT" },
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = AccentPrimary,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-
-                                        Text(
-                                            text = "Ln ${cursorPosition.first}, Col ${cursorPosition.second}",
-                                            fontSize = 10.sp,
+                                            text = statusMessage ?: "Ready",
+                                            fontSize = 11.sp,
                                             color = TextSecondary,
-                                            fontFamily = FontFamily.Monospace
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
 
-                                    // Zoom controls
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(
-                                            onClick = { viewModel.zoomOut() },
-                                            modifier = Modifier.size(20.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.ZoomOut,
-                                                contentDescription = "Zoom Out",
-                                                tint = TextMuted,
-                                                modifier = Modifier.size(14.dp)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        val activeTab = openTabs.find { it.uri == activeTabUri }
+                                        if (activeTab != null) {
+                                            Text(
+                                                text = activeTab.extension.uppercase().ifEmpty { "TEXT" },
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = AccentPrimary,
+                                                fontFamily = FontFamily.Monospace
+                                            )
+
+                                            Text(
+                                                text = "Ln ${cursorPosition.first}, Col ${cursorPosition.second}",
+                                                fontSize = 10.sp,
+                                                color = TextSecondary,
+                                                fontFamily = FontFamily.Monospace
                                             )
                                         }
 
-                                        Text(
-                                            text = "${fontSizeSp.toInt()}pt",
-                                            fontSize = 10.sp,
-                                            color = TextSecondary,
-                                            fontFamily = FontFamily.Monospace
-                                        )
+                                        // Zoom controls
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(
+                                                onClick = { viewModel.zoomOut() },
+                                                modifier = Modifier.size(20.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.ZoomOut,
+                                                    contentDescription = "Zoom Out",
+                                                    tint = TextMuted,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
 
-                                        IconButton(
-                                            onClick = { viewModel.zoomIn() },
-                                            modifier = Modifier.size(20.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.ZoomIn,
-                                                contentDescription = "Zoom In",
-                                                tint = TextMuted,
-                                                modifier = Modifier.size(14.dp)
+                                            Text(
+                                                text = "${fontSizeSp.toInt()}pt",
+                                                fontSize = 10.sp,
+                                                color = TextSecondary,
+                                                fontFamily = FontFamily.Monospace
                                             )
+
+                                            IconButton(
+                                                onClick = { viewModel.zoomIn() },
+                                                modifier = Modifier.size(20.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.ZoomIn,
+                                                    contentDescription = "Zoom In",
+                                                    tint = TextMuted,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -519,20 +529,22 @@ class MainActivity : ComponentActivity() {
 
                                 val activeTab = openTabs.find { it.uri == activeTabUri }
                                 if (activeTab != null) {
-                                    SoraEditorView(
-                                        content = activeTab.content,
-                                        extension = activeTab.extension,
-                                        isWordWrap = isWordWrap,
-                                        fontSizeSp = fontSizeSp,
-                                        onContentChange = { newContent ->
-                                            viewModel.updateActiveTabContent(newContent)
-                                        },
-                                        onCursorChange = { line, col ->
-                                            viewModel.updateCursor(line, col)
-                                        },
-                                        controller = editorController,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
+                                    androidx.compose.runtime.key(activeTab.uri) {
+                                        SoraEditorView(
+                                            content = activeTab.content,
+                                            extension = activeTab.extension,
+                                            isWordWrap = isWordWrap,
+                                            fontSizeSp = fontSizeSp,
+                                            onContentChange = { newContent ->
+                                                viewModel.updateActiveTabContent(newContent)
+                                            },
+                                            onCursorChange = { line, col ->
+                                                viewModel.updateCursor(line, col)
+                                            },
+                                            controller = editorController,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
                                 }
                             } else {
                                 // Empty state when no tabs are open

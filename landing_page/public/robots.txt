@@ -1,0 +1,9 @@
+# Robots.txt for Klix Code
+# Deployment URL: https://klix.vercel.app
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://klix.vercel.app/sitemap.xml
+Host: https://klix.vercel.app

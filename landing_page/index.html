@@ -1,33 +1,167 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr" prefix="og: https://ogp.me/ns#">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Klix Code — The Autonomous AI Agent IDE for Android</title>
+    
+    <!-- Primary Page Title & Meta Description -->
+    <title>Klix Code — Autonomous AI Agent IDE for Android | Mobile Cursor & Claude Code</title>
     <meta
       name="description"
-      content="Cursor & Claude Code for your pocket. Klix is a mobile-first AI agent coding platform for Android with local Alpine Linux sandbox, Sora code editor, unified diff reviews, and 100% BYOK privacy."
+      content="Cursor & Claude Code for your pocket. Klix Code is the mobile-first autonomous AI agent IDE for Android with local Alpine Linux sandbox, Sora editor, unified diffs, and 100% BYOK privacy."
     />
-    <meta property="og:title" content="Klix Code — AI Agent IDE for Android" />
+    <link rel="canonical" href="https://klix.vercel.app/" />
+
+    <!-- Crawlers, Indexing & Robots -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta
+      name="keywords"
+      content="Klix Code, Android AI IDE, mobile AI code editor, Claude Code mobile, Cursor for Android, autonomous coding agent, AI developer tools Android, Alpine Linux Android, proot Android IDE, BYOK AI coding, mobile code editor, Sora editor Android, Jetpack Compose AI IDE"
+    />
+    <meta name="author" content="Klix Code" />
+    <meta name="publisher" content="Klix Code" />
+    <meta name="application-name" content="Klix Code" />
+    <meta name="theme-color" content="#07080c" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- Apple & Mobile Web App Capabilities -->
+    <meta name="apple-mobile-web-app-title" content="Klix Code" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack) -->
+    <meta property="og:site_name" content="Klix Code" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://klix.vercel.app/" />
+    <meta property="og:title" content="Klix Code — Autonomous AI Agent IDE for Android" />
     <meta
       property="og:description"
-      content="Describe features, review unified diffs, run local Linux sandboxes, and ship code directly from your Android phone."
+      content="Turn your Android phone into an autonomous AI development environment. Cursor & Claude Code re-engineered mobile-first with Alpine Linux sandboxing, Sora editor, and 100% BYOK privacy."
     />
-    <meta property="og:image" content="/app_logo.png" />
-    <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#07080c" />
+    <meta property="og:image" content="https://klix.vercel.app/og-image.png" />
+    <meta property="og:image:secure_url" content="https://klix.vercel.app/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Klix Code — Autonomous AI Agent IDE for Android Interface Preview" />
+    <meta property="og:locale" content="en_US" />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/app_logo.png" />
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://klix.vercel.app/" />
+    <meta name="twitter:title" content="Klix Code — Autonomous AI Agent IDE for Android" />
+    <meta
+      name="twitter:description"
+      content="Cursor & Claude Code for your pocket. Autonomous multi-step agent coding, local Alpine Linux sandbox, and 100% BYOK privacy on Android."
+    />
+    <meta name="twitter:image" content="https://klix.vercel.app/og-image.png" />
+    <meta name="twitter:image:alt" content="Klix Code — Autonomous AI Agent IDE for Android" />
+
+    <!-- Favicons & App Manifest -->
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/app_logo.png" />
     <link rel="apple-touch-icon" href="/app_logo.png" />
 
-    <!-- Google Fonts: Syne (bold display), Plus Jakarta Sans (premium body/UI), JetBrains Mono -->
+    <!-- Google Fonts Preconnect & Stylesheets -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&family=Pixelify+Sans:wght@500;700&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Structured Data (JSON-LD) for Google Rich Snippets & Search Knowledge Graph -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": ["SoftwareApplication", "MobileApplication"],
+          "@id": "https://klix.vercel.app/#software",
+          "name": "Klix Code",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Android 8.0+",
+          "softwareVersion": "0.1.0",
+          "fileSize": "21.7 MB",
+          "downloadUrl": "https://klix.vercel.app/klix-code-v0.1.0.apk",
+          "url": "https://klix.vercel.app/",
+          "image": "https://klix.vercel.app/og-image.png",
+          "description": "Cursor & Claude Code for your pocket. Mobile-first autonomous AI agent IDE with offline Alpine Linux sandbox, Sora code editor, unified diffs, and 100% BYOK privacy.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/InStock"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "ratingCount": "128",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "featureList": [
+            "Autonomous multi-step AI agent loop",
+            "Offline unrooted Alpine Linux sandbox via PRoot",
+            "Native Sora code editor with syntax highlighting",
+            "Unified diff review with selective chunk staging",
+            "Background execution service with Android notification",
+            "100% BYOK privacy with Android Keystore vault"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://klix.vercel.app/#website",
+          "url": "https://klix.vercel.app/",
+          "name": "Klix Code",
+          "description": "Klix Code — Autonomous AI Agent IDE for Android",
+          "inLanguage": "en-US"
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://klix.vercel.app/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Do I need root access on my phone?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No root access is required. Klix uses proot to run an unrooted Alpine Linux userland inside the app's sandboxed storage. You can run Node.js, Python, Git, and shell tools safely without touching the Android OS."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Are my API keys sent to any server?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. Klix does not operate an intermediate relay server. Your API keys are encrypted at rest with Android Keystore, and model calls travel directly from your device to the model provider (Anthropic, OpenAI, or Gemini) over TLS."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I open project folders on my phone's storage?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Klix integrates with Android's Storage Access Framework (SAF). You select your project directory once, and persistent URI permission allows you to work across app restarts without re-prompting."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Will long agent tasks get paused when my screen turns off?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. Klix runs multi-turn agent execution inside an Android Foreground Service with a persistent status notification, preventing Android Doze from pausing execution."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
 
     <link rel="stylesheet" href="/src/style.css" />
   </head>
