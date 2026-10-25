@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 enum class HarnessStatus {
     IDLE,
@@ -41,6 +40,10 @@ class AgentHarness(
     private val toolExecutor: WorkspaceToolExecutor,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 ) {
+
+    companion object {
+        const val MAX_TURNS_PER_TASK = 25
+    }
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
@@ -68,6 +71,11 @@ class AgentHarness(
 
     private var currentSettings: ProviderSettings = ProviderSettings()
     private var currentApiKey: String = ""
+
+    // Batch state for parallel/sequential tool calls within a single model turn
+    private val currentBatchResults = mutableListOf<ToolCallResult>()
+    private val remainingPendingTools = mutableListOf<ToolCallRequest>()
+    private var currentTurnCount = 0
 
     fun updateContext(
         workspaceUri: Uri?,
@@ -99,6 +107,10 @@ class AgentHarness(
             return
         }
 
+        currentTurnCount = 0
+        currentBatchResults.clear()
+        remainingPendingTools.clear()
+
         val userMessage = ChatMessage(
             role = MessageRole.USER,
             content = userPrompt
@@ -123,8 +135,8 @@ class AgentHarness(
                 dryRunWrite = false
             )
 
-            recordToolResult(pending.toolCall, result)
-            runOrchestrationLoop()
+            currentBatchResults.add(result)
+            processNextToolInBatch()
         }
     }
 
@@ -140,12 +152,16 @@ class AgentHarness(
             error = reason
         )
 
-        recordToolResult(pending.toolCall, result)
-        runOrchestrationLoop()
+        currentBatchResults.add(result)
+        activeJob = scope.launch {
+            processNextToolInBatch()
+        }
     }
 
     fun cancelTask() {
         activeJob?.cancel()
+        currentBatchResults.clear()
+        remainingPendingTools.clear()
         _status.value = HarnessStatus.IDLE
         _statusMessage.value = "Task cancelled by user."
         _pendingApproval.value = null
@@ -156,11 +172,24 @@ class AgentHarness(
         _messages.value = emptyList()
         _totalPromptTokens.value = 0
         _totalCompletionTokens.value = 0
+        currentTurnCount = 0
         _status.value = HarnessStatus.IDLE
         _statusMessage.value = "Chat reset."
     }
 
     private fun runOrchestrationLoop() {
+        currentTurnCount++
+        if (currentTurnCount > MAX_TURNS_PER_TASK) {
+            _status.value = HarnessStatus.COMPLETED
+            _statusMessage.value = "Reached turn limit ($MAX_TURNS_PER_TASK turns)."
+            val warningMsg = ChatMessage(
+                role = MessageRole.ASSISTANT,
+                content = "Task reached maximum turn budget ($MAX_TURNS_PER_TASK turns). Please review the actions taken above and continue with a new instruction if needed."
+            )
+            _messages.value = _messages.value + warningMsg
+            return
+        }
+
         activeJob = scope.launch {
             try {
                 _status.value = HarnessStatus.THINKING
@@ -186,10 +215,11 @@ class AgentHarness(
                 _totalPromptTokens.value += response.promptTokens
                 _totalCompletionTokens.value += response.completionTokens
 
-                // Record Assistant Turn
+                // Record Assistant Turn with reasoning/thought and tool calls
                 val assistantMsg = ChatMessage(
                     role = MessageRole.ASSISTANT,
                     content = response.textResponse ?: "",
+                    thought = response.thoughtResponse,
                     toolCalls = response.toolCalls
                 )
                 _messages.value = _messages.value + assistantMsg
@@ -200,8 +230,12 @@ class AgentHarness(
                     return@launch
                 }
 
-                // Handle Tool Calls sequentially
-                handleToolCalls(response.toolCalls)
+                // Initialize batch execution for all tool calls in this turn
+                currentBatchResults.clear()
+                remainingPendingTools.clear()
+                remainingPendingTools.addAll(response.toolCalls)
+
+                processNextToolInBatch()
 
             } catch (e: Exception) {
                 _status.value = HarnessStatus.ERROR
@@ -215,9 +249,11 @@ class AgentHarness(
         }
     }
 
-    private suspend fun handleToolCalls(toolCalls: List<ToolCallRequest>) {
-        for (toolCall in toolCalls) {
-            val isDestructive = AgentTools.isDestructive(toolCall.name)
+    private suspend fun processNextToolInBatch() {
+        while (remainingPendingTools.isNotEmpty()) {
+            val toolCall = remainingPendingTools.removeAt(0)
+            val cleanName = toolCall.name.removePrefix("default_api:").trim()
+            val isDestructive = AgentTools.isDestructive(cleanName)
             val requiresApproval = if (isDestructive) {
                 !currentSettings.autoApproveWriteTools
             } else {
@@ -226,58 +262,59 @@ class AgentHarness(
 
             if (requiresApproval) {
                 // If write or edit, generate preview diff first
-                val previewResult = if (toolCall.name in listOf("write_file", "edit_file")) {
+                val previewResult = if (cleanName in listOf("write_file", "edit_file")) {
                     toolExecutor.execute(currentWorkspaceUri, toolCall, dryRunWrite = true)
                 } else null
 
-                val promptMsg = when (toolCall.name) {
+                val promptMsg = when (cleanName) {
                     "write_file" -> "Proposing to write file '${toolCall.parsedArguments["path"]}'"
                     "edit_file" -> "Proposing targeted edit on '${toolCall.parsedArguments["path"]}'"
                     "run_command" -> "Proposing shell command: `${toolCall.parsedArguments["command"]}`"
-                    else -> "Approval needed to execute '${toolCall.name}'"
+                    else -> "Approval needed to execute '${cleanName}'"
                 }
 
                 _status.value = HarnessStatus.AWAITING_APPROVAL
-                _statusMessage.value = "Awaiting approval for ${toolCall.name}"
+                _statusMessage.value = "Awaiting approval for $cleanName"
                 _pendingApproval.value = PendingApproval(
                     toolCall = toolCall,
                     diff = previewResult?.proposedDiff,
                     promptMessage = promptMsg
                 )
-                // Halt orchestration loop until user responds
+                // Pause batch execution until user approves or denies
                 return
             } else {
                 // Auto-approved
                 _status.value = HarnessStatus.EXECUTING_TOOL
-                _statusMessage.value = "Running ${toolCall.name}..."
+                _statusMessage.value = "Running $cleanName..."
 
                 val result = toolExecutor.execute(
                     rootTreeUri = currentWorkspaceUri,
                     toolCall = toolCall,
                     dryRunWrite = false
                 )
-
-                recordToolResult(toolCall, result)
+                currentBatchResults.add(result)
             }
         }
 
-        // Once all tool calls in batch are processed, continue turn loop
-        runOrchestrationLoop()
-    }
+        // All tools in this turn's batch have finished: commit unified tool result message
+        if (currentBatchResults.isNotEmpty()) {
+            val userResponseWithResults = ChatMessage(
+                role = MessageRole.USER,
+                content = "",
+                toolResults = currentBatchResults.toList()
+            )
+            _messages.value = _messages.value + userResponseWithResults
+            currentBatchResults.clear()
+        }
 
-    private fun recordToolResult(toolCall: ToolCallRequest, result: ToolCallResult) {
-        val userResponseWithResult = ChatMessage(
-            role = MessageRole.USER,
-            content = "",
-            toolResults = listOf(result)
-        )
-        _messages.value = _messages.value + userResponseWithResult
+        // Continue next turn in orchestration loop
+        runOrchestrationLoop()
     }
 
     private fun buildSystemPrompt(): String {
         val sb = StringBuilder()
-        sb.append("You are Klix AI, an expert agentic software engineer inside KlixCode, a mobile-first native Android IDE.\n")
-        sb.append("You have direct access to workspace inspection and modification tools.\n\n")
+        sb.append("You are Klix AI, an elite agentic software engineer inside KlixCode, a mobile-first native Android IDE.\n")
+        sb.append("You have direct access to workspace tools to inspect, navigate, write, and execute code.\n\n")
 
         sb.append("### Active Environment:\n")
         sb.append("- Workspace: $currentWorkspaceName\n")
@@ -288,11 +325,12 @@ class AgentHarness(
             }
         }
 
-        sb.append("\n### Instructions:\n")
-        sb.append("1. Follow the Plan-Then-Execute methodology: for non-trivial requests, outline what files you will inspect or modify before acting.\n")
-        sb.append("2. When making code changes, use 'edit_file' for surgical changes or 'write_file' for new/rewritten files. All changes will generate diffs for the user to review.\n")
-        sb.append("3. Always inspect existing files using 'read_file' or 'search_files' before making modifications to ensure accuracy.\n")
-        sb.append("4. Keep explanations clear, concise, and mobile-friendly.\n")
+        sb.append("\n### Operating Guidelines:\n")
+        sb.append("1. **Plan-Then-Execute**: For complex or non-trivial requests, outline the inspection steps and planned edits before invoking modification tools.\n")
+        sb.append("2. **Inspect First**: Always inspect existing files using `read_file`, `list_dir`, or `search_files` before modifying them. Never guess file paths or content.\n")
+        sb.append("3. **Targeted Modifications**: Use `edit_file` for surgical changes by specifying exact `old_string` matches (including exact indentation and line breaks). Use `write_file` for creating new files or complete rewrites.\n")
+        sb.append("4. **Workspace Paths**: All tool paths must be relative to the workspace root without leading slashes (e.g., 'app/src/Main.kt').\n")
+        sb.append("5. **Concise Explanations**: Provide mobile-friendly, crisp summaries of changes made.\n")
 
         return sb.toString()
     }

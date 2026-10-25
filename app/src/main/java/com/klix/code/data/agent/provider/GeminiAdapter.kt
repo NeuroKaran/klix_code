@@ -44,6 +44,11 @@ class GeminiAdapter(
             }
 
             for (tc in msg.toolCalls) {
+                val partObj = JSONObject()
+                if (!tc.thoughtSignature.isNullOrBlank()) {
+                    partObj.put("thought_signature", tc.thoughtSignature)
+                    partObj.put("thoughtSignature", tc.thoughtSignature)
+                }
                 val fcObj = JSONObject()
                 fcObj.put("name", tc.name)
                 try {
@@ -51,14 +56,15 @@ class GeminiAdapter(
                 } catch (_: Exception) {
                     fcObj.put("args", JSONObject())
                 }
-                partsArray.put(JSONObject().put("functionCall", fcObj))
+                partObj.put("functionCall", fcObj)
+                partsArray.put(partObj)
             }
 
             for (result in msg.toolResults) {
                 val frObj = JSONObject()
                 frObj.put("name", result.name)
                 val responseObj = JSONObject()
-                responseObj.put("result", if (result.isSuccess) result.output else "Error: ${result.error}")
+                responseObj.put("result", if (result.isSuccess) result.output else "Error: ${result.error ?: "Unknown error"}")
                 frObj.put("response", responseObj)
                 partsArray.put(JSONObject().put("functionResponse", frObj))
             }
@@ -115,6 +121,7 @@ class GeminiAdapter(
             if (candidates == null || candidates.length() == 0) {
                 return@withContext ProviderTurnResponse(
                     textResponse = null,
+                    thoughtResponse = null,
                     toolCalls = emptyList(),
                     rawJson = responseBody
                 )
@@ -125,25 +132,43 @@ class GeminiAdapter(
             val parts = content?.optJSONArray("parts")
 
             var textResp: String? = null
+            var thoughtResp: String? = null
             val toolCalls = mutableListOf<ToolCallRequest>()
 
             if (parts != null) {
                 for (i in 0 until parts.length()) {
                     val part = parts.getJSONObject(i)
+                    val isThought = part.optBoolean("thought", false)
+
                     if (part.has("text")) {
-                        textResp = (textResp ?: "") + part.optString("text")
+                        val text = part.optString("text")
+                        if (isThought) {
+                            thoughtResp = (thoughtResp ?: "") + text
+                        } else {
+                            textResp = (textResp ?: "") + text
+                        }
                     }
                     if (part.has("functionCall")) {
                         val fc = part.getJSONObject("functionCall")
                         val name = fc.optString("name")
                         val argsObj = fc.optJSONObject("args") ?: JSONObject()
                         val rawArgs = argsObj.toString()
+
+                        val signature = when {
+                            part.has("thought_signature") && !part.isNull("thought_signature") -> part.optString("thought_signature")
+                            part.has("thoughtSignature") && !part.isNull("thoughtSignature") -> part.optString("thoughtSignature")
+                            fc.has("thought_signature") && !fc.isNull("thought_signature") -> fc.optString("thought_signature")
+                            fc.has("thoughtSignature") && !fc.isNull("thoughtSignature") -> fc.optString("thoughtSignature")
+                            else -> null
+                        }
+
                         toolCalls.add(
                             ToolCallRequest(
                                 id = UUID.randomUUID().toString(),
                                 name = name,
                                 rawArguments = rawArgs,
-                                parsedArguments = AgentTools.parseArguments(rawArgs)
+                                parsedArguments = AgentTools.parseArguments(rawArgs),
+                                thoughtSignature = signature
                             )
                         )
                     }
@@ -156,6 +181,7 @@ class GeminiAdapter(
 
             ProviderTurnResponse(
                 textResponse = textResp,
+                thoughtResponse = thoughtResp,
                 toolCalls = toolCalls,
                 promptTokens = promptTokens,
                 completionTokens = completionTokens,

@@ -112,6 +112,7 @@ class AnthropicAdapter(
             val contentArr = respJson.optJSONArray("content") ?: JSONArray()
 
             var textResp: String? = null
+            var thoughtResp: String? = null
             val toolCalls = mutableListOf<ToolCallRequest>()
 
             for (i in 0 until contentArr.length()) {
@@ -119,6 +120,9 @@ class AnthropicAdapter(
                 when (block.optString("type")) {
                     "text" -> {
                         textResp = (textResp ?: "") + block.optString("text")
+                    }
+                    "thinking" -> {
+                        thoughtResp = (thoughtResp ?: "") + block.optString("thinking")
                     }
                     "tool_use" -> {
                         val id = block.optString("id")
@@ -143,6 +147,7 @@ class AnthropicAdapter(
 
             ProviderTurnResponse(
                 textResponse = textResp,
+                thoughtResponse = thoughtResp,
                 toolCalls = toolCalls,
                 promptTokens = promptTokens,
                 completionTokens = completionTokens,

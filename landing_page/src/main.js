@@ -165,13 +165,15 @@ function initDownloadButtons() {
 
   if (copyBtn && checksumText) {
     copyBtn.addEventListener('click', async () => {
-      const hash = checksumText.textContent.trim();
+      const hash = checksumText.dataset.hash || checksumText.textContent.trim();
       try {
         await navigator.clipboard.writeText(hash);
         if (copyBtnText) copyBtnText.textContent = 'Copied!';
+        copyBtn.classList.add('copied');
         showToast('SHA-256 Checksum copied to clipboard!');
         setTimeout(() => {
           if (copyBtnText) copyBtnText.textContent = 'Copy Hash';
+          copyBtn.classList.remove('copied');
         }, 2500);
       } catch (err) {
         showToast('Checksum: ' + hash.substring(0, 16) + '...');
@@ -327,14 +329,131 @@ function initMatrixRain() {
 }
 
 // ==========================================================================
+// 6. SCROLL-TRIGGERED REVEAL ANIMATIONS (IntersectionObserver)
+//    Inspired by Motia-style smooth entrance transitions
+// ==========================================================================
+
+function initScrollReveal() {
+  const revealElements = document.querySelectorAll('.reveal');
+
+  if (!revealElements.length) return;
+
+  // Use IntersectionObserver for buttery-smooth, GPU-friendly reveals
+  const observerOptions = {
+    root: null,          // viewport
+    rootMargin: '0px 0px -60px 0px', // trigger slightly before fully in view
+    threshold: 0.15,     // 15% of the element must be visible
+  };
+
+  const revealObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        // Once revealed, stop observing (one-shot animation)
+        observer.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  revealElements.forEach((el) => {
+    revealObserver.observe(el);
+  });
+}
+
+// ==========================================================================
+// 7. LIGHTWEIGHT PARALLAX ON SCROLL (Phone Aura + Ambient Grid)
+// ==========================================================================
+
+function initScrollParallax() {
+  const aura = document.querySelector('.phone-aura-backdrop');
+  const grid = document.querySelector('.ambient-grid');
+
+  if (!aura && !grid) return;
+
+  let ticking = false;
+
+  function onScroll() {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+
+        // Subtle parallax: aura moves slower than scroll
+        if (aura) {
+          const auraShift = scrollY * 0.15;
+          aura.style.transform = `translateX(-50%) translateY(${auraShift}px)`;
+        }
+
+        // Grid shifts very subtly for depth
+        if (grid) {
+          const gridShift = scrollY * 0.03;
+          grid.style.transform = `translateY(${gridShift}px)`;
+        }
+
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+}
+
+// ==========================================================================
+// 8. CARDS FAN DECK INTERACTIVE BEHAVIOR
+// ==========================================================================
+
+function initCardsFanDeck() {
+  const fanCards = document.querySelectorAll('.fan-card');
+  const phone = document.getElementById('phone-mockup');
+
+  fanCards.forEach((card) => {
+    // Accessibility: Keyboard selection
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        card.click();
+      }
+    });
+
+    // Interactive card click connects to the phone mockup tabs
+    card.addEventListener('click', () => {
+      const screen = card.getAttribute('data-screen');
+
+      // Add a quick feedback pop
+      card.style.transform = `${card.style.transform || ''} scale(1.12)`;
+      setTimeout(() => {
+        card.style.transform = '';
+      }, 300);
+
+      if (screen === 'shell-ps' || screen === 'node-server') {
+        const termTab = document.querySelector('.phone-tab-btn[data-tab="terminal"]');
+        if (termTab) termTab.click();
+      } else if (screen === 'agent-claude') {
+        const agentTab = document.querySelector('.phone-tab-btn[data-tab="agent"]');
+        if (agentTab) agentTab.click();
+      } else if (screen === 'saf-storage' || screen === 'file-tree') {
+        const diffTab = document.querySelector('.phone-tab-btn[data-tab="diff"]');
+        if (diffTab) diffTab.click();
+      }
+
+      // Smooth scroll if needed
+      phone?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+}
+
+// ==========================================================================
 // INITIALIZATION
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
   initMatrixRain();
+  initCardsFanDeck();
   initPhoneMockupTabs();
   generateQrMatrixSvg();
   initDownloadButtons();
   initNavigation();
+  initScrollReveal();
+  initScrollParallax();
 });
 

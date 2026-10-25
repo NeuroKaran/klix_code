@@ -21,11 +21,11 @@
     <link rel="icon" type="image/png" href="/app_logo.png" />
     <link rel="apple-touch-icon" href="/app_logo.png" />
 
-    <!-- Google Fonts: Pixelify Sans (free pixel font), JetBrains Mono, Inter -->
+    <!-- Google Fonts: Syne (bold display), Plus Jakarta Sans (premium body/UI), JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Pixelify+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&family=Pixelify+Sans:wght@500;700&display=swap"
       rel="stylesheet"
     />
 
@@ -81,7 +81,8 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span>Download APK</span>
+            <span class="nav-dl-text">Download APK</span>
+            <span class="nav-dl-short">APK</span>
           </a>
 
           <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
@@ -98,6 +99,9 @@
         <a href="#features" class="mobile-nav-link">Features</a>
         <a href="#download" class="mobile-nav-link">Download APK</a>
         <a href="#faq" class="mobile-nav-link">FAQ</a>
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="mobile-nav-link mobile-nav-github">
+          GitHub Repository ↗
+        </a>
         <a href="/klix-code-v0.1.0.apk" download="klix-code-v0.1.0.apk" class="btn-primary-lime mobile-download-btn">
           Download APK (21.7 MB)
         </a>
@@ -109,7 +113,7 @@
       <section class="hero-section" id="hero">
         <div class="hero-container">
           <!-- Clean Announcement Pill -->
-          <div class="pill-badge" id="hero-badge">
+          <div class="pill-badge hero-entry hero-entry-d1" id="hero-badge">
             <span class="badge-dot"></span>
             <span class="badge-tag">v0.1.0 Beta Released</span>
             <span class="badge-separator">•</span>
@@ -117,18 +121,18 @@
           </div>
 
           <!-- Pixelated Headline (Style from iii.dev reference) -->
-          <h1 class="hero-title font-pixel">
+          <h1 class="hero-title font-pixel hero-entry hero-entry-d2">
             <span class="title-line">The Agentic AI IDE.</span>
             <span class="title-line hero-title-highlight">Built for your pocket.</span>
           </h1>
 
           <!-- Simple, clean subtitle -->
-          <p class="hero-subtitle">
+          <p class="hero-subtitle hero-entry hero-entry-d3">
             Cursor & Claude Code, re-architected mobile-first. Bring your own keys, orchestrate autonomous multi-step plans, review diffs, and run an offline Alpine Linux sandbox — right on your phone.
           </p>
 
           <!-- Single high-impact Lime CTA -->
-          <div class="hero-cta-wrapper">
+          <div class="hero-cta-wrapper hero-entry hero-entry-d4">
             <a
               href="/klix-code-v0.1.0.apk"
               download="klix-code-v0.1.0.apk"
@@ -149,11 +153,59 @@
           </div>
 
           <!-- Phone Mockup with Radiant Gradient Aura (Inspired by Reference Image 1) -->
-          <div class="device-showcase-container" id="demo">
+          <div class="device-showcase-container hero-entry hero-entry-d5" id="demo">
             <!-- Radiant Background Gradient Aura (Electric Lime & Cyan backlight) -->
-            <div class="phone-aura-backdrop" aria-hidden="true"></div>
+            <div class="phone-aura-backdrop aura-animate" aria-hidden="true"></div>
 
-            <!-- Clearly Visible Flagship Smartphone Mockup -->
+            <!-- Fanned Out Cards Deck (Peeking & Glowing Behind Phone Mockup) -->
+            <div class="cards-fan-deck" id="cards-fan-deck" aria-label="Klix Android App Screenshots">
+              <!-- Card 1: Far Left - Alpine Shell Processes -->
+              <div class="fan-card fan-card-1" data-screen="shell-ps" tabindex="0" role="button" aria-label="Alpine Sandbox Shell Processes">
+                <div class="fan-card-glass">
+                  <img src="/screenshots/app-screen-1.jpg" alt="Alpine Sandbox Shell Processes" class="fan-card-img" loading="lazy" />
+                  <div class="fan-card-glow-overlay"></div>
+                  <div class="fan-card-badge font-pixel">Sandbox Proot</div>
+                </div>
+              </div>
+
+              <!-- Card 2: Mid Left - Local Node Server -->
+              <div class="fan-card fan-card-2" data-screen="node-server" tabindex="0" role="button" aria-label="Local Node.js Server Running">
+                <div class="fan-card-glass">
+                  <img src="/screenshots/app-screen-2.jpg" alt="Local Node.js Server Running" class="fan-card-img" loading="lazy" />
+                  <div class="fan-card-glow-overlay"></div>
+                  <div class="fan-card-badge font-pixel">Node.js :3001</div>
+                </div>
+              </div>
+
+              <!-- Card 3: Center Peak - AI Agent Mode -->
+              <div class="fan-card fan-card-3" data-screen="agent-claude" tabindex="0" role="button" aria-label="Klix AI Agent Claude 3.7">
+                <div class="fan-card-glass">
+                  <img src="/screenshots/app-screen-3.jpg" alt="Klix AI Agent Claude 3.7" class="fan-card-img" loading="lazy" />
+                  <div class="fan-card-glow-overlay"></div>
+                  <div class="fan-card-badge font-pixel">Agent Claude 3.7</div>
+                </div>
+              </div>
+
+              <!-- Card 4: Mid Right - Workspace Launcher -->
+              <div class="fan-card fan-card-4" data-screen="saf-storage" tabindex="0" role="button" aria-label="Project Workspace Picker">
+                <div class="fan-card-glass">
+                  <img src="/screenshots/app-screen-4.jpg" alt="Project Workspace Picker" class="fan-card-img" loading="lazy" />
+                  <div class="fan-card-glow-overlay"></div>
+                  <div class="fan-card-badge font-pixel">SAF Workspace</div>
+                </div>
+              </div>
+
+              <!-- Card 5: Far Right - File Tree Sidebar -->
+              <div class="fan-card fan-card-5" data-screen="file-tree" tabindex="0" role="button" aria-label="File Tree & Project Explorer">
+                <div class="fan-card-glass">
+                  <img src="/screenshots/app-screen-5.jpg" alt="File Tree & Project Explorer" class="fan-card-img" loading="lazy" />
+                  <div class="fan-card-glow-overlay"></div>
+                  <div class="fan-card-badge font-pixel">File Explorer</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Clearly Visible Flagship Smartphone Mockup (Center Foreground) -->
             <div class="phone-frame" id="phone-mockup">
               <!-- Metallic Rim Highlight & Speaker Grill -->
               <div class="phone-speaker-bar"></div>
@@ -308,29 +360,29 @@ Linux localhost 6.1.0-android14-arm64 (proot)
       <!-- Model Compatibility Section -->
       <section class="providers-section" aria-label="Model Providers">
         <div class="section-container">
-          <div class="providers-header">
+          <div class="providers-header reveal reveal-up">
             <span class="section-eyebrow font-pixel">BRING YOUR OWN KEY • ZERO MIDDLEMAN</span>
             <p class="providers-caption">Direct client-to-provider TLS calls. Keys encrypted in Android Keystore.</p>
           </div>
 
-          <div class="providers-grid">
-            <div class="provider-pill-card">
+          <div class="providers-grid stagger-children">
+            <div class="provider-pill-card reveal reveal-up">
               <span class="provider-badge-dot dot-anthropic"></span>
               <span class="provider-name">Claude 3.7 Sonnet</span>
             </div>
-            <div class="provider-pill-card">
+            <div class="provider-pill-card reveal reveal-up">
               <span class="provider-badge-dot dot-openai"></span>
               <span class="provider-name">OpenAI GPT-4o</span>
             </div>
-            <div class="provider-pill-card">
+            <div class="provider-pill-card reveal reveal-up">
               <span class="provider-badge-dot dot-google"></span>
               <span class="provider-name">Google Gemini 2.5</span>
             </div>
-            <div class="provider-pill-card">
+            <div class="provider-pill-card reveal reveal-up">
               <span class="provider-badge-dot dot-deepseek"></span>
               <span class="provider-name">DeepSeek R1</span>
             </div>
-            <div class="provider-pill-card">
+            <div class="provider-pill-card reveal reveal-up">
               <span class="provider-badge-dot dot-lime"></span>
               <span class="provider-name">Local / Ollama</span>
             </div>
@@ -341,20 +393,20 @@ Linux localhost 6.1.0-android14-arm64 (proot)
       <!-- Clean Features Bento Grid -->
       <section class="features-section" id="features">
         <div class="section-container">
-          <div class="section-badge-center">
+          <div class="section-badge-center reveal reveal-blur">
             <span class="badge-dot"></span>
             <span>Core Architecture</span>
           </div>
-          <h2 class="section-title text-center font-pixel">
+          <h2 class="section-title text-center font-pixel reveal reveal-up delay-100">
             Engineered Mobile-First
           </h2>
-          <p class="section-subtitle text-center">
+          <p class="section-subtitle text-center reveal reveal-up delay-200">
             A native Kotlin client with an offline Linux sandbox, Sora editor, and hardware-backed credential encryption.
           </p>
 
-          <div class="bento-grid-clean">
+          <div class="bento-grid-clean stagger-children">
             <!-- Feature 1 -->
-            <div class="bento-clean-card">
+            <div class="bento-clean-card reveal reveal-scale">
               <div class="bento-icon-wrapper lime-glow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -368,7 +420,7 @@ Linux localhost 6.1.0-android14-arm64 (proot)
             </div>
 
             <!-- Feature 2 -->
-            <div class="bento-clean-card">
+            <div class="bento-clean-card reveal reveal-scale">
               <div class="bento-icon-wrapper cyan-glow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="4 17 10 11 4 5"></polyline>
@@ -382,7 +434,7 @@ Linux localhost 6.1.0-android14-arm64 (proot)
             </div>
 
             <!-- Feature 3 -->
-            <div class="bento-clean-card">
+            <div class="bento-clean-card reveal reveal-scale">
               <div class="bento-icon-wrapper lime-glow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="16 18 22 12 16 6"></polyline>
@@ -396,7 +448,7 @@ Linux localhost 6.1.0-android14-arm64 (proot)
             </div>
 
             <!-- Feature 4 -->
-            <div class="bento-clean-card">
+            <div class="bento-clean-card reveal reveal-scale">
               <div class="bento-icon-wrapper cyan-glow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -415,7 +467,7 @@ Linux localhost 6.1.0-android14-arm64 (proot)
       <!-- Download Center Section -->
       <section class="download-section" id="download">
         <div class="section-container">
-          <div class="download-clean-card">
+          <div class="download-clean-card reveal reveal-blur reveal-slow">
             <div class="download-badge-tag font-pixel">OFFICIAL RELEASE</div>
             <h2 class="download-clean-title font-pixel">Download Klix Code APK</h2>
             <p class="download-clean-desc">
@@ -452,11 +504,19 @@ Linux localhost 6.1.0-android14-arm64 (proot)
 
             <!-- SHA-256 Checksum -->
             <div class="checksum-strip">
-              <span class="checksum-title font-pixel">SHA-256 Checksum:</span>
-              <code class="checksum-code" id="checksum-text">fd7856f2152b490f772cad848221aadad00580d359e67c3236a4a241b38d34aa</code>
-              <button class="btn-copy-code" id="copy-hash-btn">
-                <span id="copy-btn-text">Copy Hash</span>
-              </button>
+              <div class="checksum-header">
+                <span class="checksum-title font-pixel">SHA-256 Checksum:</span>
+                <button class="btn-copy-code" id="copy-hash-btn" type="button" aria-label="Copy SHA-256 Checksum">
+                  <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span id="copy-btn-text">Copy Hash</span>
+                </button>
+              </div>
+              <div class="checksum-body">
+                <code class="checksum-code" id="checksum-text" data-hash="fd7856f2152b490f772cad848221aadad00580d359e67c3236a4a241b38d34aa">fd7856f2152b490f772cad848221aadad00580d359e67c3236a4a241b38d34aa</code>
+              </div>
             </div>
           </div>
         </div>
@@ -465,14 +525,14 @@ Linux localhost 6.1.0-android14-arm64 (proot)
       <!-- FAQ Section -->
       <section class="faq-section" id="faq">
         <div class="section-container">
-          <div class="section-badge-center">
+          <div class="section-badge-center reveal reveal-blur">
             <span class="badge-dot"></span>
             <span>Questions & Answers</span>
           </div>
-          <h2 class="section-title text-center font-pixel">Frequently Asked Questions</h2>
+          <h2 class="section-title text-center font-pixel reveal reveal-up delay-100">Frequently Asked Questions</h2>
 
-          <div class="faq-accordion-list">
-            <details class="faq-item" open>
+          <div class="faq-accordion-list stagger-children">
+            <details class="faq-item reveal reveal-up" open>
               <summary class="faq-question">
                 <span>Do I need root access on my phone?</span>
                 <span class="faq-arrow">+</span>
@@ -484,7 +544,7 @@ Linux localhost 6.1.0-android14-arm64 (proot)
               </div>
             </details>
 
-            <details class="faq-item">
+            <details class="faq-item reveal reveal-up">
               <summary class="faq-question">
                 <span>Are my API keys sent to any server?</span>
                 <span class="faq-arrow">+</span>
@@ -527,7 +587,7 @@ Linux localhost 6.1.0-android14-arm64 (proot)
     <!-- Clean, Properly Formatted Footer (No Overlapping!) -->
     <footer class="site-footer">
       <div class="section-container">
-        <div class="footer-grid-clean">
+        <div class="footer-grid-clean reveal reveal-up">
           <!-- Col 1: Brand Info -->
           <div class="footer-brand-box">
             <div class="footer-brand-row">
@@ -573,7 +633,7 @@ Linux localhost 6.1.0-android14-arm64 (proot)
           </div>
         </div>
 
-        <div class="footer-bottom-row">
+        <div class="footer-bottom-row reveal reveal-up delay-200">
           <p>© 2026 Klix Code. Built for Android developers everywhere.</p>
           <div class="footer-pills">
             <span class="foot-pill">Android 8.0+</span>

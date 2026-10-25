@@ -47,7 +47,8 @@ data class ToolCallRequest(
     val id: String,
     val name: String,
     val rawArguments: String,
-    val parsedArguments: Map<String, String> = emptyMap()
+    val parsedArguments: Map<String, String> = emptyMap(),
+    val thoughtSignature: String? = null
 )
 
 data class ToolCallResult(
@@ -177,12 +178,19 @@ object AgentTools {
 
     fun parseArguments(rawJson: String): Map<String, String> {
         val map = mutableMapOf<String, String>()
+        val cleaned = rawJson.trim().removeSurrounding("```json", "```").removeSurrounding("```", "```").trim()
+        if (cleaned.isBlank() || cleaned == "{}") return map
         try {
-            val json = JSONObject(rawJson)
+            val json = JSONObject(cleaned)
             val keys = json.keys()
             while (keys.hasNext()) {
                 val key = keys.next()
-                map[key] = json.optString(key, "")
+                val value = json.opt(key)
+                map[key] = when (value) {
+                    null, JSONObject.NULL -> ""
+                    is JSONObject, is JSONArray -> value.toString()
+                    else -> value.toString()
+                }
             }
         } catch (_: Exception) {
             // Raw string fallback

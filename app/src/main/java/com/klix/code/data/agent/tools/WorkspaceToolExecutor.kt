@@ -20,8 +20,9 @@ class WorkspaceToolExecutor(
         toolCall: ToolCallRequest,
         dryRunWrite: Boolean = false
     ): ToolCallResult {
+        val cleanName = toolCall.name.removePrefix("default_api:").trim()
         return try {
-            when (toolCall.name) {
+            when (cleanName) {
                 AgentTools.READ_FILE.name -> executeReadFile(rootTreeUri, toolCall)
                 AgentTools.WRITE_FILE.name -> executeWriteFile(rootTreeUri, toolCall, dryRunWrite)
                 AgentTools.EDIT_FILE.name -> executeEditFile(rootTreeUri, toolCall, dryRunWrite)
@@ -51,14 +52,15 @@ class WorkspaceToolExecutor(
         if (rootTreeUri == null) {
             return ToolCallResult(toolCall.id, toolCall.name, false, "", "No workspace open.")
         }
-        val path = toolCall.parsedArguments["path"]
+        val rawPath = toolCall.parsedArguments["path"]
             ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'path'.")
+        val path = rawPath.trim().removePrefix("./").removePrefix("/")
 
         val doc = repository.findDocumentByPath(rootTreeUri, path)
-            ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "File not found at path: '$path'.")
+            ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "File not found at path: '$path'. Use 'list_dir' or 'search_files' to verify file locations.")
 
         if (doc.isDirectory) {
-            return ToolCallResult(toolCall.id, toolCall.name, false, "", "Path is a directory, not a file: '$path'.")
+            return ToolCallResult(toolCall.id, toolCall.name, false, "", "Path is a directory, not a file: '$path'. Use 'list_dir' instead.")
         }
 
         val content = repository.readFile(doc.uri)
@@ -78,8 +80,9 @@ class WorkspaceToolExecutor(
         if (rootTreeUri == null) {
             return ToolCallResult(toolCall.id, toolCall.name, false, "", "No workspace open.")
         }
-        val path = toolCall.parsedArguments["path"]
+        val rawPath = toolCall.parsedArguments["path"]
             ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'path'.")
+        val path = rawPath.trim().removePrefix("./").removePrefix("/")
         val content = toolCall.parsedArguments["content"] ?: ""
 
         val existingDoc = repository.findDocumentByPath(rootTreeUri, path)
@@ -129,8 +132,9 @@ class WorkspaceToolExecutor(
         if (rootTreeUri == null) {
             return ToolCallResult(toolCall.id, toolCall.name, false, "", "No workspace open.")
         }
-        val path = toolCall.parsedArguments["path"]
+        val rawPath = toolCall.parsedArguments["path"]
             ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'path'.")
+        val path = rawPath.trim().removePrefix("./").removePrefix("/")
         val oldString = toolCall.parsedArguments["old_string"]
             ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'old_string'.")
         val newString = toolCall.parsedArguments["new_string"] ?: ""
@@ -183,7 +187,8 @@ class WorkspaceToolExecutor(
         if (rootTreeUri == null) {
             return ToolCallResult(toolCall.id, toolCall.name, false, "", "No workspace open.")
         }
-        val path = toolCall.parsedArguments["path"] ?: ""
+        val rawPath = (toolCall.parsedArguments["path"] ?: "").trim().removePrefix("./").removePrefix("/")
+        val path = if (rawPath == "." || rawPath == "/") "" else rawPath
         val nodes = repository.listDirectory(rootTreeUri, path)
 
         if (nodes.isEmpty()) {

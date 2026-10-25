@@ -93,6 +93,29 @@ class WorkspaceToolExecutorTest {
     }
 
     @Test
+    fun testDefaultApiPrefixResolution() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val fakeExec = FakeExecutionProvider(outputToReturn = "Command resolved via default_api prefix")
+        val executor = WorkspaceToolExecutor(fakeRepo, fakeExec)
+
+        val toolCall = ToolCallRequest(
+            id = "call_prefix",
+            name = "default_api:run_command",
+            rawArguments = """{"command": "echo test"}""",
+            parsedArguments = mapOf("command" to "echo test")
+        )
+
+        val result = executor.execute(
+            rootTreeUri = null,
+            toolCall = toolCall,
+            dryRunWrite = false
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals("Command resolved via default_api prefix", result.output)
+    }
+
+    @Test
     fun testSearchFilesToolExecution() = runBlocking {
         val fakeRepo = FakeWorkspaceRepository()
         val fakeExec = FakeExecutionProvider()

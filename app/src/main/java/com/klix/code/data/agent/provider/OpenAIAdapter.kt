@@ -120,6 +120,8 @@ class OpenAIAdapter(
 
             val message = choices.getJSONObject(0).optJSONObject("message")
             val textContent = message?.optString("content")?.takeIf { it.isNotBlank() && it != "null" }
+            val reasoningContent = message?.optString("reasoning_content")?.takeIf { it.isNotBlank() && it != "null" }
+                ?: message?.optString("reasoning")?.takeIf { it.isNotBlank() && it != "null" }
 
             val toolCalls = mutableListOf<ToolCallRequest>()
             val tcArr = message?.optJSONArray("tool_calls")
@@ -147,6 +149,7 @@ class OpenAIAdapter(
 
             ProviderTurnResponse(
                 textResponse = textContent,
+                thoughtResponse = reasoningContent,
                 toolCalls = toolCalls,
                 promptTokens = promptTokens,
                 completionTokens = completionTokens,

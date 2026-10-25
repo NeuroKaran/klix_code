@@ -442,6 +442,12 @@ private fun ChatMessageItem(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
+        // If assistant produced internal reasoning / thoughts, render expandable card
+        if (!isUser && !message.thought.isNullOrBlank()) {
+            ReasoningCard(thought = message.thought)
+            Spacer(modifier = Modifier.height(6.dp))
+        }
+
         if (message.content.isNotBlank()) {
             Box(
                 modifier = Modifier
@@ -480,6 +486,70 @@ private fun ChatMessageItem(
         message.toolResults.forEach { res ->
             Spacer(modifier = Modifier.height(6.dp))
             ToolResultCard(result = res, onReviewDiff = onReviewDiff)
+        }
+    }
+}
+
+@Composable
+private fun ReasoningCard(thought: String) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = DarkSurface.copy(alpha = 0.85f),
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SmartToy,
+                        contentDescription = null,
+                        tint = AccentSecondary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = "Reasoning Process",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondary
+                    )
+                }
+
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+
+            AnimatedVisibility(visible = isExpanded) {
+                Column(modifier = Modifier.padding(top = 6.dp)) {
+                    Text(
+                        text = thought.trim(),
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = TextMuted,
+                        lineHeight = 15.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 240.dp)
+                            .background(DarkBg)
+                            .padding(8.dp)
+                    )
+                }
+            }
         }
     }
 }

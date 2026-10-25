@@ -13,6 +13,7 @@ data class ChatMessage(
     val id: String = java.util.UUID.randomUUID().toString(),
     val role: MessageRole,
     val content: String,
+    val thought: String? = null,
     val toolCalls: List<ToolCallRequest> = emptyList(),
     val toolResults: List<ToolCallResult> = emptyList(),
     val timestamp: Long = System.currentTimeMillis()
@@ -30,6 +31,7 @@ data class ProviderTurnRequest(
 
 data class ProviderTurnResponse(
     val textResponse: String?,
+    val thoughtResponse: String? = null,
     val toolCalls: List<ToolCallRequest>,
     val promptTokens: Int = 0,
     val completionTokens: Int = 0,

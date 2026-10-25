@@ -26,8 +26,9 @@
   --border-lime: rgba(212, 255, 50, 0.35);
 
   /* Typography */
-  --font-pixel: 'Pixelify Sans', monospace, sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Syne', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-pixel: 'Syne', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   --container-width: 1140px;
@@ -61,9 +62,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.font-pixel {
-  font-family: var(--font-pixel);
-  letter-spacing: -0.01em;
+.font-pixel,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
 /* Digital Code Rain Canvas & Glow Overlay */
@@ -248,6 +251,12 @@ body {
 .nav-download-btn {
   padding: 8px 16px;
   font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nav-dl-short {
+  display: none;
 }
 
 .mobile-menu-toggle {
@@ -415,12 +424,13 @@ body {
 
 /* Pixelated Headline (Style from iii.dev reference) */
 .hero-title {
-  font-size: clamp(2.2rem, 5.2vw, 3.8rem);
-  font-weight: 600;
-  line-height: 1.1;
+  font-size: clamp(2.3rem, 5.4vw, 4rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
   color: #ffffff;
   margin-bottom: 18px;
-  max-width: 860px;
+  max-width: 880px;
 }
 
 .title-line {
@@ -456,11 +466,13 @@ body {
 .device-showcase-container {
   position: relative;
   width: 100%;
-  max-width: 680px;
+  max-width: 1100px;
   margin: 0 auto;
   display: flex;
   justify-content: center;
-  padding-top: 24px;
+  align-items: center;
+  padding-top: 36px;
+  padding-bottom: 20px;
 }
 
 /* Radiant Backlight Glow (matching Reference Image 1 top aura) */
@@ -470,12 +482,191 @@ body {
   left: 50%;
   transform: translateX(-50%);
   width: 130%;
-  max-width: 720px;
-  height: 480px;
-  background: radial-gradient(ellipse at 50% 18%, rgba(212, 255, 50, 0.45) 0%, rgba(56, 189, 248, 0.22) 36%, transparent 74%);
-  filter: blur(55px);
+  max-width: 850px;
+  height: 520px;
+  background: radial-gradient(ellipse at 50% 22%, rgba(212, 255, 50, 0.45) 0%, rgba(56, 189, 248, 0.22) 38%, transparent 74%);
+  filter: blur(60px);
   pointer-events: none;
   z-index: 1;
+}
+
+/* ==========================================================================
+   CARDS FAN DECK (Fanned out behind phone screen, matching Video Reference)
+   ========================================================================== */
+
+.cards-fan-deck {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  max-width: 1080px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.fan-card {
+  position: absolute;
+  width: clamp(200px, 20vw, 255px);
+  height: clamp(420px, 42vw, 540px);
+  aspect-ratio: 9 / 19.5;
+  border-radius: 28px;
+  pointer-events: auto;
+  cursor: pointer;
+  outline: none;
+  transform-origin: center bottom;
+  will-change: transform, box-shadow, filter;
+  transition:
+    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.4s ease,
+    filter 0.45s ease,
+    z-index 0s;
+}
+
+/* Card glass container */
+.fan-card-glass {
+  width: 100%;
+  height: 100%;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #090c12;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.88), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.fan-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Internal lime glow overlay on hover */
+.fan-card-glow-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(212, 255, 50, 0.15) 0%, transparent 40%, rgba(212, 255, 50, 0.08) 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+/* Screen Title Badge on Card */
+.fan-card-badge {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(13, 16, 23, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-lime);
+  color: var(--lime-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  opacity: 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+/* Default Radial Fan Positions (Peeking out behind the center 410px phone) */
+/* Card 1: Far Left */
+.fan-card-1 {
+  transform: translate(-330px, 45px) rotate(-22deg) scale(0.88);
+  z-index: 2;
+}
+
+/* Card 2: Mid Left */
+.fan-card-2 {
+  transform: translate(-180px, 15px) rotate(-11deg) scale(0.94);
+  z-index: 4;
+}
+
+/* Card 3: Center Peak (Behind phone, peek above top status bar) */
+.fan-card-3 {
+  transform: translate(0px, -35px) rotate(0deg) scale(0.98);
+  z-index: 3;
+}
+
+/* Card 4: Mid Right */
+.fan-card-4 {
+  transform: translate(180px, 15px) rotate(11deg) scale(0.94);
+  z-index: 4;
+}
+
+/* Card 5: Far Right */
+.fan-card-5 {
+  transform: translate(330px, 45px) rotate(22deg) scale(0.88);
+  z-index: 2;
+}
+
+/* ---- HOVER STATE: Ultra-smooth lift, scale & intense electric lime glow ---- */
+.fan-card:hover,
+.fan-card:focus-visible {
+  z-index: 28 !important;
+  filter: brightness(1.06);
+}
+
+.fan-card:hover .fan-card-glass,
+.fan-card:focus-visible .fan-card-glass {
+  border-color: var(--lime-primary);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95),
+              0 0 45px rgba(212, 255, 50, 0.75),
+              0 0 16px rgba(212, 255, 50, 0.95),
+              inset 0 0 20px rgba(212, 255, 50, 0.2);
+}
+
+.fan-card:hover .fan-card-glow-overlay,
+.fan-card:focus-visible .fan-card-glow-overlay {
+  opacity: 1;
+}
+
+.fan-card:hover .fan-card-badge,
+.fan-card:focus-visible .fan-card-badge {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Specific hover transformations maintaining ergonomic angle */
+.fan-card-1:hover, .fan-card-1:focus-visible {
+  transform: translate(-345px, -30px) rotate(-14deg) scale(1.06);
+}
+
+.fan-card-2:hover, .fan-card-2:focus-visible {
+  transform: translate(-195px, -45px) rotate(-6deg) scale(1.08);
+}
+
+.fan-card-3:hover, .fan-card-3:focus-visible {
+  transform: translate(0px, -70px) rotate(0deg) scale(1.1);
+}
+
+.fan-card-4:hover, .fan-card-4:focus-visible {
+  transform: translate(195px, -45px) rotate(6deg) scale(1.08);
+}
+
+.fan-card-5:hover, .fan-card-5:focus-visible {
+  transform: translate(345px, -30px) rotate(14deg) scale(1.06);
+}
+
+/* Sibling dimming when deck is hovered for maximum focal punch */
+.cards-fan-deck:hover .fan-card:not(:hover) {
+  filter: brightness(0.7) blur(0.5px);
+  opacity: 0.82;
 }
 
 /* Phone Frame — High-Contrast Visible Chassis (163.4mm x 78mm ratio = 2.095:1) */
@@ -494,7 +685,7 @@ body {
     0 30px 90px rgba(0, 0, 0, 0.95),
     0 0 70px rgba(212, 255, 50, 0.26);
   position: relative;
-  z-index: 2;
+  z-index: 10;
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -1190,6 +1381,7 @@ body {
   gap: 14px;
   text-decoration: none;
   padding: 16px 24px;
+  border-radius: 14px;
   height: 100%;
 }
 
@@ -1256,47 +1448,84 @@ body {
 
 .checksum-strip {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   background: #090c12;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 10px 14px;
+  padding: 12px 14px;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  transition: border-color 0.2s ease;
+}
+
+.checksum-strip:hover {
+  border-color: rgba(212, 255, 50, 0.25);
+}
+
+.checksum-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
   gap: 10px;
 }
 
 .checksum-title {
   font-size: 0.75rem;
   color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.checksum-code {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--lime-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.02em;
 }
 
 .btn-copy-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-copy-code:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: rgba(212, 255, 50, 0.15);
+  border-color: var(--lime-primary);
+  color: var(--lime-primary);
+}
+
+.btn-copy-code .copy-icon {
+  flex-shrink: 0;
+}
+
+.checksum-body {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.checksum-code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  line-height: 1.45;
+  color: var(--lime-primary);
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  user-select: all;
+  letter-spacing: 0.02em;
 }
 
 /* ==========================================================================
@@ -1564,6 +1793,176 @@ body {
 }
 
 /* ==========================================================================
+   SCROLL-TRIGGERED REVEAL ANIMATIONS (Motia / modern SaaS style)
+   Elements start hidden and smoothly animate in when entering the viewport.
+   JavaScript adds the `.is-visible` class via IntersectionObserver.
+   ========================================================================== */
+
+/* ---- Base hidden state for all scroll-reveal elements ---- */
+.reveal {
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  transition:
+    opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---- Variant: Fade-Up (default) ---- */
+.reveal.reveal-up {
+  transform: translateY(60px);
+}
+
+.reveal.reveal-up.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---- Variant: Fade-Down ---- */
+.reveal.reveal-down {
+  transform: translateY(-50px);
+}
+
+.reveal.reveal-down.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---- Variant: Slide-in from Left ---- */
+.reveal.reveal-left {
+  transform: translateX(-80px);
+}
+
+.reveal.reveal-left.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---- Variant: Slide-in from Right ---- */
+.reveal.reveal-right {
+  transform: translateX(80px);
+}
+
+.reveal.reveal-right.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---- Variant: Scale-In (cards, phone mockup) ---- */
+.reveal.reveal-scale {
+  transform: scale(0.88);
+}
+
+.reveal.reveal-scale.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ---- Variant: Blur + Fade (premium glassmorphic feel) ---- */
+.reveal.reveal-blur {
+  transform: translateY(40px);
+  filter: blur(12px);
+}
+
+.reveal.reveal-blur.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* ---- Variant: Clip reveal from bottom (section-level) ---- */
+.reveal.reveal-clip {
+  clip-path: inset(10% 0 10% 0);
+  transform: translateY(30px);
+}
+
+.reveal.reveal-clip.is-visible {
+  opacity: 1;
+  clip-path: inset(0 0 0 0);
+  transform: translateY(0);
+}
+
+/* ---- Stagger delays for children inside a parent ---- */
+.stagger-children > .reveal:nth-child(1) { transition-delay: 0ms; }
+.stagger-children > .reveal:nth-child(2) { transition-delay: 100ms; }
+.stagger-children > .reveal:nth-child(3) { transition-delay: 200ms; }
+.stagger-children > .reveal:nth-child(4) { transition-delay: 300ms; }
+.stagger-children > .reveal:nth-child(5) { transition-delay: 400ms; }
+.stagger-children > .reveal:nth-child(6) { transition-delay: 500ms; }
+.stagger-children > .reveal:nth-child(7) { transition-delay: 600ms; }
+.stagger-children > .reveal:nth-child(8) { transition-delay: 700ms; }
+
+/* ---- Named delay utilities (for manual fine-tuning) ---- */
+.delay-100 { transition-delay: 100ms !important; }
+.delay-200 { transition-delay: 200ms !important; }
+.delay-300 { transition-delay: 300ms !important; }
+.delay-400 { transition-delay: 400ms !important; }
+.delay-500 { transition-delay: 500ms !important; }
+.delay-600 { transition-delay: 600ms !important; }
+
+/* ---- Slow / fast duration modifiers ---- */
+.reveal-slow {
+  transition-duration: 1.2s !important;
+}
+
+.reveal-fast {
+  transition-duration: 0.5s !important;
+}
+
+/* ---- Hero entry animation (plays on load, not scroll) ---- */
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes heroGlowPulse {
+  0%, 100% { opacity: 0.45; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.60; transform: translateX(-50%) scale(1.04); }
+}
+
+.hero-entry {
+  animation: heroFadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.hero-entry-d1 { animation-delay: 0.1s; }
+.hero-entry-d2 { animation-delay: 0.25s; }
+.hero-entry-d3 { animation-delay: 0.4s; }
+.hero-entry-d4 { animation-delay: 0.6s; }
+.hero-entry-d5 { animation-delay: 0.8s; }
+
+/* Animated aura pulse behind phone */
+.phone-aura-backdrop.aura-animate {
+  animation: heroGlowPulse 5s ease-in-out infinite;
+}
+
+/* ---- Scroll-progress-linked parallax (lightweight via CSS custom property) ---- */
+.parallax-slow {
+  transition: transform 0.1s linear;
+}
+
+/* ---- Reduce motion for accessibility ---- */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .hero-entry {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    clip-path: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
    RESPONSIVE DESIGN (Adaptive to Phone View)
    ========================================================================== */
 
@@ -1584,9 +1983,32 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .footer-grid-clean {
+    .footer-grid-clean {
     grid-template-columns: 1fr;
     gap: 24px;
+  }
+
+  .cards-fan-deck {
+    transform: translate(-50%, -50%) scale(0.78);
+  }
+}
+
+@media (max-width: 600px) {
+  .cards-fan-deck {
+    transform: translate(-50%, -50%) scale(0.62);
+    opacity: 0.85;
+  }
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .nav-actions .nav-icon-btn {
+    display: none;
+  }
+
+  .nav-download-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
   }
 }
 
@@ -1598,10 +2020,37 @@ body {
   .hero-cta-wrapper {
     flex-direction: column;
     width: 100%;
+    gap: 12px;
   }
 
   .btn-large {
     width: 100%;
+    border-radius: 12px;
+    padding: 12px 20px;
+  }
+
+  .btn-badge-sub {
+    font-size: 0.68rem;
+    padding: 2px 6px;
+  }
+
+  .btn-huge {
+    padding: 14px 18px;
+    border-radius: 12px;
+    gap: 12px;
+  }
+
+  .btn-primary-label {
+    font-size: 1.02rem;
+  }
+
+  .btn-meta-label {
+    font-size: 0.7rem;
+  }
+
+  .download-action-row {
+    padding: 12px;
+    gap: 12px;
   }
 
   .phone-frame {
@@ -1619,11 +2068,47 @@ body {
   }
 
   .download-clean-card {
-    padding: 24px 16px;
+    padding: 24px 14px;
   }
 
   .checksum-strip {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 10px;
+  }
+
+  .checksum-title {
+    font-size: 0.68rem;
+  }
+
+  .btn-copy-code {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  .checksum-code {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-name {
+    font-size: 1.1rem;
+  }
+
+  .brand-tag {
+    font-size: 0.62rem;
+    padding: 1px 4px;
+  }
+
+  .nav-download-btn .nav-dl-text {
+    display: none;
+  }
+
+  .nav-download-btn .nav-dl-short {
+    display: inline;
+  }
+
+  .nav-download-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
   }
 }

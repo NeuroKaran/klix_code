@@ -45,4 +45,34 @@ class AgentToolTest {
         assertEquals("src/Main.kt", parsed["path"])
         assertEquals("println(\"Hello\")", parsed["content"])
     }
+
+    @Test
+    fun testParseArgumentsWithMarkdownFencesAndPrimitives() {
+        val json = """
+            ```json
+            {
+               "path": "test.txt",
+               "lines": 42,
+               "flag": true
+            }
+            ```
+        """.trimIndent()
+        val parsed = AgentTools.parseArguments(json)
+
+        assertEquals("test.txt", parsed["path"])
+        assertEquals("42", parsed["lines"])
+        assertEquals("true", parsed["flag"])
+    }
+
+    @Test
+    fun testToolCallRequestPreservesThoughtSignature() {
+        val tc = com.klix.code.data.agent.tools.ToolCallRequest(
+            id = "tc_1",
+            name = "list_dir",
+            rawArguments = "{}",
+            parsedArguments = emptyMap(),
+            thoughtSignature = "sig_abc_123"
+        )
+        assertEquals("sig_abc_123", tc.thoughtSignature)
+    }
 }
