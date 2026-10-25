@@ -2,6 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/klix-code-v0.1.0.apk",
+      "destination": "/klix-code-v0.2.0.apk",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -47,7 +54,7 @@
       ]
     },
     {
-      "source": "/klix-code-v0.1.0.apk",
+      "source": "/klix-code-v0.2.0.apk",
       "headers": [
         {
           "key": "Content-Type",
@@ -55,7 +62,7 @@
         },
         {
           "key": "Content-Disposition",
-          "value": "attachment; filename=\"klix-code-v0.1.0.apk\""
+          "value": "attachment; filename=\"klix-code-v0.2.0.apk\""
         },
         {
           "key": "Cache-Control",

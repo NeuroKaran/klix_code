@@ -10,3 +10,4 @@ build/
 .externalNativeBuild
 .cxx
 *.apk
+!landing_page/public/*.apk
