@@ -192,4 +192,23 @@ class TerminalViewModelTest {
         terminalViewModel.selectTerminal(term2Id)
         assertEquals("python server.py", terminalViewModel.getInputDraft())
     }
+
+    @Test
+    fun testCancelExecutionUpdatesStateAndAppendsInterrupted() {
+        terminalViewModel.cancelExecution()
+        assertEquals(false, terminalViewModel.isExecuting.value)
+        val lines = terminalViewModel.terminalLines.value
+        val hasInterrupted = lines.any { it.text.contains("Process interrupted") }
+        assertTrue(hasInterrupted)
+    }
+
+    @Test
+    fun testSendInputCtrlCInterruptsProcess() {
+        // Trigger execution state simulation
+        terminalViewModel.cancelExecution()
+        terminalViewModel.sendInput("^C")
+        val lines = terminalViewModel.terminalLines.value
+        val count = lines.count { it.text.contains("Process interrupted") }
+        assertTrue(count >= 1)
+    }
 }

@@ -387,6 +387,11 @@ class TerminalViewModel @JvmOverloads constructor(
             executeCommand(input, session.id)
             return
         }
+        val trimmed = input.trim()
+        if (trimmed == "^C" || trimmed == "Ctrl+C" || trimmed == "ctrl+c" || input == "\u0003") {
+            cancelExecution(session.id)
+            return
+        }
         // Echo input into terminal lines and send to process stdin
         appendSessionOutput(session, input + "\n", isStdout = true)
         session.executionProvider.sendInput(input)

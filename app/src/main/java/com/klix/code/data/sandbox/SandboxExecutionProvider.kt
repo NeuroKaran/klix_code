@@ -1,6 +1,9 @@
 package com.klix.code.data.sandbox
 
 import android.content.Context
+import android.os.Build
+import android.system.Os
+import android.system.OsConstants
 import com.klix.code.data.agent.execution.CommandResult
 import com.klix.code.data.agent.execution.ExecutionProvider
 import kotlinx.coroutines.Dispatchers
@@ -8,6 +11,7 @@ import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
+import java.util.ArrayDeque
 import java.util.concurrent.TimeUnit
 
 class SandboxExecutionProvider(
@@ -26,6 +30,9 @@ class SandboxExecutionProvider(
     @Volatile
     private var activeProcess: Process? = null
 
+    @Volatile
+    private var activeShellPid: Int? = null
+
     fun sendInput(input: String) {
         try {
             val proc = activeProcess ?: return
@@ -37,9 +44,170 @@ class SandboxExecutionProvider(
     }
 
     fun cancelActiveProcess() {
+        val proc = activeProcess ?: return
+        val rootPid = getProcessPid(proc)
+        val shellPid = activeShellPid
+
+        val targets = mutableSetOf<Int>()
+        rootPid?.let { targets.add(it) }
+        shellPid?.let { targets.add(it) }
+
+        // Discover all descendant processes (node, python, child workers, etc.)
+        val descendants = findDescendantPids(targets)
+
+        // Try writing ETX (Ctrl+C byte 3) into process stdin stream
         try {
-            activeProcess?.destroyForcibly()
-        } catch (_: Exception) {}
+            proc.outputStream.write(3)
+            proc.outputStream.flush()
+        } catch (_: Throwable) {}
+
+        // Immediately send SIGINT to all descendants, shell, root process, and process group
+        for (pid in descendants) {
+            sendSignal(pid, OsConstants.SIGINT)
+        }
+        shellPid?.let { sendSignal(it, OsConstants.SIGINT) }
+        rootPid?.let {
+            sendSignal(it, OsConstants.SIGINT)
+            sendGroupSignal(it, OsConstants.SIGINT)
+        }
+
+        // Asynchronously escalate to SIGTERM and SIGKILL so UI remains fast
+        Thread {
+            try {
+                Thread.sleep(120)
+                for (pid in descendants) {
+                    sendSignal(pid, OsConstants.SIGTERM)
+                }
+                shellPid?.let { sendSignal(it, OsConstants.SIGTERM) }
+                rootPid?.let {
+                    sendSignal(it, OsConstants.SIGTERM)
+                    sendGroupSignal(it, OsConstants.SIGTERM)
+                }
+
+                Thread.sleep(150)
+                for (pid in descendants) {
+                    sendSignal(pid, OsConstants.SIGKILL)
+                }
+                shellPid?.let { sendSignal(it, OsConstants.SIGKILL) }
+                rootPid?.let {
+                    sendSignal(it, OsConstants.SIGKILL)
+                    sendGroupSignal(it, OsConstants.SIGKILL)
+                }
+
+                // Sweep any newly forked descendants
+                val remaining = findDescendantPids(targets)
+                for (pid in remaining) {
+                    sendSignal(pid, OsConstants.SIGKILL)
+                }
+
+                proc.destroyForcibly()
+            } catch (_: Throwable) {}
+        }.start()
+    }
+
+    private fun getProcessPid(process: Process): Int? {
+        try {
+            val pidMethod = process.javaClass.getMethod("pid")
+            return (pidMethod.invoke(process) as? Number)?.toInt()
+        } catch (_: Throwable) {}
+        try {
+            val pidField = process.javaClass.getDeclaredField("pid")
+            pidField.isAccessible = true
+            return pidField.getInt(process)
+        } catch (_: Throwable) {}
+        try {
+            val idField = process.javaClass.getDeclaredField("id")
+            idField.isAccessible = true
+            return idField.getInt(process)
+        } catch (_: Throwable) {}
+        return null
+    }
+
+    private fun findDescendantPids(targetPids: Set<Int>): Set<Int> {
+        val descendants = mutableSetOf<Int>()
+        val toScan = ArrayDeque<Int>()
+        toScan.addAll(targetPids.filter { it > 0 })
+
+        try {
+            val procDir = File("/proc")
+            val entries = procDir.listFiles() ?: return descendants
+            val parentToChildren = mutableMapOf<Int, MutableList<Int>>()
+
+            for (entry in entries) {
+                val pid = entry.name.toIntOrNull() ?: continue
+                if (pid <= 0) continue
+                val ppid = getParentPid(entry) ?: continue
+                parentToChildren.getOrPut(ppid) { mutableListOf() }.add(pid)
+            }
+
+            while (toScan.isNotEmpty()) {
+                val parent = toScan.removeFirst()
+                val children = parentToChildren[parent] ?: continue
+                for (child in children) {
+                    if (descendants.add(child)) {
+                        toScan.add(child)
+                    }
+                }
+            }
+        } catch (_: Throwable) {}
+
+        return descendants
+    }
+
+    private fun getParentPid(procEntry: File): Int? {
+        try {
+            val statFile = File(procEntry, "stat")
+            if (statFile.canRead()) {
+                val content = statFile.readText()
+                val rParen = content.lastIndexOf(')')
+                if (rParen != -1 && rParen + 2 < content.length) {
+                    val after = content.substring(rParen + 2).trim()
+                    val parts = after.split(Regex("\\s+"))
+                    return parts.getOrNull(1)?.toIntOrNull()
+                }
+            }
+        } catch (_: Throwable) {}
+
+        try {
+            val statusFile = File(procEntry, "status")
+            if (statusFile.canRead()) {
+                statusFile.useLines { lines ->
+                    for (line in lines) {
+                        if (line.startsWith("PPid:")) {
+                            return line.substring(5).trim().toIntOrNull()
+                        }
+                    }
+                }
+            }
+        } catch (_: Throwable) {}
+
+        return null
+    }
+
+    private fun sendSignal(pid: Int, signal: Int) {
+        if (pid <= 0) return
+        var success = false
+        try {
+            Os.kill(pid, signal)
+            success = true
+        } catch (_: Throwable) {}
+        if (!success) {
+            try {
+                val sigName = when (signal) {
+                    OsConstants.SIGINT -> "-INT"
+                    OsConstants.SIGTERM -> "-TERM"
+                    else -> "-9"
+                }
+                Runtime.getRuntime().exec(arrayOf("kill", sigName, pid.toString())).waitFor()
+            } catch (_: Throwable) {}
+        }
+    }
+
+    private fun sendGroupSignal(pgid: Int, signal: Int) {
+        if (pgid <= 1) return
+        try {
+            Os.kill(-pgid, signal)
+        } catch (_: Throwable) {}
     }
 
     suspend fun runStreamingCommand(
@@ -56,7 +224,7 @@ class SandboxExecutionProvider(
             val isSandboxReady = sandboxManager.isInstalled()
 
             val currentDir = if (!workingDir.isNullOrBlank()) workingDir else "/workspace"
-            val wrappedCommand = "cd \"$currentDir\" 2>/dev/null; $command; __KLIX_STATUS=$?; echo \"__KLIX_PWD:\$(pwd):STATUS:\$__KLIX_STATUS\"; exit \$__KLIX_STATUS"
+            val wrappedCommand = "echo \"__KLIX_PID:\$\$\"; cd \"$currentDir\" 2>/dev/null; $command; __KLIX_STATUS=$?; echo \"__KLIX_PWD:\$(pwd):STATUS:\$__KLIX_STATUS\"; exit \$__KLIX_STATUS"
 
             val effectiveWorkingDir = if (!workingDir.isNullOrBlank() && File(workingDir).exists()) {
                 File(workingDir)
@@ -166,7 +334,9 @@ class SandboxExecutionProvider(
                             val fullLine = pendingText.substring(0, newlineIndex).trimEnd('\r')
                             pendingText.delete(0, newlineIndex + 1)
 
-                            if (fullLine.startsWith("__KLIX_PWD:") && fullLine.contains(":STATUS:")) {
+                            if (fullLine.startsWith("__KLIX_PID:")) {
+                                activeShellPid = fullLine.removePrefix("__KLIX_PID:").trim().toIntOrNull()
+                            } else if (fullLine.startsWith("__KLIX_PWD:") && fullLine.contains(":STATUS:")) {
                                 val parts = fullLine.removePrefix("__KLIX_PWD:").split(":STATUS:")
                                 capturedNewCwd = parts.getOrNull(0)?.trim()
                                 capturedExitCode = parts.getOrNull(1)?.trim()?.toIntOrNull()
@@ -177,7 +347,7 @@ class SandboxExecutionProvider(
                         }
 
                         // Emit interactive prompts without waiting for a newline
-                        if (pendingText.isNotEmpty() && !pendingText.startsWith("__KLIX_PWD")) {
+                        if (pendingText.isNotEmpty() && !pendingText.startsWith("__KLIX_")) {
                             val partial = pendingText.toString()
                             stdoutBuilder.append(partial)
                             onOutputLine(partial, true)
@@ -187,7 +357,9 @@ class SandboxExecutionProvider(
 
                     if (pendingText.isNotEmpty()) {
                         val remaining = pendingText.toString().trimEnd('\r')
-                        if (remaining.startsWith("__KLIX_PWD:") && remaining.contains(":STATUS:")) {
+                        if (remaining.startsWith("__KLIX_PID:")) {
+                            activeShellPid = remaining.removePrefix("__KLIX_PID:").trim().toIntOrNull()
+                        } else if (remaining.startsWith("__KLIX_PWD:") && remaining.contains(":STATUS:")) {
                             val parts = remaining.removePrefix("__KLIX_PWD:").split(":STATUS:")
                             capturedNewCwd = parts.getOrNull(0)?.trim()
                             capturedExitCode = parts.getOrNull(1)?.trim()?.toIntOrNull()
@@ -217,7 +389,7 @@ class SandboxExecutionProvider(
 
             val finished = process.waitFor(600, TimeUnit.SECONDS)
             if (!finished) {
-                process.destroyForcibly()
+                cancelActiveProcess()
                 val timeoutMsg = "Command timed out after 600 seconds."
                 onOutputLine(timeoutMsg, false)
                 return@withContext CommandResult(
@@ -249,7 +421,12 @@ class SandboxExecutionProvider(
                 executionTimeMs = System.currentTimeMillis() - startTime
             )
         } finally {
+            val p = activeProcess
+            if (p != null && p.isAlive) {
+                cancelActiveProcess()
+            }
             activeProcess = null
+            activeShellPid = null
         }
     }
 

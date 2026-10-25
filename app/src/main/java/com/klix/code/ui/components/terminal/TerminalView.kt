@@ -57,6 +57,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -120,6 +126,18 @@ fun TerminalView(
         modifier = modifier
             .fillMaxSize()
             .background(DarkBg)
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown &&
+                    event.isCtrlPressed &&
+                    event.key == Key.C &&
+                    isExecuting
+                ) {
+                    viewModel.cancelExecution()
+                    true
+                } else {
+                    false
+                }
+            }
             .navigationBarsPadding()
             .imePadding()
     ) {
