@@ -31,6 +31,29 @@ data class TerminalLine(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+data class TerminalTab(
+    val id: String,
+    val title: String,
+    val isExecuting: Boolean = false,
+    val currentCwd: String = "/workspace"
+)
+
+internal class TerminalSession(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    var title: String,
+    val executionProvider: SandboxExecutionProvider,
+    initialCwd: String = "/workspace"
+) {
+    val lines: MutableList<TerminalLine> = mutableListOf()
+    val commandHistory: MutableList<String> = mutableListOf()
+    var isExecuting: Boolean = false
+    var currentCwd: String = initialCwd
+    var historyIndex: Int = -1
+    var lastLineHadNewline: Boolean = true
+    var activeJob: Job? = null
+    var inputDraft: String = ""
+}
+
 class TerminalViewModel @JvmOverloads constructor(
     application: Application,
     val sandboxExecutionProvider: SandboxExecutionProvider = SandboxExecutionProvider(application),
@@ -38,6 +61,14 @@ class TerminalViewModel @JvmOverloads constructor(
 ) : AndroidViewModel(application) {
 
     val sandboxManager: SandboxManager = sandboxExecutionProvider.sandboxManager
+
+    private val sessions = mutableListOf<TerminalSession>()
+
+    private val _tabs = MutableStateFlow<List<TerminalTab>>(emptyList())
+    val tabs: StateFlow<List<TerminalTab>> = _tabs.asStateFlow()
+
+    private val _activeTerminalId = MutableStateFlow<String>("")
+    val activeTerminalId: StateFlow<String> = _activeTerminalId.asStateFlow()
 
     private val _terminalLines = MutableStateFlow<List<TerminalLine>>(emptyList())
     val terminalLines: StateFlow<List<TerminalLine>> = _terminalLines.asStateFlow()
@@ -51,21 +82,123 @@ class TerminalViewModel @JvmOverloads constructor(
     private val _currentCwd = MutableStateFlow("/workspace")
     val currentCwd: StateFlow<String> = _currentCwd.asStateFlow()
 
-    private val _historyIndex = MutableStateFlow(-1)
-
     private val _showSetupDialog = MutableStateFlow(false)
     val showSetupDialog: StateFlow<Boolean> = _showSetupDialog.asStateFlow()
 
-    private var activeJob: Job? = null
-
     init {
-        printBanner()
+        val initialSession = TerminalSession(
+            title = "Terminal 1",
+            executionProvider = sandboxExecutionProvider,
+            initialCwd = "/workspace"
+        )
+        sessions.add(initialSession)
+        _activeTerminalId.value = initialSession.id
+        printBanner(initialSession)
+        syncActiveState(initialSession)
+        updateTabsState()
     }
 
-    private fun printBanner() {
+    private fun getActiveSession(): TerminalSession? {
+        val currentId = _activeTerminalId.value
+        return sessions.find { it.id == currentId } ?: sessions.firstOrNull()
+    }
+
+    private fun syncActiveState(session: TerminalSession) {
+        synchronized(session) {
+            _terminalLines.value = session.lines.toList()
+            _commandHistory.value = session.commandHistory.toList()
+            _isExecuting.value = session.isExecuting
+            _currentCwd.value = session.currentCwd
+        }
+    }
+
+    private fun updateTabsState() {
+        _tabs.value = sessions.map { session ->
+            TerminalTab(
+                id = session.id,
+                title = session.title,
+                isExecuting = session.isExecuting,
+                currentCwd = session.currentCwd
+            )
+        }
+    }
+
+    fun addNewTerminal(title: String? = null, workingDir: String? = null): String {
+        val sessionTitle = title ?: run {
+            var count = 1
+            while (sessions.any { it.title == "Terminal $count" }) {
+                count++
+            }
+            "Terminal $count"
+        }
+        val defaultCwd = workingDir ?: getActiveSession()?.currentCwd ?: "/workspace"
+        val newProvider = SandboxExecutionProvider(getApplication(), sandboxManager)
+        val session = TerminalSession(
+            title = sessionTitle,
+            executionProvider = newProvider,
+            initialCwd = defaultCwd
+        )
+        printBanner(session)
+        sessions.add(session)
+        selectTerminal(session.id)
+        return session.id
+    }
+
+    fun closeTerminal(id: String) {
+        val sessionToClose = sessions.find { it.id == id } ?: return
+        sessionToClose.executionProvider.cancelActiveProcess()
+        sessionToClose.activeJob?.cancel()
+
+        val wasActive = (_activeTerminalId.value == id)
+        val index = sessions.indexOf(sessionToClose)
+        sessions.remove(sessionToClose)
+
+        if (sessions.isEmpty()) {
+            val fresh = TerminalSession(
+                title = "Terminal 1",
+                executionProvider = SandboxExecutionProvider(getApplication(), sandboxManager),
+                initialCwd = "/workspace"
+            )
+            printBanner(fresh)
+            sessions.add(fresh)
+            selectTerminal(fresh.id)
+        } else if (wasActive) {
+            val newIndex = (index - 1).coerceAtLeast(0)
+            selectTerminal(sessions[newIndex].id)
+        } else {
+            updateTabsState()
+        }
+    }
+
+    fun selectTerminal(id: String) {
+        val session = sessions.find { it.id == id } ?: return
+        _activeTerminalId.value = session.id
+        syncActiveState(session)
+        updateTabsState()
+    }
+
+    fun renameTerminal(id: String, newTitle: String) {
+        val trimmed = newTitle.trim()
+        if (trimmed.isEmpty()) return
+        val session = sessions.find { it.id == id } ?: return
+        session.title = trimmed
+        updateTabsState()
+    }
+
+    fun getInputDraft(terminalId: String? = null): String {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return ""
+        return session.inputDraft
+    }
+
+    fun setInputDraft(draft: String, terminalId: String? = null) {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        session.inputDraft = draft
+    }
+
+    private fun printBanner(session: TerminalSession) {
         val isReady = sandboxManager.isInstalled()
         val banner = mutableListOf(
-            TerminalLine(text = "KlixCode Linux Terminal [Alpine Sandbox v1]", color = AccentPrimary)
+            TerminalLine(text = "KlixCode Linux Terminal [Alpine Sandbox v1] - ${session.title}", color = AccentPrimary)
         )
         if (!isReady) {
             banner.add(
@@ -85,11 +218,22 @@ class TerminalViewModel @JvmOverloads constructor(
         banner.add(
             TerminalLine(text = "--------------------------------------------------------", color = TextSecondary)
         )
-        _terminalLines.value = banner
+        synchronized(session) {
+            session.lines.clear()
+            session.lines.addAll(banner)
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
+        }
     }
 
-    fun setWorkingDirectory(path: String) {
-        _currentCwd.value = path
+    fun setWorkingDirectory(path: String, terminalId: String? = null) {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        session.currentCwd = path
+        if (session.id == _activeTerminalId.value) {
+            _currentCwd.value = path
+        }
+        updateTabsState()
     }
 
     fun openSetupDialog() {
@@ -100,34 +244,44 @@ class TerminalViewModel @JvmOverloads constructor(
         _showSetupDialog.value = false
     }
 
-    fun executeCommand(command: String) {
+    fun executeCommand(command: String, terminalId: String? = null) {
         val trimmed = command.trim()
         if (trimmed.isEmpty()) return
 
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+
         // Add to history
-        val updatedHistory = _commandHistory.value.toMutableList()
-        if (updatedHistory.isEmpty() || updatedHistory.last() != trimmed) {
-            updatedHistory.add(trimmed)
+        synchronized(session) {
+            if (session.commandHistory.isEmpty() || session.commandHistory.last() != trimmed) {
+                session.commandHistory.add(trimmed)
+            }
+            session.historyIndex = -1
         }
-        _commandHistory.value = updatedHistory
-        _historyIndex.value = -1
+        if (session.id == _activeTerminalId.value) {
+            _commandHistory.value = session.commandHistory.toList()
+        }
 
         // Print command prompt
         val promptLine = TerminalLine(
-            text = "klix@mobile:${_currentCwd.value}$ $trimmed",
+            text = "klix@mobile:${session.currentCwd}$ $trimmed",
             color = AccentSecondary,
             isCommand = true
         )
-        _terminalLines.value = _terminalLines.value + promptLine
+        appendTerminalLine(session, promptLine)
 
         // Handle internal commands
         when (trimmed) {
             "clear" -> {
-                _terminalLines.value = emptyList()
+                synchronized(session) {
+                    session.lines.clear()
+                }
+                if (session.id == _activeTerminalId.value) {
+                    _terminalLines.value = emptyList()
+                }
                 return
             }
             "help" -> {
-                printHelp()
+                printHelp(session)
                 return
             }
             "sandbox-setup" -> {
@@ -135,119 +289,155 @@ class TerminalViewModel @JvmOverloads constructor(
                 return
             }
             "sandbox-status" -> {
-                printStatus()
+                printStatus(session)
                 return
             }
         }
 
         // Run in sandbox via provider
-        lastLineHadNewline = true
-        activeJob = scope.launch {
-            _isExecuting.value = true
+        session.lastLineHadNewline = true
+        session.activeJob = scope.launch {
+            setSessionExecuting(session, true)
             try {
-                val result = sandboxExecutionProvider.runStreamingCommand(
+                val result = session.executionProvider.runStreamingCommand(
                     command = trimmed,
-                    workingDir = _currentCwd.value
+                    workingDir = session.currentCwd
                 ) { chunk, isStdout ->
-                    appendOutput(chunk, isStdout)
+                    appendSessionOutput(session, chunk, isStdout)
                 }
 
                 result.newCwd?.let { newDir ->
                     if (newDir.isNotBlank() && result.isSuccess) {
-                        _currentCwd.value = newDir
+                        session.currentCwd = newDir
+                        if (session.id == _activeTerminalId.value) {
+                            _currentCwd.value = newDir
+                        }
+                        updateTabsState()
                     }
                 }
             } catch (e: Exception) {
                 val errLine = TerminalLine(text = "Execution failed: ${e.message}", color = AccentError, isError = true)
-                _terminalLines.value = _terminalLines.value + errLine
+                appendTerminalLine(session, errLine)
             } finally {
-                _isExecuting.value = false
+                setSessionExecuting(session, false)
             }
         }
     }
 
-    private var lastLineHadNewline = true
+    private fun setSessionExecuting(session: TerminalSession, executing: Boolean) {
+        session.isExecuting = executing
+        if (session.id == _activeTerminalId.value) {
+            _isExecuting.value = executing
+        }
+        updateTabsState()
+    }
 
-    fun appendOutput(text: String, isStdout: Boolean) {
+    private fun appendTerminalLine(session: TerminalSession, line: TerminalLine) {
+        synchronized(session) {
+            session.lines.add(line)
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
+        }
+    }
+
+    fun appendOutput(text: String, isStdout: Boolean, terminalId: String? = null) {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        appendSessionOutput(session, text, isStdout)
+    }
+
+    private fun appendSessionOutput(session: TerminalSession, text: String, isStdout: Boolean) {
         if (text.isEmpty()) return
 
         val rawSegments = text.split('\n')
-        val currentList = _terminalLines.value.toMutableList()
+        synchronized(session) {
+            for (i in rawSegments.indices) {
+                val segment = rawSegments[i]
+                val isLastSegment = (i == rawSegments.size - 1)
 
-        for (i in rawSegments.indices) {
-            val segment = rawSegments[i]
-            val isLastSegment = (i == rawSegments.size - 1)
+                // Trailing empty segment from text ending with '\n'
+                if (isLastSegment && segment.isEmpty()) {
+                    session.lastLineHadNewline = true
+                    break
+                }
 
-            // Trailing empty segment from text ending with '\n'
-            if (isLastSegment && segment.isEmpty()) {
-                lastLineHadNewline = true
-                break
+                val parsed = parseAnsiLine(segment, isStdout)
+
+                if (!session.lastLineHadNewline && session.lines.isNotEmpty()) {
+                    val last = session.lines.last()
+                    session.lines[session.lines.size - 1] = last.copy(
+                        text = last.text + parsed.text
+                    )
+                } else if (segment.isNotEmpty() || !isLastSegment) {
+                    session.lines.add(parsed)
+                }
+
+                session.lastLineHadNewline = !isLastSegment
             }
-
-            val parsed = parseAnsiLine(segment, isStdout)
-
-            if (!lastLineHadNewline && currentList.isNotEmpty()) {
-                val last = currentList.last()
-                currentList[currentList.size - 1] = last.copy(
-                    text = last.text + parsed.text
-                )
-            } else if (segment.isNotEmpty() || !isLastSegment) {
-                currentList.add(parsed)
-            }
-
-            lastLineHadNewline = !isLastSegment
         }
 
-        _terminalLines.value = currentList
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
+        }
     }
 
-    fun sendInput(input: String) {
-        if (!_isExecuting.value) {
-            executeCommand(input)
+    fun sendInput(input: String, terminalId: String? = null) {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        if (!session.isExecuting) {
+            executeCommand(input, session.id)
             return
         }
         // Echo input into terminal lines and send to process stdin
-        appendOutput(input + "\n", isStdout = true)
-        sandboxExecutionProvider.sendInput(input)
+        appendSessionOutput(session, input + "\n", isStdout = true)
+        session.executionProvider.sendInput(input)
     }
 
-    fun cancelExecution() {
-        sandboxExecutionProvider.cancelActiveProcess()
-        activeJob?.cancel()
-        _isExecuting.value = false
-        appendOutput("^C (Process interrupted)\n", isStdout = false)
+    fun cancelExecution(terminalId: String? = null) {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        session.executionProvider.cancelActiveProcess()
+        session.activeJob?.cancel()
+        setSessionExecuting(session, false)
+        appendSessionOutput(session, "^C (Process interrupted)\n", isStdout = false)
     }
 
-    fun clearTerminal() {
-        _terminalLines.value = emptyList()
+    fun clearTerminal(terminalId: String? = null) {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        synchronized(session) {
+            session.lines.clear()
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = emptyList()
+        }
     }
 
-    fun getPreviousHistory(): String? {
-        val history = _commandHistory.value
+    fun getPreviousHistory(terminalId: String? = null): String? {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return null
+        val history = session.commandHistory
         if (history.isEmpty()) return null
-        val newIndex = if (_historyIndex.value == -1) {
+        val newIndex = if (session.historyIndex == -1) {
             history.size - 1
         } else {
-            maxOf(0, _historyIndex.value - 1)
+            maxOf(0, session.historyIndex - 1)
         }
-        _historyIndex.value = newIndex
+        session.historyIndex = newIndex
         return history[newIndex]
     }
 
-    fun getNextHistory(): String? {
-        val history = _commandHistory.value
-        if (history.isEmpty() || _historyIndex.value == -1) return null
-        val newIndex = _historyIndex.value + 1
+    fun getNextHistory(terminalId: String? = null): String? {
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return null
+        val history = session.commandHistory
+        if (history.isEmpty() || session.historyIndex == -1) return null
+        val newIndex = session.historyIndex + 1
         return if (newIndex >= history.size) {
-            _historyIndex.value = -1
+            session.historyIndex = -1
             ""
         } else {
-            _historyIndex.value = newIndex
+            session.historyIndex = newIndex
             history[newIndex]
         }
     }
 
-    private fun printHelp() {
+    private fun printHelp(session: TerminalSession) {
         val helpLines = listOf(
             TerminalLine(text = "Available Klix Terminal Commands:", color = AccentPrimary),
             TerminalLine(text = "  clear            Clear the terminal screen", color = TextSecondary),
@@ -257,14 +447,19 @@ class TerminalViewModel @JvmOverloads constructor(
             TerminalLine(text = "  help             Display this help guide", color = TextSecondary),
             TerminalLine(text = "All standard Linux commands (ls, cat, grep, find, etc.) execute inside Alpine userland.", color = TextMuted)
         )
-        _terminalLines.value = _terminalLines.value + helpLines
+        synchronized(session) {
+            session.lines.addAll(helpLines)
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
+        }
     }
 
-    private fun printStatus() {
+    private fun printStatus(session: TerminalSession) {
         val status = sandboxManager.status.value
         val installed = sandboxManager.isInstalled()
         val arch = sandboxManager.detectArch()
-        val prootAvailable = sandboxExecutionProvider.findProotExecutable() != null
+        val prootAvailable = session.executionProvider.findProotExecutable() != null
         val lines = listOf(
             TerminalLine(text = "Alpine Sandbox Status: $status", color = if (installed) AccentSecondary else AccentWarning),
             TerminalLine(text = "Sandbox Installed: $installed", color = if (installed) AccentSecondary else AccentWarning),
@@ -272,11 +467,15 @@ class TerminalViewModel @JvmOverloads constructor(
             TerminalLine(text = "Detected Architecture: $arch", color = TextSecondary),
             TerminalLine(text = "RootFS Path: ${sandboxManager.getRootfsDir().absolutePath}", color = TextMuted)
         )
-        _terminalLines.value = _terminalLines.value + lines
+        synchronized(session) {
+            session.lines.addAll(lines)
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
+        }
     }
 
     private fun parseAnsiLine(rawLine: String, isStdout: Boolean): TerminalLine {
-        // Simple ANSI escape code color stripper / parser
         var color = if (isStdout) TextPrimary else AccentError
 
         if (rawLine.contains("\u001B[31m") || rawLine.contains("\u001B[91m")) {
@@ -289,7 +488,6 @@ class TerminalViewModel @JvmOverloads constructor(
             color = AccentPrimary
         }
 
-        // Clean ANSI escape sequences
         val cleanText = rawLine.replace(Regex("\u001B\\[[;\\d]*m"), "")
         return TerminalLine(
             text = cleanText,

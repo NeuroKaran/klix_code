@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,12 +29,15 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.ClearAll
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -41,6 +45,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,10 +60,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.data.sandbox.SandboxStatus
-import com.klix.code.ui.terminal.TerminalLine
+import com.klix.code.ui.terminal.TerminalTab
 import com.klix.code.ui.terminal.TerminalViewModel
 import com.klix.code.ui.theme.AccentError
 import com.klix.code.ui.theme.AccentPrimary
@@ -68,6 +74,8 @@ import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.theme.TabActiveBg
+import com.klix.code.ui.theme.TabInactiveBg
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -78,6 +86,8 @@ fun TerminalView(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val tabs by viewModel.tabs.collectAsState()
+    val activeTabId by viewModel.activeTerminalId.collectAsState()
     val lines by viewModel.terminalLines.collectAsState()
     val isExecuting by viewModel.isExecuting.collectAsState()
     val currentCwd by viewModel.currentCwd.collectAsState()
@@ -86,7 +96,20 @@ fun TerminalView(
     var inputCommand by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    // Auto scroll to bottom
+    // Dialog state for renaming a terminal
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var tabToRename by remember { mutableStateOf<TerminalTab?>(null) }
+    var renameInput by remember { mutableStateOf("") }
+
+    // Synchronize input draft when switching active terminal tab
+    LaunchedEffect(activeTabId) {
+        inputCommand = viewModel.getInputDraft(activeTabId)
+        if (lines.isNotEmpty()) {
+            listState.scrollToItem(lines.size - 1)
+        }
+    }
+
+    // Auto scroll to bottom on new output lines
     LaunchedEffect(lines.size) {
         if (lines.isNotEmpty()) {
             listState.animateScrollToItem(lines.size - 1)
@@ -100,7 +123,7 @@ fun TerminalView(
             .navigationBarsPadding()
             .imePadding()
     ) {
-        // Header Bar
+        // 1. Top Header Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -130,61 +153,76 @@ fun TerminalView(
                     )
                 }
 
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Terminal",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+
+                    // Sandbox status pill
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(DarkSurfaceVariant)
+                            .clickable { viewModel.openSetupDialog() }
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "Sandbox Shell",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            text = when (sandboxStatus) {
+                                SandboxStatus.READY -> "Alpine Linux"
+                                SandboxStatus.DOWNLOADING -> "Downloading..."
+                                SandboxStatus.EXTRACTING -> "Extracting..."
+                                else -> "Setup Sandbox"
+                            },
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = if (sandboxStatus == SandboxStatus.READY) AccentSecondary else AccentWarning
                         )
-
-                        // Sandbox status pill
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(DarkSurfaceVariant)
-                                .clickable { viewModel.openSetupDialog() }
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = when (sandboxStatus) {
-                                    SandboxStatus.READY -> "Alpine Linux"
-                                    SandboxStatus.DOWNLOADING -> "Downloading..."
-                                    SandboxStatus.EXTRACTING -> "Extracting..."
-                                    else -> "Setup Sandbox"
-                                },
-                                fontSize = 10.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = if (sandboxStatus == SandboxStatus.READY) AccentSecondary else AccentWarning
-                            )
-                        }
                     }
-
-                    Text(
-                        text = currentCwd,
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = TextMuted
-                    )
                 }
             }
 
-            // Action buttons
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { viewModel.clearTerminal() }, modifier = Modifier.size(32.dp)) {
+            // Top Action buttons
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                // New Terminal button
+                IconButton(
+                    onClick = { viewModel.addNewTerminal() },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "New Terminal",
+                        tint = AccentPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Clear Terminal button
+                IconButton(
+                    onClick = { viewModel.clearTerminal() },
+                    modifier = Modifier.size(32.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Clear",
+                        contentDescription = "Clear Terminal",
                         tint = TextSecondary,
                         modifier = Modifier.size(18.dp)
                     )
                 }
 
-                IconButton(onClick = { viewModel.openSetupDialog() }, modifier = Modifier.size(32.dp)) {
+                // Sandbox Settings button
+                IconButton(
+                    onClick = { viewModel.openSetupDialog() },
+                    modifier = Modifier.size(32.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "Sandbox Settings",
@@ -193,7 +231,11 @@ fun TerminalView(
                     )
                 }
 
-                IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
+                // Close Sheet button
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier.size(32.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close",
@@ -204,7 +246,99 @@ fun TerminalView(
             }
         }
 
-        // Terminal Output Stream
+        // 2. Terminal Tab Bar
+        TerminalTabBar(
+            tabs = tabs,
+            activeTabId = activeTabId,
+            onSelectTab = { id -> viewModel.selectTerminal(id) },
+            onCloseTab = { id -> viewModel.closeTerminal(id) },
+            onAddTab = { viewModel.addNewTerminal() },
+            onRenameTab = { tab ->
+                tabToRename = tab
+                renameInput = tab.title
+                showRenameDialog = true
+            }
+        )
+
+        // 3. Active Terminal Info & Quick Breadcrumb
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(DarkBg)
+                .border(0.5.dp, DarkBorder)
+                .padding(horizontal = 12.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FolderOpen,
+                    contentDescription = null,
+                    tint = TextMuted,
+                    modifier = Modifier.size(13.dp)
+                )
+                Text(
+                    text = currentCwd,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = TextMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val activeTab = tabs.find { it.id == activeTabId }
+                if (activeTab != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(DarkSurfaceVariant)
+                            .clickable {
+                                tabToRename = activeTab
+                                renameInput = activeTab.title
+                                showRenameDialog = true
+                            }
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Rename",
+                                tint = AccentPrimary,
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Text(
+                                text = "Rename",
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = AccentPrimary
+                            )
+                        }
+                    }
+                }
+
+                // Active terminals count badge
+                Text(
+                    text = "${tabs.size} ${if (tabs.size == 1) "terminal" else "terminals"}",
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = TextSecondary
+                )
+            }
+        }
+
+        // 4. Terminal Output Stream
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -250,7 +384,7 @@ fun TerminalView(
             }
         }
 
-        // Mobile Developer Soft-Keys Row
+        // 5. Mobile Developer Soft-Keys Row
         HorizontalDivider(color = DarkBorder)
         Row(
             modifier = Modifier
@@ -261,20 +395,45 @@ fun TerminalView(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             val quickKeys = listOf(
+                Pair("+ TERM") { viewModel.addNewTerminal() },
                 Pair("ESC") { /* ESC */ },
-                Pair("TAB") { inputCommand += "    " },
+                Pair("TAB") {
+                    inputCommand += "    "
+                    viewModel.setInputDraft(inputCommand, activeTabId)
+                },
                 Pair("CTRL-C") { viewModel.cancelExecution() },
                 Pair("↑") {
-                    viewModel.getPreviousHistory()?.let { inputCommand = it }
+                    viewModel.getPreviousHistory()?.let {
+                        inputCommand = it
+                        viewModel.setInputDraft(it, activeTabId)
+                    }
                 },
                 Pair("↓") {
-                    viewModel.getNextHistory()?.let { inputCommand = it }
+                    viewModel.getNextHistory()?.let {
+                        inputCommand = it
+                        viewModel.setInputDraft(it, activeTabId)
+                    }
                 },
-                Pair("|") { inputCommand += " | " },
-                Pair("~") { inputCommand += "~" },
-                Pair("`") { inputCommand += "`" },
-                Pair("-") { inputCommand += "-" },
-                Pair("/") { inputCommand += "/" },
+                Pair("|") {
+                    inputCommand += " | "
+                    viewModel.setInputDraft(inputCommand, activeTabId)
+                },
+                Pair("~") {
+                    inputCommand += "~"
+                    viewModel.setInputDraft(inputCommand, activeTabId)
+                },
+                Pair("`") {
+                    inputCommand += "`"
+                    viewModel.setInputDraft(inputCommand, activeTabId)
+                },
+                Pair("-") {
+                    inputCommand += "-"
+                    viewModel.setInputDraft(inputCommand, activeTabId)
+                },
+                Pair("/") {
+                    inputCommand += "/"
+                    viewModel.setInputDraft(inputCommand, activeTabId)
+                },
                 Pair("clear") { viewModel.clearTerminal() }
             )
 
@@ -282,8 +441,12 @@ fun TerminalView(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(DarkSurface)
-                        .border(0.5.dp, DarkBorder, RoundedCornerShape(4.dp))
+                        .background(if (label == "+ TERM") AccentPrimary.copy(alpha = 0.15f) else DarkSurface)
+                        .border(
+                            0.5.dp,
+                            if (label == "+ TERM") AccentPrimary.copy(alpha = 0.5f) else DarkBorder,
+                            RoundedCornerShape(4.dp)
+                        )
                         .clickable { action() }
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
@@ -292,13 +455,13 @@ fun TerminalView(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
-                        color = TextPrimary
+                        color = if (label == "+ TERM") AccentPrimary else TextPrimary
                     )
                 }
             }
         }
 
-        // Input Line
+        // 6. Command Input Line
         HorizontalDivider(color = DarkBorder)
         Row(
             modifier = Modifier
@@ -318,7 +481,10 @@ fun TerminalView(
 
             OutlinedTextField(
                 value = inputCommand,
-                onValueChange = { inputCommand = it },
+                onValueChange = {
+                    inputCommand = it
+                    viewModel.setInputDraft(it, activeTabId)
+                },
                 placeholder = {
                     Text(
                         text = if (isExecuting) "Send input to process (e.g. 25)..." else "npm test, python app.py, ls...",
@@ -343,6 +509,7 @@ fun TerminalView(
                             viewModel.executeCommand(inputCommand)
                         }
                         inputCommand = ""
+                        viewModel.setInputDraft("", activeTabId)
                     }
                 }),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -361,6 +528,7 @@ fun TerminalView(
                         onClick = {
                             viewModel.sendInput(inputCommand)
                             inputCommand = ""
+                            viewModel.setInputDraft("", activeTabId)
                         },
                         modifier = Modifier
                             .size(40.dp)
@@ -396,6 +564,7 @@ fun TerminalView(
                         if (inputCommand.isNotBlank()) {
                             viewModel.executeCommand(inputCommand)
                             inputCommand = ""
+                            viewModel.setInputDraft("", activeTabId)
                         }
                     },
                     enabled = inputCommand.isNotBlank(),
@@ -411,6 +580,184 @@ fun TerminalView(
                         modifier = Modifier.size(18.dp)
                     )
                 }
+            }
+        }
+    }
+
+    // Rename Terminal Dialog
+    if (showRenameDialog && tabToRename != null) {
+        val currentTab = tabToRename!!
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = {
+                Text(
+                    text = "Rename Terminal",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Enter a new name for this terminal session:",
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                    OutlinedTextField(
+                        value = renameInput,
+                        onValueChange = { renameInput = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = DarkSurfaceVariant,
+                            unfocusedContainerColor = DarkSurfaceVariant,
+                            focusedBorderColor = AccentPrimary,
+                            unfocusedBorderColor = DarkBorder,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            if (renameInput.isNotBlank()) {
+                                viewModel.renameTerminal(currentTab.id, renameInput)
+                                showRenameDialog = false
+                            }
+                        })
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (renameInput.isNotBlank()) {
+                            viewModel.renameTerminal(currentTab.id, renameInput)
+                            showRenameDialog = false
+                        }
+                    }
+                ) {
+                    Text("Rename", color = AccentPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+            containerColor = DarkSurface,
+            shape = RoundedCornerShape(12.dp)
+        )
+    }
+}
+
+@Composable
+fun TerminalTabBar(
+    tabs: List<TerminalTab>,
+    activeTabId: String,
+    onSelectTab: (String) -> Unit,
+    onCloseTab: (String) -> Unit,
+    onAddTab: () -> Unit,
+    onRenameTab: (TerminalTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scrollState = rememberScrollState()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .background(DarkSurface)
+            .border(width = 0.5.dp, color = DarkBorder)
+            .horizontalScroll(scrollState),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        tabs.forEach { tab ->
+            val isActive = tab.id == activeTabId
+            val bg = if (isActive) TabActiveBg else TabInactiveBg
+
+            Row(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .background(bg)
+                    .clickable { onSelectTab(tab.id) }
+                    .padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Running spinner or terminal icon
+                if (tab.isExecuting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(11.dp),
+                        strokeWidth = 1.5.dp,
+                        color = AccentPrimary
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Terminal,
+                        contentDescription = null,
+                        tint = if (isActive) AccentSecondary else TextMuted,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+
+                Text(
+                    text = tab.title,
+                    color = if (isActive) TextPrimary else TextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                // Close terminal tab button
+                IconButton(
+                    onClick = { onCloseTab(tab.id) },
+                    modifier = Modifier.size(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close ${tab.title}",
+                        tint = if (isActive) TextSecondary else TextMuted,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
+
+            // Divider between tabs
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(1.dp)
+                    .background(DarkBorder)
+            )
+        }
+
+        // Add new terminal button in the tab strip
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .clickable { onAddTab() }
+                .padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Terminal",
+                    tint = AccentPrimary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = "New",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AccentPrimary
+                )
             }
         }
     }
