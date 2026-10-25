@@ -2,29 +2,29 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://klix.vercel.app/</loc>
+    <loc>https://klixcode.vercel.app/</loc>
     <lastmod>2026-10-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://klix.vercel.app/og-image.png</image:loc>
+      <image:loc>https://klixcode.vercel.app/og-image.png</image:loc>
       <image:title>Klix Code — Autonomous AI Agent IDE for Android</image:title>
       <image:caption>The autonomous AI agent coding platform for Android. Code anywhere with unrooted Alpine Linux sandbox, Sora editor, and BYOK privacy.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://klix.vercel.app/app_logo.png</image:loc>
+      <image:loc>https://klixcode.vercel.app/app_logo.png</image:loc>
       <image:title>Klix Code Official Logo</image:title>
     </image:image>
     <image:image>
-      <image:loc>https://klix.vercel.app/screenshots/app-screen-1.jpg</image:loc>
+      <image:loc>https://klixcode.vercel.app/screenshots/app-screen-1.jpg</image:loc>
       <image:title>Alpine Linux Sandbox Shell in Klix Code</image:title>
     </image:image>
     <image:image>
-      <image:loc>https://klix.vercel.app/screenshots/app-screen-2.jpg</image:loc>
+      <image:loc>https://klixcode.vercel.app/screenshots/app-screen-2.jpg</image:loc>
       <image:title>Local Node.js Development Server on Android</image:title>
     </image:image>
     <image:image>
-      <image:loc>https://klix.vercel.app/screenshots/app-screen-3.jpg</image:loc>
+      <image:loc>https://klixcode.vercel.app/screenshots/app-screen-3.jpg</image:loc>
       <image:title>Autonomous AI Agent Loop with Claude and GPT</image:title>
     </image:image>
   </url>

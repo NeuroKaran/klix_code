@@ -19,8 +19,8 @@
   </p>
 
   <p align="center">
-    <a href="https://klix.vercel.app/"><b>🌐 Official Website</b></a> •
-    <a href="https://klix.vercel.app/klix-code-v0.2.0.apk"><b>📦 Download APK (v0.2.0)</b></a> •
+    <a href="https://klixcode.vercel.app/"><b>🌐 Official Website</b></a> •
+    <a href="https://klixcode.vercel.app/klix-code-v0.2.0.apk"><b>📦 Download APK (v0.2.0)</b></a> •
     <a href="#-architecture"><b>🏗️ Architecture</b></a> •
     <a href="#-features"><b>✨ Features</b></a> •
     <a href="#-getting-started"><b>🚀 Quick Start</b></a>
@@ -196,8 +196,8 @@ Klix Code provides a unified tool interface across all supported LLM providers:
 
 ### 1. Download & Install
 Grab the latest release APK directly from our releases or website:
-- **Direct APK:** [Download Klix Code v0.2.0](https://klix.vercel.app/klix-code-v0.2.0.apk)
-- **Official Web:** [https://klix.vercel.app](https://klix.vercel.app/)
+- **Direct APK:** [Download Klix Code v0.2.0](https://klixcode.vercel.app/klix-code-v0.2.0.apk)
+- **Official Web:** [https://klixcode.vercel.app](https://klixcode.vercel.app/)
 
 > *Minimum Requirement:* Android 8.0 (API 26) or higher. Recommended: 4GB+ RAM.
 
