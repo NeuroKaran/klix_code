@@ -11,3 +11,5 @@ build/
 .cxx
 *.apk
 !landing_page/public/*.apk
+*.jks
+*.keystore

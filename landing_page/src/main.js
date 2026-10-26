@@ -155,7 +155,7 @@ function initDownloadButtons() {
   const downloadLinks = document.querySelectorAll('a[download]');
   downloadLinks.forEach((link) => {
     link.addEventListener('click', () => {
-      showToast('Klix Code v0.2.1 APK download started! (21.7 MB)');
+      showToast('Klix Code v0.2.1 APK download started! (16.1 MB)');
     });
   });
 
