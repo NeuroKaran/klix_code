@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
@@ -118,7 +119,7 @@ fun FileTreeView(
                     contentDescription = "Klix Logo",
                     modifier = Modifier
                         .size(20.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(CircleShape)
                 )
                 Text(
                     text = "KLIX CODE",

@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.WrapText
@@ -298,7 +299,7 @@ class MainActivity : ComponentActivity() {
                                             contentDescription = "Klix Logo",
                                             modifier = Modifier
                                                 .size(24.dp)
-                                                .clip(RoundedCornerShape(5.dp))
+                                                .clip(CircleShape)
                                         )
                                         Text(
                                             text = currentProject?.name ?: "KlixCode",
@@ -562,7 +563,7 @@ class MainActivity : ComponentActivity() {
                                             contentDescription = "Klix Logo",
                                             modifier = Modifier
                                                 .size(80.dp)
-                                                .clip(RoundedCornerShape(18.dp))
+                                                .clip(CircleShape)
                                         )
 
                                         Text(
@@ -649,7 +650,7 @@ class MainActivity : ComponentActivity() {
                                 contentDescription = "Klix Robot",
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(CircleShape)
                             )
                         },
                         title = {

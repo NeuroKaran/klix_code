@@ -151,7 +151,7 @@ body {
 .brand-icon-wrapper {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 50%;
   overflow: hidden;
   background: #000;
   display: flex;
@@ -805,7 +805,7 @@ body {
 .app-logo-tiny {
   width: 24px;
   height: 24px;
-  border-radius: 6px;
+  border-radius: 50%;
 }
 
 .app-name-text {
@@ -1635,7 +1635,7 @@ body {
 .brand-icon-wrapper-sm {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: 50%;
   overflow: hidden;
   background: #000;
   border: 1px solid var(--border-lime);
