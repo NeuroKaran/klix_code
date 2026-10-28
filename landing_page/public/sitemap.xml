@@ -3,12 +3,12 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://klixcode.vercel.app/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://klixcode.vercel.app/og-image.png</image:loc>
-      <image:title>KlixCode (Klix Code) — Autonomous AI Agent IDE for Android</image:title>
+      <image:title>Klix Code (Klix) — Autonomous AI Agent IDE for Android</image:title>
       <image:caption>The autonomous AI agent coding platform for Android. Code anywhere with unrooted Alpine Linux sandbox, Sora editor, and BYOK privacy.</image:caption>
     </image:image>
     <image:image>
