@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -249,49 +250,82 @@ fun SandboxSetupDialog(
                             color = TextSecondary
                         )
 
-                        val packages = listOf(
-                            Pair("Node.js & npm", "apk add nodejs npm"),
-                            Pair("Python 3 & pip", "apk add python3 py3-pip"),
-                            Pair("Git", "apk add git"),
-                            Pair("C/C++ Build Essentials", "apk add build-base")
+                        data class ToolchainPreset(
+                            val id: String,
+                            val label: String,
+                            val command: String
                         )
 
-                        packages.forEach { (label, command) ->
+                        val packages = listOf(
+                            ToolchainPreset("nodejs", "Node.js & npm", "apk add nodejs npm"),
+                            ToolchainPreset("python3", "Python 3 & pip", "apk add python3 py3-pip"),
+                            ToolchainPreset("git", "Git", "apk add git"),
+                            ToolchainPreset("build-base", "C/C++ Build Essentials", "apk add build-base")
+                        )
+
+                        packages.forEach { preset ->
+                            val isInstalled = sandboxManager.isToolInstalled(preset.id)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(DarkSurface)
-                                    .border(0.5.dp, DarkBorder, RoundedCornerShape(8.dp))
+                                    .border(
+                                        0.5.dp,
+                                        if (isInstalled) AccentSecondary.copy(alpha = 0.5f) else DarkBorder,
+                                        RoundedCornerShape(8.dp)
+                                    )
                                     .clickable {
-                                        onRunCommandInTerminal(command)
+                                        onRunCommandInTerminal(preset.command)
                                         onDismiss()
                                     }
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Column {
+                                Column(modifier = Modifier.weight(1f, fill = false)) {
                                     Text(
-                                        text = label,
+                                        text = preset.label,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = TextPrimary
                                     )
                                     Text(
-                                        text = command,
+                                        text = preset.command,
                                         fontSize = 11.sp,
                                         fontFamily = FontFamily.Monospace,
                                         color = AccentPrimary
                                     )
                                 }
 
-                                Text(
-                                    text = "Install",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AccentSecondary
-                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                if (isInstalled) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = AccentSecondary,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            text = "Installed",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AccentSecondary
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = "Install",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AccentPrimary
+                                    )
+                                }
                             }
                         }
                     }

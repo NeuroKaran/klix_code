@@ -54,6 +54,67 @@ class SandboxManager(private val context: Context) {
         return rootfs.exists() && (busybox.exists() || alpineRelease.exists() || binSh.exists())
     }
 
+    fun getInstalledWorldPackages(): Set<String> {
+        val rootfs = getRootfsDir()
+        val pkgs = mutableSetOf<String>()
+        val worldFile = File(rootfs, "etc/apk/world")
+        if (worldFile.exists()) {
+            try {
+                worldFile.readLines().forEach { line ->
+                    val name = line.trim().split("=")[0].split(">")[0].split("<")[0].trim()
+                    if (name.isNotEmpty()) pkgs.add(name)
+                }
+            } catch (_: Exception) {}
+        }
+        val dbFile = File(rootfs, "lib/apk/db/installed")
+        if (dbFile.exists()) {
+            try {
+                dbFile.forEachLine { line ->
+                    if (line.startsWith("P:")) {
+                        val name = line.substring(2).trim()
+                        if (name.isNotEmpty()) pkgs.add(name)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        return pkgs
+    }
+
+    fun isToolInstalled(toolId: String): Boolean {
+        val rootfs = getRootfsDir()
+        if (!rootfs.exists()) return false
+
+        val installedPkgs = getInstalledWorldPackages()
+
+        return when (toolId.lowercase()) {
+            "node", "nodejs", "nodejs & npm" -> {
+                File(rootfs, "usr/bin/node").exists() ||
+                File(rootfs, "bin/node").exists() ||
+                installedPkgs.contains("nodejs")
+            }
+            "python", "python3", "python 3 & pip" -> {
+                File(rootfs, "usr/bin/python3").exists() ||
+                File(rootfs, "bin/python3").exists() ||
+                installedPkgs.contains("python3")
+            }
+            "git" -> {
+                File(rootfs, "usr/bin/git").exists() ||
+                File(rootfs, "bin/git").exists() ||
+                installedPkgs.contains("git")
+            }
+            "build-base", "c/c++ build essentials", "c/c++" -> {
+                File(rootfs, "usr/bin/gcc").exists() ||
+                File(rootfs, "usr/bin/make").exists() ||
+                installedPkgs.contains("build-base")
+            }
+            else -> {
+                File(rootfs, "usr/bin/$toolId").exists() ||
+                File(rootfs, "bin/$toolId").exists() ||
+                installedPkgs.contains(toolId)
+            }
+        }
+    }
+
     fun detectArch(): String {
         val abis = try { Build.SUPPORTED_ABIS } catch (_: Throwable) { null }
         if (abis != null && abis.isNotEmpty()) {
