@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -64,6 +65,8 @@ import com.klix.code.data.model.FileNode
 import com.klix.code.ui.theme.AccentError
 import com.klix.code.ui.theme.AccentPrimary
 import com.klix.code.ui.theme.AccentSecondary
+import com.klix.code.ui.theme.AccentWarning
+import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
@@ -76,6 +79,8 @@ fun FileTreeView(
     rootNode: FileNode?,
     activeFileUri: Uri?,
     currentProjectName: String? = null,
+    isSandboxInstalled: Boolean = true,
+    onConfigureSandbox: (() -> Unit)? = null,
     onOpenSandboxWorkspace: (() -> Unit)? = null,
     onFileClick: (FileNode) -> Unit,
     onCreateFile: (parentUri: Uri, fileName: String) -> Unit,
@@ -90,6 +95,7 @@ fun FileTreeView(
 
     var showCreateFileDialog by remember { mutableStateOf<Uri?>(null) }
     var showCreateDirDialog by remember { mutableStateOf<Uri?>(null) }
+    var showSandboxWarningDialog by remember { mutableStateOf(false) }
     var nodeToDelete by remember { mutableStateOf<FileNode?>(null) }
     var nodeToRename by remember { mutableStateOf<FileNode?>(null) }
 
@@ -133,8 +139,12 @@ fun FileTreeView(
                 rootNode?.let { root ->
                     IconButton(
                         onClick = {
-                            dialogInputText = ""
-                            showCreateFileDialog = root.uri
+                            if (!isSandboxInstalled) {
+                                showSandboxWarningDialog = true
+                            } else {
+                                dialogInputText = ""
+                                showCreateFileDialog = root.uri
+                            }
                         },
                         modifier = Modifier.size(24.dp)
                     ) {
@@ -148,8 +158,12 @@ fun FileTreeView(
 
                     IconButton(
                         onClick = {
-                            dialogInputText = ""
-                            showCreateDirDialog = root.uri
+                            if (!isSandboxInstalled) {
+                                showSandboxWarningDialog = true
+                            } else {
+                                dialogInputText = ""
+                                showCreateDirDialog = root.uri
+                            }
                         },
                         modifier = Modifier.size(24.dp)
                     ) {
@@ -347,8 +361,12 @@ fun FileTreeView(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {
-                                dialogInputText = ""
-                                showCreateFileDialog = rootNode.uri
+                                if (!isSandboxInstalled) {
+                                    showSandboxWarningDialog = true
+                                } else {
+                                    dialogInputText = ""
+                                    showCreateFileDialog = rootNode.uri
+                                }
                             },
                             shape = RoundedCornerShape(8.dp)
                         ) {
@@ -363,8 +381,12 @@ fun FileTreeView(
                         }
                         OutlinedButton(
                             onClick = {
-                                dialogInputText = ""
-                                showCreateDirDialog = rootNode.uri
+                                if (!isSandboxInstalled) {
+                                    showSandboxWarningDialog = true
+                                } else {
+                                    dialogInputText = ""
+                                    showCreateDirDialog = rootNode.uri
+                                }
                             },
                             shape = RoundedCornerShape(8.dp)
                         ) {
@@ -403,8 +425,12 @@ fun FileTreeView(
                                 }
                             },
                             onAddFileInDir = {
-                                dialogInputText = ""
-                                showCreateFileDialog = node.uri
+                                if (!isSandboxInstalled) {
+                                    showSandboxWarningDialog = true
+                                } else {
+                                    dialogInputText = ""
+                                    showCreateFileDialog = node.uri
+                                }
                             },
                             onRename = {
                                 dialogInputText = node.name
@@ -480,6 +506,57 @@ fun FileTreeView(
             },
             dismissButton = {
                 TextButton(onClick = { showCreateDirDialog = null }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            }
+        )
+    }
+
+    // Sandbox Warning Dialog
+    if (showSandboxWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showSandboxWarningDialog = false },
+            containerColor = DarkBg,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = AccentWarning,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Text(
+                        text = "Sandbox Required",
+                        color = TextPrimary,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            text = {
+                Text(
+                    text = "You need to configure the sandbox environment first to create files and folders.",
+                    color = TextSecondary,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSandboxWarningDialog = false
+                        onConfigureSandbox?.invoke()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
+                ) {
+                    Text("Configure Sandbox")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSandboxWarningDialog = false }) {
                     Text("Cancel", color = TextSecondary)
                 }
             }

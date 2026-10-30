@@ -1,5 +1,6 @@
 package com.klix.code
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -203,6 +204,16 @@ class MainActivity : ComponentActivity() {
 
 
 
+                // Onboarding: Prompt sandbox setup on first launch if not configured
+                LaunchedEffect(Unit) {
+                    val prefs = getSharedPreferences("klix_prefs", Context.MODE_PRIVATE)
+                    val hasShownSandboxOnboarding = prefs.getBoolean("has_shown_sandbox_onboarding", false)
+                    if (!hasShownSandboxOnboarding && !terminalViewModel.sandboxManager.isInstalled()) {
+                        prefs.edit().putBoolean("has_shown_sandbox_onboarding", true).apply()
+                        terminalViewModel.openSetupDialog()
+                    }
+                }
+
                 var showAgentPromptDialog by remember { mutableStateOf(false) }
                 var agentPromptText by remember { mutableStateOf("") }
 
@@ -246,6 +257,11 @@ class MainActivity : ComponentActivity() {
                                 rootNode = fileTree,
                                 activeFileUri = activeTabUri,
                                 currentProjectName = currentProject?.name,
+                                isSandboxInstalled = terminalViewModel.sandboxManager.isInstalled(),
+                                onConfigureSandbox = {
+                                    scope.launch { drawerState.close() }
+                                    terminalViewModel.openSetupDialog()
+                                },
                                 onOpenSandboxWorkspace = {
                                     viewModel.openSandboxWorkspace()
                                 },
@@ -254,10 +270,18 @@ class MainActivity : ComponentActivity() {
                                     scope.launch { drawerState.close() }
                                 },
                                 onCreateFile = { parentUri, name ->
-                                    viewModel.createFile(parentUri, name)
+                                    if (!terminalViewModel.sandboxManager.isInstalled()) {
+                                        terminalViewModel.openSetupDialog()
+                                    } else {
+                                        viewModel.createFile(parentUri, name)
+                                    }
                                 },
                                 onCreateDirectory = { parentUri, name ->
-                                    viewModel.createDirectory(parentUri, name)
+                                    if (!terminalViewModel.sandboxManager.isInstalled()) {
+                                        terminalViewModel.openSetupDialog()
+                                    } else {
+                                        viewModel.createDirectory(parentUri, name)
+                                    }
                                 },
                                 onDeleteNode = { node ->
                                     viewModel.deleteNode(node)
