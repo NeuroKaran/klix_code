@@ -111,12 +111,11 @@ fun SoraEditorView(
                 this.isWordwrap = isWordWrap
 
                 // Configure inputType to prevent soft keyboards (e.g. Gboard) from treating
-                // code as English prose with auto-suggestions, word corrections, or auto-reverting
-                // layout from numbers/symbols back to letters on every digit/symbol typed.
+                // code as English prose with auto-corrections while ensuring IME key events
+                // (backspace deletion) and gestures (spacebar cursor sliding) function properly.
                 inputType = android.text.InputType.TYPE_CLASS_TEXT or
                         android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or
                         android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-                props.disallowSuggestions = true
 
                 // Apply syntax highlighting
                 val lang = TextMateHelper.getLanguageForExtension(extension)
