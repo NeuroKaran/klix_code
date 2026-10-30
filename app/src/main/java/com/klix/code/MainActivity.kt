@@ -4,9 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,7 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.WrapText
 import androidx.compose.material.icons.filled.Difference
-import androidx.compose.material.icons.filled.FolderOpen
+
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
@@ -83,7 +81,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.documentfile.provider.DocumentFile
+
 import com.klix.code.ui.components.DiffViewerDialog
 import com.klix.code.ui.components.EditorAccessoryBar
 import com.klix.code.ui.components.EditorTabBar
@@ -203,16 +201,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // SAF Folder Picker Launcher
-                val folderPickerLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.OpenDocumentTree()
-                ) { uri: Uri? ->
-                    if (uri != null) {
-                        val docFile = DocumentFile.fromTreeUri(this@MainActivity, uri)
-                        val folderName = docFile?.name ?: "Workspace"
-                        viewModel.openProject(uri, folderName)
-                    }
-                }
+
 
                 var showAgentPromptDialog by remember { mutableStateOf(false) }
                 var agentPromptText by remember { mutableStateOf("") }
@@ -221,7 +210,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(pendingWidgetAction) {
                     when (pendingWidgetAction) {
                         KlixWidgets.ACTION_NEW_PROJECT, KlixWidgets.ACTION_OPEN_FOLDER -> {
-                            folderPickerLauncher.launch(null)
+                            viewModel.openSandboxWorkspace()
                         }
                         KlixWidgets.ACTION_SEE_ALL_PROJECTS -> {
                             showRecentProjectsDialog = true
@@ -259,9 +248,6 @@ class MainActivity : ComponentActivity() {
                                 currentProjectName = currentProject?.name,
                                 onOpenSandboxWorkspace = {
                                     viewModel.openSandboxWorkspace()
-                                },
-                                onOpenFolderPicker = {
-                                    folderPickerLauncher.launch(null)
                                 },
                                 onFileClick = { fileNode ->
                                     viewModel.openFile(fileNode)
@@ -374,14 +360,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                     }
 
-                                    // Open Projects Dialog
-                                    IconButton(onClick = { showRecentProjectsDialog = true }) {
-                                        Icon(
-                                            imageVector = Icons.Default.FolderOpen,
-                                            contentDescription = "Open Projects",
-                                            tint = TextSecondary
-                                        )
-                                    }
+
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
                                     containerColor = DarkSurface
@@ -573,30 +552,16 @@ class MainActivity : ComponentActivity() {
                                         )
 
                                         Button(
-                                            onClick = { folderPickerLauncher.launch(null) },
-                                            colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.FolderOpen,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Open Project Folder (SAF)")
-                                        }
-
-                                        OutlinedButton(
                                             onClick = { viewModel.openSandboxWorkspace() },
-                                            border = androidx.compose.foundation.BorderStroke(1.dp, AccentSecondary)
+                                            colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Terminal,
                                                 contentDescription = null,
-                                                tint = AccentSecondary,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Open Sandbox Workspace (/workspace)", color = TextPrimary)
+                                            Text("Open Sandbox Workspace")
                                         }
 
                                         if (recentProjects.isNotEmpty()) {
@@ -620,10 +585,6 @@ class MainActivity : ComponentActivity() {
                         projects = recentProjects,
                         onSelectProject = { uri, name ->
                             viewModel.openProject(uri, name)
-                            showRecentProjectsDialog = false
-                        },
-                        onOpenNewFolder = {
-                            folderPickerLauncher.launch(null)
                             showRecentProjectsDialog = false
                         },
                         onDismiss = { showRecentProjectsDialog = false }

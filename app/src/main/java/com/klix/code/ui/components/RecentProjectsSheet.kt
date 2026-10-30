@@ -26,7 +26,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.data.model.ProjectItem
 import com.klix.code.ui.theme.AccentPrimary
-import com.klix.code.ui.theme.AccentSecondary
 import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurfaceVariant
@@ -50,7 +48,6 @@ import com.klix.code.ui.theme.TextSecondary
 fun RecentProjectsDialog(
     projects: List<ProjectItem>,
     onSelectProject: (Uri, String) -> Unit,
-    onOpenNewFolder: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -83,25 +80,6 @@ fun RecentProjectsDialog(
             ) {
                 val context = LocalContext.current
                 Button(
-                    onClick = onOpenNewFolder,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    shape = RoundedCornerShape(6.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FolderOpen,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Choose External Folder (SAF)", fontWeight = FontWeight.SemiBold)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedButton(
                     onClick = {
                         val sandboxWorkspace = java.io.File(context.filesDir, "sandbox/rootfs/workspace").apply { mkdirs() }
                         onSelectProject(Uri.fromFile(sandboxWorkspace), "Sandbox Workspace")
@@ -110,12 +88,11 @@ fun RecentProjectsDialog(
                         .fillMaxWidth()
                         .height(44.dp),
                     shape = RoundedCornerShape(6.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentSecondary)
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Terminal,
                         contentDescription = null,
-                        tint = AccentSecondary,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))

@@ -77,7 +77,6 @@ fun FileTreeView(
     activeFileUri: Uri?,
     currentProjectName: String? = null,
     onOpenSandboxWorkspace: (() -> Unit)? = null,
-    onOpenFolderPicker: (() -> Unit)? = null,
     onFileClick: (FileNode) -> Unit,
     onCreateFile: (parentUri: Uri, fileName: String) -> Unit,
     onCreateDirectory: (parentUri: Uri, dirName: String) -> Unit,
@@ -276,15 +275,6 @@ fun FileTreeView(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
-                    }
-                }
-                if (onOpenFolderPicker != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = onOpenFolderPicker,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Pick Device Folder", fontSize = 12.sp, color = TextPrimary)
                     }
                 }
             }
