@@ -2,6 +2,8 @@
  * KLIX CODE — LANDING PAGE ENGINE
  */
 
+import { initDownloadTracking, trackEvent } from './tracker.js';
+
 // ==========================================================================
 // 1. PHONE SCREEN TABS TOGGLE (Agent Loop / Diff Review / Alpine Terminal)
 // ==========================================================================
@@ -152,11 +154,12 @@ function showToast(message) {
 }
 
 function initDownloadButtons() {
-  const downloadLinks = document.querySelectorAll('a[download]');
-  downloadLinks.forEach((link) => {
-    link.addEventListener('click', () => {
+  initDownloadTracking({
+    version: 'v0.2.1',
+    fileName: 'klix-code-v0.2.1.apk',
+    onDownload: () => {
       showToast('Klix Code v0.2.1 APK download started! (16.1 MB)');
-    });
+    },
   });
 
   const copyBtn = document.getElementById('copy-hash-btn');
@@ -166,6 +169,11 @@ function initDownloadButtons() {
   if (copyBtn && checksumText) {
     copyBtn.addEventListener('click', async () => {
       const hash = checksumText.dataset.hash || checksumText.textContent.trim();
+      trackEvent('copy_checksum', {
+        algorithm: 'sha256',
+        hash_prefix: hash.substring(0, 8),
+      });
+
       try {
         await navigator.clipboard.writeText(hash);
         if (copyBtnText) copyBtnText.textContent = 'Copied!';

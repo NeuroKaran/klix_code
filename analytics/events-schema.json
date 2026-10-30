@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KlixCodeAnalyticsEvents",
+  "description": "Event logging schema for Klix Code Umami Analytics",
+  "version": "1.0.0",
+  "events": {
+    "pageview": {
+      "type": "automatic",
+      "description": "Automatically collected on every page navigation",
+      "properties": {
+        "url": { "type": "string", "example": "https://klixcode.vercel.app/" },
+        "referrer": { "type": "string", "example": "https://github.com/NeuroKaran/klix_code" },
+        "title": { "type": "string", "example": "Klix Code — Autonomous AI Agent IDE for Android" }
+      }
+    },
+    "apk_download": {
+      "type": "custom",
+      "description": "Triggered when any APK download link or button is pressed",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Version string of the downloaded APK",
+          "example": "v0.2.1"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["hero", "main_card", "mobile_nav", "footer", "qr_scan", "unknown"],
+          "description": "The visual element/location where the download was initiated"
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Filename of the downloaded package",
+          "example": "klix-code-v0.2.1.apk"
+        }
+      },
+      "required": ["version", "source", "file_name"]
+    },
+    "copy_checksum": {
+      "type": "custom",
+      "description": "Triggered when user copies the release SHA-256 hash to clipboard",
+      "properties": {
+        "algorithm": { "type": "string", "example": "sha256" },
+        "hash_prefix": { "type": "string", "example": "72a7d20e" }
+      }
+    },
+    "demo_interaction": {
+      "type": "custom",
+      "description": "Triggered when visitor clicks tabs or actions in the interactive phone demo",
+      "properties": {
+        "tab_name": {
+          "type": "string",
+          "enum": ["agent", "diff", "terminal"]
+        },
+        "action": { "type": "string", "example": "approve_patch" }
+      }
+    }
+  }
+}
