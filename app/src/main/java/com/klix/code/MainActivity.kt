@@ -71,11 +71,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import com.klix.code.ui.components.KlixLoadingAnimationScreen
+import com.klix.code.data.sandbox.SandboxStatus
 import com.klix.code.data.stats.StreakManager
 import com.klix.code.ui.components.agent.AgentChatPanel
 import com.klix.code.ui.components.agent.AgentSettingsDialog
 import com.klix.code.ui.components.sandbox.SandboxSetupDialog
+import com.klix.code.ui.components.sandbox.SandboxWarningDialog
 import com.klix.code.ui.components.terminal.TerminalView
 import com.klix.code.ui.terminal.TerminalViewModel
 import com.klix.code.ui.viewmodel.AgentViewModel
@@ -189,10 +190,6 @@ class MainActivity : ComponentActivity() {
                 val cursorPosition by viewModel.cursorPosition.collectAsState()
                 val isLoading by viewModel.isLoading.collectAsState()
 
-                var isAppLoading by rememberSaveable {
-                    mutableStateOf(pendingWidgetAction == null && pendingProjectToOpen == null)
-                }
-
                 var showRecentProjectsDialog by remember { mutableStateOf(false) }
                 var isAgentPanelOpen by remember { mutableStateOf(false) }
                 var isTerminalOpen by remember { mutableStateOf(false) }
@@ -207,6 +204,10 @@ class MainActivity : ComponentActivity() {
                 val agentDiffToReview by agentViewModel.activeDiffToReview.collectAsState()
                 val isAgentSettingsOpen by agentViewModel.isSettingsOpen.collectAsState()
                 val showSandboxSetup by terminalViewModel.showSetupDialog.collectAsState()
+
+                val sandboxStatus by terminalViewModel.sandboxManager.status.collectAsState()
+                val isSandboxInstalled = sandboxStatus == SandboxStatus.READY && terminalViewModel.sandboxManager.isInstalled()
+                var showSandboxWarningDialog by rememberSaveable { mutableStateOf(false) }
 
                 val editorController = rememberEditorController()
 
@@ -228,15 +229,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-
-
-                // Onboarding: Prompt sandbox setup on first launch if not configured
-                LaunchedEffect(Unit) {
+                // Onboarding: Prompt sandbox setup warning card on launch if not configured
+                LaunchedEffect(isSandboxInstalled) {
                     val prefs = getSharedPreferences("klix_prefs", Context.MODE_PRIVATE)
                     val hasShownSandboxOnboarding = prefs.getBoolean("has_shown_sandbox_onboarding", false)
-                    if (!hasShownSandboxOnboarding && !terminalViewModel.sandboxManager.isInstalled()) {
+                    if (!hasShownSandboxOnboarding && !isSandboxInstalled) {
                         prefs.edit().putBoolean("has_shown_sandbox_onboarding", true).apply()
-                        terminalViewModel.openSetupDialog()
+                        showSandboxWarningDialog = true
                     }
                 }
 
@@ -284,28 +283,35 @@ class MainActivity : ComponentActivity() {
                                 rootNode = fileTree,
                                 activeFileUri = activeTabUri,
                                 currentProjectName = currentProject?.name,
-                                isSandboxInstalled = terminalViewModel.sandboxManager.isInstalled(),
+                                isSandboxInstalled = isSandboxInstalled,
+                                onShowSandboxWarning = {
+                                    showSandboxWarningDialog = true
+                                },
                                 onConfigureSandbox = {
                                     scope.launch { drawerState.close() }
                                     terminalViewModel.openSetupDialog()
                                 },
                                 onOpenSandboxWorkspace = {
-                                    viewModel.openSandboxWorkspace()
+                                    if (!isSandboxInstalled) {
+                                        showSandboxWarningDialog = true
+                                    } else {
+                                        viewModel.openSandboxWorkspace()
+                                    }
                                 },
                                 onFileClick = { fileNode ->
                                     viewModel.openFile(fileNode)
                                     scope.launch { drawerState.close() }
                                 },
                                 onCreateFile = { parentUri, name ->
-                                    if (!terminalViewModel.sandboxManager.isInstalled()) {
-                                        terminalViewModel.openSetupDialog()
+                                    if (!isSandboxInstalled) {
+                                        showSandboxWarningDialog = true
                                     } else {
                                         viewModel.createFile(parentUri, name)
                                     }
                                 },
                                 onCreateDirectory = { parentUri, name ->
-                                    if (!terminalViewModel.sandboxManager.isInstalled()) {
-                                        terminalViewModel.openSetupDialog()
+                                    if (!isSandboxInstalled) {
+                                        showSandboxWarningDialog = true
                                     } else {
                                         viewModel.createDirectory(parentUri, name)
                                     }
@@ -603,7 +609,13 @@ class MainActivity : ComponentActivity() {
                                         )
 
                                         Button(
-                                            onClick = { viewModel.openSandboxWorkspace() },
+                                            onClick = {
+                                                if (!isSandboxInstalled) {
+                                                    showSandboxWarningDialog = true
+                                                } else {
+                                                    viewModel.openSandboxWorkspace()
+                                                }
+                                            },
                                             colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
                                         ) {
                                             Icon(
@@ -804,14 +816,15 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // Klix Startup Loading Animation
-                AnimatedVisibility(
-                    visible = isAppLoading,
-                    enter = fadeIn(),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 400))
-                ) {
-                    KlixLoadingAnimationScreen(
-                        onAnimationFinished = { isAppLoading = false }
+                // Sandbox Warning Dialog
+                if (showSandboxWarningDialog) {
+                    SandboxWarningDialog(
+                        onDismiss = { showSandboxWarningDialog = false },
+                        onInstallSandbox = {
+                            showSandboxWarningDialog = false
+                            scope.launch { drawerState.close() }
+                            terminalViewModel.openSetupDialog()
+                        }
                     )
                 }
             }
