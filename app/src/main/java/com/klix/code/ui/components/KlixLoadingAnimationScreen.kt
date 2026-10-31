@@ -1,32 +1,40 @@
 package com.klix.code.ui.components
 
-import android.graphics.SurfaceTexture
-import android.media.MediaPlayer
-import android.view.Surface
-import android.view.TextureView
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,21 +42,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.klix.code.R
 import kotlinx.coroutines.delay
 
 private val SplashBackgroundColor = Color(0xFF0E1118)
+private val AccentLime = Color(0xFF00E676)
+private val ProgressTrackColor = Color(0xFF1B2230)
 
 /**
- * KlixLoadingAnimationScreen plays the custom Klix animated loading sequence
- * when the app opens, seamlessly fitting all screen ratios with a sleek
- * dark background and instant tap-to-skip option.
+ * Native Jetpack Compose startup loading screen displaying the circular Klix app icon,
+ * ambient pulsing glow, progressive environment initialization status, and instant tap-to-skip.
  */
 @Composable
 fun KlixLoadingAnimationScreen(
@@ -66,23 +79,45 @@ fun KlixLoadingAnimationScreen(
         }
     }
 
-    // Safety timeout: In case device decoder fails or onCompletion is delayed,
-    // ensure the IDE loads within 4.5 seconds.
+    // Progress animation from 0% to 100%
+    val progress = remember { Animatable(0f) }
+
     LaunchedEffect(Unit) {
-        delay(4500)
+        progress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 1400, easing = FastOutSlowInEasing)
+        )
+        delay(120)
         safeFinish()
     }
 
-    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    // Subtle pulsing ambient animation for the circular logo
+    val infiniteTransition = rememberInfiniteTransition(label = "logoPulse")
+    val glowScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowScale"
+    )
+    val logoScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoScale"
+    )
 
-    DisposableEffect(Unit) {
-        onDispose {
-            try {
-                mediaPlayer?.stop()
-                mediaPlayer?.release()
-                mediaPlayer = null
-            } catch (_: Exception) {}
-        }
+    val currentProgress = progress.value
+    val statusText = when {
+        currentProgress < 0.35f -> "Initializing Alpine Linux sandbox..."
+        currentProgress < 0.70f -> "Mounting /workspace storage..."
+        currentProgress < 0.95f -> "Preparing code workspace..."
+        else -> "Klix Code Ready"
     }
 
     Box(
@@ -97,78 +132,101 @@ fun KlixLoadingAnimationScreen(
             },
         contentAlignment = Alignment.Center
     ) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 32.dp)
         ) {
-            val videoRatio = 9f / 16f
-            val screenRatio = maxWidth.value / maxHeight.value
+            // Circular Logo with subtle ambient glow
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(140.dp)
+            ) {
+                // Outer ambient radial glow
+                Box(
+                    modifier = Modifier
+                        .size((128 * glowScale).dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    AccentLime.copy(alpha = 0.32f),
+                                    AccentLime.copy(alpha = 0.08f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                )
 
-            val videoModifier = if (screenRatio > videoRatio) {
-                // Screen is wider than video (tablet or landscape)
-                Modifier
-                    .fillMaxHeight()
-                    .aspectRatio(videoRatio)
-            } else {
-                // Screen is taller than video (typical smartphone)
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(videoRatio)
+                // App's circular icon
+                Image(
+                    painter = painterResource(id = R.drawable.klix_logo),
+                    contentDescription = "Klix App Icon",
+                    modifier = Modifier
+                        .size(108.dp)
+                        .scale(logoScale)
+                        .clip(CircleShape)
+                        .border(2.dp, AccentLime.copy(alpha = 0.5f), CircleShape)
+                )
             }
 
-            AndroidView(
-                factory = { ctx ->
-                    TextureView(ctx).apply {
-                        isOpaque = true
-                        surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-                            override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-                                try {
-                                    val s = Surface(surface)
-                                    val player = MediaPlayer().apply {
-                                        val afd = ctx.resources.openRawResourceFd(R.raw.klix_loading_animation)
-                                        setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                                        afd.close()
-                                        setSurface(s)
-                                        isLooping = false
-                                        setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT)
-                                        setOnPreparedListener { mp ->
-                                            mp.start()
-                                        }
-                                        setOnCompletionListener {
-                                            safeFinish()
-                                        }
-                                        setOnErrorListener { _, _, _ ->
-                                            safeFinish()
-                                            true
-                                        }
-                                        prepareAsync()
-                                    }
-                                    mediaPlayer = player
-                                } catch (e: Exception) {
-                                    safeFinish()
-                                }
-                            }
+            Spacer(modifier = Modifier.height(24.dp))
 
-                            override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+            // App Name
+            Text(
+                text = "Klix code",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
 
-                            override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                                try {
-                                    mediaPlayer?.stop()
-                                    mediaPlayer?.release()
-                                    mediaPlayer = null
-                                } catch (_: Exception) {}
-                                return true
-                            }
+            Spacer(modifier = Modifier.height(4.dp))
 
-                            override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
-                        }
-                    }
-                },
-                modifier = videoModifier
+            // Subtitle
+            Text(
+                text = "IDE ANYWHERE",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AccentLime,
+                letterSpacing = 2.5.sp
+            )
+
+            Spacer(modifier = Modifier.height(36.dp))
+
+            // Animated Progress Bar
+            LinearProgressIndicator(
+                progress = { currentProgress },
+                modifier = Modifier
+                    .fillMaxWidth(0.68f)
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = AccentLime,
+                trackColor = ProgressTrackColor,
+                strokeCap = StrokeCap.Round
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Status message and percentage
+            Text(
+                text = statusText,
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Normal
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "${(currentProgress * 100).toInt()}%",
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                color = AccentLime.copy(alpha = 0.85f),
+                fontWeight = FontWeight.Medium
             )
         }
 
-        // Tap-to-skip chip in the top corner for instant IDE access
+        // Tap-to-skip button in the top corner for instant IDE access
         Box(
             modifier = Modifier
                 .fillMaxSize()

@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.KlixCode" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">#121212</item>
-        <item name="android:navigationBarColor">#121212</item>
+        <item name="android:statusBarColor">#0E1118</item>
+        <item name="android:navigationBarColor">#0E1118</item>
+        <item name="android:windowBackground">@color/splash_bg</item>
+    </style>
+
+    <!-- Splash Theme applied during Activity launch to eliminate blank window screen -->
+    <style name="Theme.KlixCode.Splash" parent="Theme.KlixCode">
+        <item name="android:windowBackground">@drawable/splash_window_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/klix_logo</item>
+        <item name="android:statusBarColor">#0E1118</item>
+        <item name="android:navigationBarColor">#0E1118</item>
     </style>
 </resources>

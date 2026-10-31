@@ -108,6 +108,8 @@ import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
 import com.klix.code.ui.viewmodel.EditorViewModel
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import io.sentry.Sentry
 import com.klix.code.data.telemetry.KlixTelemetry
@@ -155,8 +157,11 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_KlixCode)
         super.onCreate(savedInstanceState)
-        StreakManager.recordActivity(this)
+        lifecycleScope.launch(Dispatchers.IO) {
+            StreakManager.recordActivity(applicationContext)
+        }
         parseWidgetIntent(intent)
         KlixTelemetry.recordBreadcrumb(
             category = "ui.lifecycle",

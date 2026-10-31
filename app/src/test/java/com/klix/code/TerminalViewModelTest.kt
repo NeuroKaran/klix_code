@@ -67,7 +67,8 @@ class TerminalViewModelTest {
     fun testBuiltInClearCommand() {
         terminalViewModel.executeCommand("clear")
         val lines = terminalViewModel.terminalLines.value
-        assertTrue(lines.isEmpty())
+        assertEquals(1, lines.size)
+        assertTrue(lines.first().isPrompt)
     }
 
     @Test
@@ -121,15 +122,17 @@ class TerminalViewModelTest {
         // Spin up second terminal and clear it
         val term2Id = terminalViewModel.addNewTerminal()
         terminalViewModel.executeCommand("clear")
-        assertEquals(0, terminalViewModel.terminalLines.value.size)
+        assertEquals(1, terminalViewModel.terminalLines.value.size)
+        assertTrue(terminalViewModel.terminalLines.value.first().isPrompt)
 
         // Switch back to terminal 1 and verify buffer preserved
         terminalViewModel.selectTerminal(term1Id)
         assertEquals(term1LinesCount, terminalViewModel.terminalLines.value.size)
 
-        // Switch back to terminal 2 and verify it's still cleared
+        // Switch back to terminal 2 and verify it still has its persistent prompt line
         terminalViewModel.selectTerminal(term2Id)
-        assertEquals(0, terminalViewModel.terminalLines.value.size)
+        assertEquals(1, terminalViewModel.terminalLines.value.size)
+        assertTrue(terminalViewModel.terminalLines.value.first().isPrompt)
     }
 
     @Test

@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+import kotlinx.coroutines.Dispatchers
+
 class AgentViewModel @JvmOverloads constructor(
     application: Application,
     private val repository: WorkspaceRepository = WorkspaceRepositoryImpl(application),
@@ -39,7 +41,7 @@ class AgentViewModel @JvmOverloads constructor(
     val totalPromptTokens: StateFlow<Int> = harness.totalPromptTokens
     val totalCompletionTokens: StateFlow<Int> = harness.totalCompletionTokens
 
-    private val _settings = MutableStateFlow(keyManager.getSettings())
+    private val _settings = MutableStateFlow(ProviderSettings())
     val settings: StateFlow<ProviderSettings> = _settings.asStateFlow()
 
     private val _activeDiffToReview = MutableStateFlow<FileDiff?>(null)
@@ -53,10 +55,12 @@ class AgentViewModel @JvmOverloads constructor(
     }
 
     fun syncHarnessConfig() {
-        val currentSettings = keyManager.getSettings()
-        _settings.value = currentSettings
-        val key = keyManager.getApiKey(currentSettings.activeProvider) ?: ""
-        harness.configureProvider(currentSettings, key)
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentSettings = keyManager.getSettings()
+            _settings.value = currentSettings
+            val key = keyManager.getApiKey(currentSettings.activeProvider) ?: ""
+            harness.configureProvider(currentSettings, key)
+        }
     }
 
     fun updateWorkspaceContext(
