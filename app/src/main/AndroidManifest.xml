@@ -77,6 +77,28 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_companion_info" />
         </receiver>
-    </application>
+    
+    <!-- Required: set your sentry.io project identifier (DSN) -->
+    <meta-data android:name="io.sentry.dsn" android:value="https://d243693e469cf97c98515dcdfa19e0bd@o4512348002320384.ingest.us.sentry.io/4512348243165184" />
+    <!-- Add data like request headers, user ip address and device name, see https://docs.sentry.io/platforms/android/data-management/data-collected/ for more info -->
+    <meta-data android:name="io.sentry.send-default-pii" android:value="true" />
+
+    <!-- enable automatic breadcrumbs for user interactions (clicks, swipes, scrolls) -->
+    <meta-data android:name="io.sentry.traces.user-interaction.enable" android:value="true" />
+    <!-- enable screenshot for crashes (could contain sensitive/PII data) -->
+    <meta-data android:name="io.sentry.attach-screenshot" android:value="true" />
+    <!-- enable view hierarchy for crashes -->
+    <meta-data android:name="io.sentry.attach-view-hierarchy" android:value="true" />
+
+    <!-- enable the performance API by setting a sample-rate, adjust in production env -->
+    <meta-data android:name="io.sentry.traces.sample-rate" android:value="1.0" />
+    <!-- enable Sentry Logs -->
+    <meta-data android:name="io.sentry.logs.enabled" android:value="true" />
+    <!-- ANR (App Not Responding) detection -->
+    <meta-data android:name="io.sentry.anr.enable" android:value="true" />
+    <meta-data android:name="io.sentry.anr.timeout-interval-millis" android:value="5000" />
+    <!-- Frame tracking for UI lag and jitter (slow / frozen frames) -->
+    <meta-data android:name="io.sentry.traces.frames-tracking.enable" android:value="true" />
+</application>
 
 </manifest>

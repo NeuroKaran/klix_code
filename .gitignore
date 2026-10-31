@@ -13,3 +13,6 @@ build/
 !landing_page/public/*.apk
 *.jks
 *.keystore
+
+# Sentry Config File
+sentry.properties

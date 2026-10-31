@@ -12,6 +12,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+
+    id("io.sentry.android.gradle") version "6.25.0"
 }
 
 android {
@@ -100,4 +102,14 @@ dependencies {
     testImplementation(libs.mockito.core)
     testImplementation("org.json:json:20240303")
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+
+sentry {
+    org.set("swaranai")
+    projectName.set("android")
+
+    // this will upload your source code to Sentry to show it as part of the stack traces
+    // disable if you don't want to expose your sources
+    includeSourceContext.set(true)
 }

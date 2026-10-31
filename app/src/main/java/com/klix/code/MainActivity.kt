@@ -103,6 +103,7 @@ import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
 import com.klix.code.ui.viewmodel.EditorViewModel
 import kotlinx.coroutines.launch
+import io.sentry.Sentry
 
 class MainActivity : ComponentActivity() {
 
