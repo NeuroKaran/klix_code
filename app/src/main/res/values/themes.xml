@@ -10,7 +10,7 @@
     <style name="Theme.KlixCode.Splash" parent="Theme.KlixCode">
         <item name="android:windowBackground">@drawable/splash_window_background</item>
         <item name="android:windowSplashScreenBackground">@color/splash_bg</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/klix_logo</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo_round</item>
         <item name="android:statusBarColor">#0E1118</item>
         <item name="android:navigationBarColor">#0E1118</item>
     </style>
