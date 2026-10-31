@@ -58,6 +58,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,7 +69,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.klix.code.ui.components.KlixLoadingAnimationScreen
 import com.klix.code.data.stats.StreakManager
 import com.klix.code.ui.components.agent.AgentChatPanel
 import com.klix.code.ui.components.agent.AgentSettingsDialog
@@ -178,6 +184,10 @@ class MainActivity : ComponentActivity() {
                 val cursorPosition by viewModel.cursorPosition.collectAsState()
                 val isLoading by viewModel.isLoading.collectAsState()
 
+                var isAppLoading by rememberSaveable {
+                    mutableStateOf(pendingWidgetAction == null && pendingProjectToOpen == null)
+                }
+
                 var showRecentProjectsDialog by remember { mutableStateOf(false) }
                 var isAgentPanelOpen by remember { mutableStateOf(false) }
                 var isTerminalOpen by remember { mutableStateOf(false) }
@@ -254,7 +264,8 @@ class MainActivity : ComponentActivity() {
                 val agentSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 val terminalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-                ModalNavigationDrawer(
+                Box(modifier = Modifier.fillMaxSize()) {
+                    ModalNavigationDrawer(
                     drawerState = drawerState,
                     gesturesEnabled = drawerState.isOpen,
                     drawerContent = {
@@ -787,7 +798,20 @@ class MainActivity : ComponentActivity() {
                         onDismiss = { terminalViewModel.closeSetupDialog() }
                     )
                 }
+
+                // Klix Startup Loading Animation
+                AnimatedVisibility(
+                    visible = isAppLoading,
+                    enter = fadeIn(),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 400))
+                ) {
+                    KlixLoadingAnimationScreen(
+                        onAnimationFinished = { isAppLoading = false }
+                    )
+                }
             }
         }
     }
 }
+}
+

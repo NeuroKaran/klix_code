@@ -28,7 +28,8 @@ data class TerminalLine(
     val color: Color = TextPrimary,
     val isCommand: Boolean = false,
     val isError: Boolean = false,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val isPrompt: Boolean = false
 )
 
 data class TerminalTab(
@@ -218,9 +219,17 @@ class TerminalViewModel @JvmOverloads constructor(
         banner.add(
             TerminalLine(text = "--------------------------------------------------------", color = TextSecondary)
         )
+        val promptLine = TerminalLine(
+            text = "klix@mobile:${session.currentCwd}$",
+            color = AccentSecondary,
+            isCommand = true,
+            isPrompt = true
+        )
         synchronized(session) {
             session.lines.clear()
             session.lines.addAll(banner)
+            session.lines.add(promptLine)
+            session.lastLineHadNewline = true
         }
         if (session.id == _activeTerminalId.value) {
             _terminalLines.value = session.lines.toList()
@@ -232,6 +241,19 @@ class TerminalViewModel @JvmOverloads constructor(
         session.currentCwd = path
         if (session.id == _activeTerminalId.value) {
             _currentCwd.value = path
+        }
+        synchronized(session) {
+            if (session.lines.isNotEmpty() && session.lines.last().isPrompt) {
+                session.lines[session.lines.size - 1] = TerminalLine(
+                    text = "klix@mobile:${path}$",
+                    color = AccentSecondary,
+                    isCommand = true,
+                    isPrompt = true
+                )
+            }
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
         }
         updateTabsState()
     }
@@ -265,19 +287,24 @@ class TerminalViewModel @JvmOverloads constructor(
         val promptLine = TerminalLine(
             text = "klix@mobile:${session.currentCwd}$ $trimmed",
             color = AccentSecondary,
-            isCommand = true
+            isCommand = true,
+            isPrompt = false
         )
-        appendTerminalLine(session, promptLine)
+        synchronized(session) {
+            if (session.lines.isNotEmpty() && session.lines.last().isPrompt) {
+                session.lines[session.lines.size - 1] = promptLine
+            } else {
+                session.lines.add(promptLine)
+            }
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
+        }
 
         // Handle internal commands
         when (trimmed) {
             "clear" -> {
-                synchronized(session) {
-                    session.lines.clear()
-                }
-                if (session.id == _activeTerminalId.value) {
-                    _terminalLines.value = emptyList()
-                }
+                clearTerminal(session.id)
                 return
             }
             "help" -> {
@@ -286,6 +313,7 @@ class TerminalViewModel @JvmOverloads constructor(
             }
             "sandbox-setup" -> {
                 openSetupDialog()
+                appendIdlePrompt(session)
                 return
             }
             "sandbox-status" -> {
@@ -320,6 +348,7 @@ class TerminalViewModel @JvmOverloads constructor(
                 appendTerminalLine(session, errLine)
             } finally {
                 setSessionExecuting(session, false)
+                appendIdlePrompt(session)
             }
         }
     }
@@ -403,15 +432,42 @@ class TerminalViewModel @JvmOverloads constructor(
         session.activeJob?.cancel()
         setSessionExecuting(session, false)
         appendSessionOutput(session, "^C (Process interrupted)\n", isStdout = false)
+        appendIdlePrompt(session)
     }
 
     fun clearTerminal(terminalId: String? = null) {
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        val promptLine = TerminalLine(
+            text = "klix@mobile:${session.currentCwd}$",
+            color = AccentSecondary,
+            isCommand = true,
+            isPrompt = true
+        )
         synchronized(session) {
             session.lines.clear()
+            session.lines.add(promptLine)
+            session.lastLineHadNewline = true
         }
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = emptyList()
+            _terminalLines.value = session.lines.toList()
+        }
+    }
+
+    private fun appendIdlePrompt(session: TerminalSession) {
+        val idlePrompt = TerminalLine(
+            text = "klix@mobile:${session.currentCwd}$",
+            color = AccentSecondary,
+            isCommand = true,
+            isPrompt = true
+        )
+        synchronized(session) {
+            if (session.lines.isEmpty() || !session.lines.last().isPrompt) {
+                session.lines.add(idlePrompt)
+                session.lastLineHadNewline = true
+            }
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
         }
     }
 
@@ -455,9 +511,7 @@ class TerminalViewModel @JvmOverloads constructor(
         synchronized(session) {
             session.lines.addAll(helpLines)
         }
-        if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
-        }
+        appendIdlePrompt(session)
     }
 
     private fun printStatus(session: TerminalSession) {
@@ -475,9 +529,7 @@ class TerminalViewModel @JvmOverloads constructor(
         synchronized(session) {
             session.lines.addAll(lines)
         }
-        if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
-        }
+        appendIdlePrompt(session)
     }
 
     private fun parseAnsiLine(rawLine: String, isStdout: Boolean): TerminalLine {

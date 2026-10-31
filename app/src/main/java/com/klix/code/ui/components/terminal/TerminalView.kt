@@ -115,8 +115,8 @@ fun TerminalView(
         }
     }
 
-    // Auto scroll to bottom on new output lines
-    LaunchedEffect(lines.size) {
+    // Auto scroll to bottom on new output lines or prompt update
+    LaunchedEffect(lines.size, lines.lastOrNull()?.id) {
         if (lines.isNotEmpty()) {
             listState.animateScrollToItem(lines.size - 1)
         }
