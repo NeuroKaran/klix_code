@@ -133,6 +133,15 @@ fun FileTreeView(
                     letterSpacing = 1.sp,
                     color = TextPrimary
                 )
+                Text(
+                    text = "v0.3.0",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AccentPrimary,
+                    modifier = Modifier
+                        .background(AccentPrimary.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                )
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

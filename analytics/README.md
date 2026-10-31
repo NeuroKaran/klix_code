@@ -89,10 +89,10 @@ To ensure 100% accuracy, tracking is handled in two ways:
 
 - **Declarative HTML attributes**:
   ```html
-  <a href="/klix-code-v0.2.1.apk"
-     download="klix-code-v0.2.1.apk"
+  <a href="/klix-code-v0.3.0.apk"
+     download="klix-code-v0.3.0.apk"
      data-umami-event="apk_download"
-     data-umami-event-version="v0.2.1"
+     data-umami-event-version="v0.3.0"
      data-umami-event-source="hero">
      Download APK
   </a>
@@ -104,9 +104,9 @@ To ensure 100% accuracy, tracking is handled in two ways:
   import { trackDownload } from './tracker.js';
 
   trackDownload({
-    version: 'v0.2.1',
+    version: 'v0.3.0',
     source: 'hero', // 'hero' | 'main_card' | 'mobile_nav' | 'footer'
-    fileName: 'klix-code-v0.2.1.apk',
+    fileName: 'klix-code-v0.3.0.apk',
   });
   ```
 
@@ -134,4 +134,4 @@ In the Umami dashboard under **Events → `apk_download`**:
 When running `npm run dev` in `landing_page/`:
 1. By default, Umami ignores `localhost` to prevent polluting production data.
 2. To test locally, you can pass `data-domains="localhost,klixcode.vercel.app"` to the script tag, or inspect the console where `tracker.js` logs:
-   `[Umami Analytics] Event tracked: apk_download { version: "v0.2.1", source: "hero" }`
+   `[Umami Analytics] Event tracked: apk_download { version: "v0.3.0", source: "hero" }`

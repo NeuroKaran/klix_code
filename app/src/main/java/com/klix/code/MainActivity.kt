@@ -104,6 +104,7 @@ import com.klix.code.ui.theme.TextSecondary
 import com.klix.code.ui.viewmodel.EditorViewModel
 import kotlinx.coroutines.launch
 import io.sentry.Sentry
+import com.klix.code.data.telemetry.KlixTelemetry
 
 class MainActivity : ComponentActivity() {
 
@@ -122,6 +123,10 @@ class MainActivity : ComponentActivity() {
 
     private fun parseWidgetIntent(intent: Intent?) {
         if (intent == null) return
+        KlixTelemetry.recordBreadcrumb(
+            category = "widget",
+            message = "Widget intent action: ${intent.action}"
+        )
         when (intent.action) {
             KlixWidgets.ACTION_OPEN_PROJECT -> {
                 val uriStr = intent.getStringExtra(KlixWidgets.EXTRA_PROJECT_URI)
@@ -147,6 +152,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         StreakManager.recordActivity(this)
         parseWidgetIntent(intent)
+        KlixTelemetry.recordBreadcrumb(
+            category = "ui.lifecycle",
+            message = "MainActivity created",
+            data = mapOf("intent_action" to (intent?.action ?: "default"))
+        )
 
         setContent {
             KlixTheme {

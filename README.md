@@ -20,7 +20,7 @@
 
   <p align="center">
     <a href="https://klixcode.vercel.app/"><b>🌐 Official Website</b></a> •
-    <a href="https://klixcode.vercel.app/klix-code-v0.2.1.apk"><b>📦 Download APK (v0.2.1)</b></a> •
+    <a href="https://klixcode.vercel.app/klix-code-v0.3.0.apk"><b>📦 Download APK (v0.3.0)</b></a> •
     <a href="#-architecture"><b>🏗️ Architecture</b></a> •
     <a href="#-features"><b>✨ Features</b></a> •
     <a href="#-getting-started"><b>🚀 Quick Start</b></a>
@@ -196,7 +196,7 @@ Klix Code provides a unified tool interface across all supported LLM providers:
 
 ### 1. Download & Install
 Grab the latest release APK directly from our releases or website:
-- **Direct APK:** [Download Klix Code v0.2.1](https://klixcode.vercel.app/klix-code-v0.2.1.apk)
+- **Direct APK:** [Download Klix Code v0.3.0](https://klixcode.vercel.app/klix-code-v0.3.0.apk)
 - **Official Web:** [https://klixcode.vercel.app](https://klixcode.vercel.app/)
 
 > *Minimum Requirement:* Android 8.0 (API 26) or higher. Recommended: 4GB+ RAM.
@@ -207,10 +207,10 @@ Grab the latest release APK directly from our releases or website:
 3. Select your provider (**Anthropic**, **OpenAI**, **Gemini**, or **Custom/OpenRouter**).
 4. Paste your API key. Keys are instantly encrypted inside the on-device **Android Keystore**.
 
-### 3. Open a Project Folder
-1. Tap **Open Folder** on the home screen.
-2. Grant persistent directory permission to any folder on your device or SD card via Android's Storage Access Framework.
-3. Start prompting the agent to write features, diagnose bugs, or build apps!
+### 3. Open Sandbox Workspace
+1. Tap **Open Sandbox Workspace** on the home screen.
+2. Access the isolated native Linux `/workspace` environment directly on-device.
+3. Use the terminal, pre-configured toolchains (Node.js, Python, Git, C/C++), and prompt the AI agent to write features, diagnose bugs, or build apps!
 
 ---
 
