@@ -696,7 +696,7 @@ class WorkspaceToolExecutor(
         try {
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) KlixCode/0.3.1 Mobile")
+                .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) KlixCode/0.3.6 Mobile")
                 .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.5")
                 .build()
 
