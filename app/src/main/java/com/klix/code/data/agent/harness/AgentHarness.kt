@@ -43,6 +43,7 @@ class AgentHarness(
 
     companion object {
         const val MAX_TURNS_PER_TASK = 25
+        const val MAX_AUTO_CORRECTIONS = 3
     }
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -76,6 +77,8 @@ class AgentHarness(
     private val currentBatchResults = mutableListOf<ToolCallResult>()
     private val remainingPendingTools = mutableListOf<ToolCallRequest>()
     private var currentTurnCount = 0
+    private var autoCorrectionAttempts = 0
+    private val modifiedFilesInCurrentTask = mutableSetOf<String>()
 
     fun updateContext(
         workspaceUri: Uri?,
@@ -108,6 +111,8 @@ class AgentHarness(
         }
 
         currentTurnCount = 0
+        autoCorrectionAttempts = 0
+        modifiedFilesInCurrentTask.clear()
         currentBatchResults.clear()
         remainingPendingTools.clear()
 
@@ -134,6 +139,14 @@ class AgentHarness(
                 toolCall = pending.toolCall,
                 dryRunWrite = false
             )
+
+            val cleanName = pending.toolCall.name.removePrefix("default_api:").trim()
+            if (result.isSuccess && cleanName in listOf("write_file", "edit_file", "multi_replace_file_content", "multi_replace")) {
+                val path = pending.toolCall.parsedArguments["path"]
+                if (!path.isNullOrBlank()) {
+                    modifiedFilesInCurrentTask.add(path.trim().removePrefix("./").removePrefix("/"))
+                }
+            }
 
             currentBatchResults.add(result)
             processNextToolInBatch()
@@ -173,6 +186,8 @@ class AgentHarness(
         _totalPromptTokens.value = 0
         _totalCompletionTokens.value = 0
         currentTurnCount = 0
+        autoCorrectionAttempts = 0
+        modifiedFilesInCurrentTask.clear()
         _status.value = HarnessStatus.IDLE
         _statusMessage.value = "Chat reset."
     }
@@ -225,8 +240,31 @@ class AgentHarness(
                 _messages.value = _messages.value + assistantMsg
 
                 if (response.toolCalls.isEmpty()) {
+                    // Self-Correction & Verification Hook
+                    if (currentSettings.autoVerifyEdits && modifiedFilesInCurrentTask.isNotEmpty() && autoCorrectionAttempts < MAX_AUTO_CORRECTIONS) {
+                        _status.value = HarnessStatus.EXECUTING_TOOL
+                        _statusMessage.value = "Verifying workspace changes..."
+
+                        val verificationError = toolExecutor.verifyWorkspace(currentWorkspaceUri, modifiedFilesInCurrentTask)
+                        if (verificationError != null) {
+                            autoCorrectionAttempts++
+                            _status.value = HarnessStatus.THINKING
+                            _statusMessage.value = "Self-correcting verification errors ($autoCorrectionAttempts/$MAX_AUTO_CORRECTIONS)..."
+
+                            val feedbackMsg = ChatMessage(
+                                role = MessageRole.USER,
+                                content = "[Automated Verification Feedback]\nVerification detected the following error(s) after code modifications:\n```\n$verificationError\n```\nPlease inspect the error(s), inspect the relevant code using 'read_file', and apply a fix using 'edit_file' or 'multi_replace_file_content'."
+                            )
+                            _messages.value = _messages.value + feedbackMsg
+
+                            // Automatically continue loop for self-correction
+                            runOrchestrationLoop()
+                            return@launch
+                        }
+                    }
+
                     _status.value = HarnessStatus.COMPLETED
-                    _statusMessage.value = "Done"
+                    _statusMessage.value = if (modifiedFilesInCurrentTask.isNotEmpty() && currentSettings.autoVerifyEdits) "Done (Verified)" else "Done"
                     return@launch
                 }
 
@@ -293,6 +331,12 @@ class AgentHarness(
                     toolCall = toolCall,
                     dryRunWrite = false
                 )
+                if (result.isSuccess && cleanName in listOf("write_file", "edit_file", "multi_replace_file_content", "multi_replace")) {
+                    val path = toolCall.parsedArguments["path"]
+                    if (!path.isNullOrBlank()) {
+                        modifiedFilesInCurrentTask.add(path.trim().removePrefix("./").removePrefix("/"))
+                    }
+                }
                 currentBatchResults.add(result)
             }
         }
@@ -332,8 +376,10 @@ class AgentHarness(
         sb.append("3. **Line-Sliced Reading**: Use `read_file` with optional `start_line` and `end_line` to inspect specific sections of large files. Output is 1-indexed.\n")
         sb.append("4. **Pinpoint Surgical Edits**: Use `edit_file` for single contiguous changes, specifying `start_line` and `end_line` whenever possible along with exact `old_string`.\n")
         sb.append("5. **Multi-Chunk Edits**: Use `multi_replace_file_content` when making multiple non-contiguous edits across a file in a single operation.\n")
-        sb.append("6. **Workspace Paths**: All tool paths must be relative to the workspace root without leading slashes (e.g., 'app/src/Main.kt').\n")
-        sb.append("7. **Concise Explanations**: Provide mobile-friendly, crisp summaries of changes made.\n")
+        sb.append("6. **Web Documentation & Search**: Use `search_web` to look up accurate APIs, documentation, and error solutions. Use `fetch_web_page` to retrieve official docs and reference pages.\n")
+        sb.append("7. **Automated Verification**: When you make code changes, the environment automatically verifies syntax and compilation. If errors are found, you will receive feedback to self-correct.\n")
+        sb.append("8. **Workspace Paths**: All tool paths must be relative to the workspace root without leading slashes (e.g., 'app/src/Main.kt').\n")
+        sb.append("9. **Concise Explanations**: Provide mobile-friendly, crisp summaries of changes made.\n")
 
         return sb.toString()
     }

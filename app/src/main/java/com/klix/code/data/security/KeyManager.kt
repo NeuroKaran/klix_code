@@ -69,6 +69,7 @@ class KeyManagerImpl(private val context: Context) : KeyManager {
             ?: ModelProvider.CUSTOM_OPENAI_COMPATIBLE.defaultEndpoint
         val autoRead = prefs.getBoolean("auto_approve_read", true)
         val autoWrite = prefs.getBoolean("auto_approve_write", false)
+        val autoVerify = prefs.getBoolean("auto_verify_edits", true)
         val temp = prefs.getFloat("temperature", 0.2f)
 
         return ProviderSettings(
@@ -77,6 +78,7 @@ class KeyManagerImpl(private val context: Context) : KeyManager {
             customEndpointUrl = endpoint,
             autoApproveReadTools = autoRead,
             autoApproveWriteTools = autoWrite,
+            autoVerifyEdits = autoVerify,
             temperature = temp
         )
     }
@@ -88,6 +90,7 @@ class KeyManagerImpl(private val context: Context) : KeyManager {
             .putString("custom_endpoint", settings.customEndpointUrl)
             .putBoolean("auto_approve_read", settings.autoApproveReadTools)
             .putBoolean("auto_approve_write", settings.autoApproveWriteTools)
+            .putBoolean("auto_verify_edits", settings.autoVerifyEdits)
             .putFloat("temperature", settings.temperature)
             .apply()
     }

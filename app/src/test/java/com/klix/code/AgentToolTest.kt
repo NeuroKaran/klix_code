@@ -11,7 +11,7 @@ class AgentToolTest {
     @Test
     fun testToolDefinitionsAndSchemas() {
         val tools = AgentTools.ALL_TOOLS
-        assertEquals(7, tools.size)
+        assertEquals(9, tools.size)
 
         val readFileTool = AgentTools.READ_FILE
         val schema = readFileTool.toJsonSchema()
@@ -33,6 +33,14 @@ class AgentToolTest {
         val chunksProp = multiSchema.getJSONObject("properties").getJSONObject("replacement_chunks")
         assertEquals("array", chunksProp.getString("type"))
         assertTrue(chunksProp.has("items"))
+
+        val fetchTool = AgentTools.FETCH_WEB_PAGE
+        val fetchSchema = fetchTool.toJsonSchema()
+        assertTrue(fetchSchema.getJSONObject("properties").has("url"))
+
+        val searchTool = AgentTools.SEARCH_WEB
+        val searchSchema = searchTool.toJsonSchema()
+        assertTrue(searchSchema.getJSONObject("properties").has("query"))
     }
 
     @Test
@@ -46,6 +54,8 @@ class AgentToolTest {
         assertFalse(AgentTools.isDestructive("read_file"))
         assertFalse(AgentTools.isDestructive("list_dir"))
         assertFalse(AgentTools.isDestructive("search_files"))
+        assertFalse(AgentTools.isDestructive("fetch_web_page"))
+        assertFalse(AgentTools.isDestructive("search_web"))
     }
 
     @Test

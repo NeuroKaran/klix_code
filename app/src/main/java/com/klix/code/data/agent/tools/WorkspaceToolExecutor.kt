@@ -6,10 +6,22 @@ import com.klix.code.data.agent.execution.LocalExecutionProvider
 import com.klix.code.data.model.DiffCalculator
 import com.klix.code.data.model.FileDiff
 import com.klix.code.data.repository.WorkspaceRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 class WorkspaceToolExecutor(
     private val repository: WorkspaceRepository,
-    private val executionProvider: ExecutionProvider = LocalExecutionProvider()
+    private val executionProvider: ExecutionProvider = LocalExecutionProvider(),
+    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .build()
 ) {
 
     /**
@@ -31,6 +43,8 @@ class WorkspaceToolExecutor(
                 AgentTools.LIST_DIR.name -> executeListDir(rootTreeUri, toolCall)
                 AgentTools.SEARCH_FILES.name -> executeSearchFiles(rootTreeUri, toolCall)
                 AgentTools.RUN_COMMAND.name -> executeRunCommand(toolCall)
+                AgentTools.FETCH_WEB_PAGE.name, "read_url_content", "fetch_url" -> executeFetchWebPage(toolCall)
+                AgentTools.SEARCH_WEB.name -> executeSearchWeb(toolCall)
                 else -> ToolCallResult(
                     toolCallId = toolCall.id,
                     name = toolCall.name,
@@ -637,5 +651,280 @@ class WorkspaceToolExecutor(
             }
         }
         return -1
+    }
+
+    suspend fun executeFetchWebPage(toolCall: ToolCallRequest): ToolCallResult = withContext(Dispatchers.IO) {
+        val rawUrl = toolCall.parsedArguments["url"]
+            ?: return@withContext ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'url'.")
+        val url = rawUrl.trim()
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            return@withContext ToolCallResult(toolCall.id, toolCall.name, false, "", "Invalid URL '$url'. Must start with http:// or https://")
+        }
+
+        val maxLen = toolCall.parsedArguments["max_length"]?.toIntOrNull() ?: 10000
+
+        try {
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) KlixCode/0.3.1 Mobile")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.5")
+                .build()
+
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    return@withContext ToolCallResult(
+                        toolCallId = toolCall.id,
+                        name = toolCall.name,
+                        isSuccess = false,
+                        output = "",
+                        error = "HTTP error ${response.code}: ${response.message}"
+                    )
+                }
+
+                val body = response.body?.string() ?: ""
+                val contentType = response.header("Content-Type") ?: ""
+
+                val textContent = if (contentType.contains("text/html") || body.contains("<html", ignoreCase = true)) {
+                    convertHtmlToMarkdown(body)
+                } else {
+                    body.trim()
+                }
+
+                val truncated = if (textContent.length > maxLen) {
+                    textContent.take(maxLen) + "\n\n[Content truncated at $maxLen characters. Specify a narrower URL or section if needed.]"
+                } else {
+                    textContent
+                }
+
+                ToolCallResult(
+                    toolCallId = toolCall.id,
+                    name = toolCall.name,
+                    isSuccess = true,
+                    output = truncated.ifEmpty { "(Web page returned no readable text)" }
+                )
+            }
+        } catch (e: Exception) {
+            ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = false,
+                output = "",
+                error = "Failed to fetch web page: ${e.message}"
+            )
+        }
+    }
+
+    suspend fun executeSearchWeb(toolCall: ToolCallRequest): ToolCallResult = withContext(Dispatchers.IO) {
+        val query = toolCall.parsedArguments["query"]
+            ?: return@withContext ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'query'.")
+        val maxResults = minOf(10, maxOf(1, toolCall.parsedArguments["max_results"]?.toIntOrNull() ?: 5))
+
+        try {
+            val encodedQuery = URLEncoder.encode(query, "UTF-8")
+            val searchUrl = "https://html.duckduckgo.com/html/?q=$encodedQuery"
+
+            val request = Request.Builder()
+                .url(searchUrl)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "en-US,en;q=0.5")
+                .build()
+
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    return@withContext ToolCallResult(
+                        toolCallId = toolCall.id,
+                        name = toolCall.name,
+                        isSuccess = false,
+                        output = "",
+                        error = "Search request returned HTTP ${response.code}: ${response.message}"
+                    )
+                }
+
+                val html = response.body?.string() ?: ""
+                val searchResults = parseDuckDuckGoHtml(html, maxResults)
+
+                if (searchResults.isEmpty()) {
+                    return@withContext ToolCallResult(
+                        toolCallId = toolCall.id,
+                        name = toolCall.name,
+                        isSuccess = true,
+                        output = "No search results found for: '$query'"
+                    )
+                }
+
+                val sb = StringBuilder("Found ${searchResults.size} search result(s) for '$query':\n\n")
+                for ((idx, res) in searchResults.withIndex()) {
+                    sb.append("${idx + 1}. **${res.title}**\n")
+                    sb.append("   URL: ${res.url}\n")
+                    if (res.snippet.isNotBlank()) {
+                        sb.append("   ${res.snippet}\n")
+                    }
+                    sb.append("\n")
+                }
+
+                ToolCallResult(
+                    toolCallId = toolCall.id,
+                    name = toolCall.name,
+                    isSuccess = true,
+                    output = sb.toString().trimEnd()
+                )
+            }
+        } catch (e: Exception) {
+            ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = false,
+                output = "",
+                error = "Search failed: ${e.message}"
+            )
+        }
+    }
+
+    /**
+     * Verifies the workspace or specific modified files for syntax, build, or test errors.
+     * Returns error output if verification fails, or null if verification succeeds or is skipped.
+     */
+    suspend fun verifyWorkspace(rootTreeUri: Uri?, modifiedPaths: Set<String>): String? {
+        if (modifiedPaths.isEmpty()) return null
+
+        val errorList = mutableListOf<String>()
+
+        // 1. In-process syntax check for JSON files
+        for (path in modifiedPaths) {
+            if (path.endsWith(".json", ignoreCase = true)) {
+                val doc = if (rootTreeUri != null) repository.findDocumentByPath(rootTreeUri, path) else null
+                if (doc != null) {
+                    val content = repository.readFile(doc.uri)
+                    try {
+                        org.json.JSONObject(content)
+                    } catch (e1: Exception) {
+                        try {
+                            org.json.JSONArray(content)
+                        } catch (e2: Exception) {
+                            errorList.add("JSON Syntax Error in '$path': ${e1.message}")
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Sandbox compiler/linter checks via executionProvider
+        for (path in modifiedPaths) {
+            val cmd = when {
+                path.endsWith(".py", ignoreCase = true) -> "python3 -m py_compile \"$path\" 2>&1 || python -m py_compile \"$path\" 2>&1"
+                path.endsWith(".js", ignoreCase = true) || path.endsWith(".mjs", ignoreCase = true) -> "node -c \"$path\" 2>&1"
+                path.endsWith(".sh", ignoreCase = true) || path.endsWith(".bash", ignoreCase = true) -> "sh -n \"$path\" 2>&1"
+                else -> null
+            }
+
+            if (cmd != null) {
+                val result = executionProvider.runCommand(cmd)
+                if (!result.isSuccess) {
+                    val output = result.combinedOutput
+                    val isCommandMissing = output.contains("not found", ignoreCase = true) ||
+                                           output.contains("No such file or directory", ignoreCase = true)
+                    if (!isCommandMissing && output.isNotBlank()) {
+                        errorList.add("Verification error in '$path':\n$output")
+                    }
+                }
+            }
+        }
+
+        return if (errorList.isNotEmpty()) errorList.joinToString("\n\n") else null
+    }
+
+    fun convertHtmlToMarkdown(rawHtml: String): String {
+        var s = rawHtml
+        s = s.replace(Regex("(?is)<script[^>]*>.*?</script>"), "")
+        s = s.replace(Regex("(?is)<style[^>]*>.*?</style>"), "")
+        s = s.replace(Regex("(?is)<svg[^>]*>.*?</svg>"), "")
+        s = s.replace(Regex("(?is)<noscript[^>]*>.*?</noscript>"), "")
+
+        s = s.replace(Regex("(?is)<pre[^>]*><code[^>]*>(.*?)</code></pre>")) { match ->
+            "\n```\n${match.groupValues[1].trim()}\n```\n"
+        }
+        s = s.replace(Regex("(?is)<code[^>]*>(.*?)</code>")) { match ->
+            "`${match.groupValues[1]}`"
+        }
+
+        s = s.replace(Regex("(?is)<h1[^>]*>(.*?)</h1>"), "\n\n# $1\n")
+        s = s.replace(Regex("(?is)<h2[^>]*>(.*?)</h2>"), "\n\n## $1\n")
+        s = s.replace(Regex("(?is)<h3[^>]*>(.*?)</h3>"), "\n\n### $1\n")
+        s = s.replace(Regex("(?is)<h[4-6][^>]*>(.*?)</h[4-6]>"), "\n\n#### $1\n")
+
+        s = s.replace(Regex("(?is)<p[^>]*>(.*?)</p>"), "\n\n$1\n")
+        s = s.replace(Regex("(?is)<br\\s*/?>"), "\n")
+        s = s.replace(Regex("(?is)<li[^>]*>(.*?)</li>"), "\n* $1")
+
+        s = s.replace(Regex("<[^>]+>"), " ")
+
+        s = s.replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&#x27;", "'")
+
+        return s.replace(Regex("\n{3,}"), "\n\n").trim()
+    }
+
+    data class SearchItem(
+        val title: String,
+        val url: String,
+        val snippet: String
+    )
+
+    fun parseDuckDuckGoHtml(html: String, maxResults: Int): List<SearchItem> {
+        val results = mutableListOf<SearchItem>()
+        val linkRegex = Regex("""(?is)<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>(.*?)</a>""")
+        val snippetRegex = Regex("""(?is)<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</a>""")
+
+        val linkMatches = linkRegex.findAll(html).toList()
+        val snippetMatches = snippetRegex.findAll(html).toList()
+
+        val count = minOf(linkMatches.size, maxResults)
+        for (i in 0 until count) {
+            val rawHref = linkMatches[i].groupValues[1]
+            val rawTitle = linkMatches[i].groupValues[2]
+            val rawSnippet = if (i < snippetMatches.size) snippetMatches[i].groupValues[1] else ""
+
+            val title = cleanHtmlText(rawTitle)
+            val snippet = cleanHtmlText(rawSnippet)
+            val cleanUrl = extractTargetUrl(rawHref)
+
+            if (cleanUrl.isNotBlank() && title.isNotBlank()) {
+                results.add(SearchItem(title, cleanUrl, snippet))
+            }
+        }
+        return results
+    }
+
+    private fun extractTargetUrl(rawHref: String): String {
+        return try {
+            if (rawHref.contains("uddg=")) {
+                val encoded = rawHref.substringAfter("uddg=").substringBefore("&")
+                URLDecoder.decode(encoded, "UTF-8")
+            } else if (rawHref.startsWith("//")) {
+                "https:$rawHref"
+            } else {
+                rawHref
+            }
+        } catch (_: Exception) {
+            rawHref
+        }
+    }
+
+    private fun cleanHtmlText(text: String): String {
+        return text.replace(Regex("<[^>]+>"), "")
+            .replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&#x27;", "'")
+            .trim()
     }
 }

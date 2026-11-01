@@ -80,6 +80,7 @@ fun AgentSettingsDialog(
     var customEndpoint by remember { mutableStateOf(currentSettings.customEndpointUrl) }
     var autoApproveRead by remember { mutableStateOf(currentSettings.autoApproveReadTools) }
     var autoApproveWrite by remember { mutableStateOf(currentSettings.autoApproveWriteTools) }
+    var autoVerify by remember { mutableStateOf(currentSettings.autoVerifyEdits) }
 
     var apiKeyInput by remember(selectedProvider) {
         mutableStateOf(onGetApiKey(selectedProvider) ?: "")
@@ -427,6 +428,35 @@ fun AgentSettingsDialog(
                     )
                 }
 
+                // Auto-Verify & Self-Correct Switch
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                        Text(
+                            text = "Auto-Verify & Self-Correct",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "Run sandbox syntax/linter checks on edits and auto-heal errors",
+                            fontSize = 11.sp,
+                            color = TextSecondary
+                        )
+                    }
+                    Switch(
+                        checked = autoVerify,
+                        onCheckedChange = { autoVerify = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = AccentPrimary,
+                            checkedTrackColor = AccentPrimary.copy(alpha = 0.4f)
+                        )
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(6.dp))
 
                 // Apply & Done Button
@@ -437,7 +467,8 @@ fun AgentSettingsDialog(
                             activeModel = activeModel.ifBlank { selectedProvider.defaultModel },
                             customEndpointUrl = customEndpoint,
                             autoApproveReadTools = autoApproveRead,
-                            autoApproveWriteTools = autoApproveWrite
+                            autoApproveWriteTools = autoApproveWrite,
+                            autoVerifyEdits = autoVerify
                         )
                         onSaveSettings(updated)
                         onDismiss()

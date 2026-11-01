@@ -306,4 +306,90 @@ class WorkspaceToolExecutorTest {
         assertTrue(updatedText.contains("val x = 100"))
         assertTrue(updatedText.contains("return (x + y) * 2"))
     }
+
+    @Test
+    fun testHtmlToMarkdownConversion() {
+        val fakeRepo = FakeWorkspaceRepository()
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+
+        val sampleHtml = """
+            <html>
+            <head><script>alert('evil');</script><style>.cls{color:red}</style></head>
+            <body>
+                <h1>Android Documentation</h1>
+                <p>Welcome to <code>KlixCode</code> mobile IDE.</p>
+                <pre><code>val greeting = "Hello"</code></pre>
+                <ul>
+                    <li>Feature A &amp; B</li>
+                    <li>Feature &lt;C&gt;</li>
+                </ul>
+            </body>
+            </html>
+        """.trimIndent()
+
+        val markdown = executor.convertHtmlToMarkdown(sampleHtml)
+        assertTrue(markdown.contains("# Android Documentation"))
+        assertTrue(markdown.contains("`KlixCode`"))
+        assertTrue(markdown.contains("```\nval greeting = \"Hello\"\n```"))
+        assertTrue(markdown.contains("* Feature A & B"))
+        assertTrue(markdown.contains("* Feature <C>"))
+        org.junit.Assert.assertFalse(markdown.contains("<script>"))
+        org.junit.Assert.assertFalse(markdown.contains("alert('evil')"))
+        org.junit.Assert.assertFalse(markdown.contains(".cls{color:red}"))
+    }
+
+    @Test
+    fun testDuckDuckGoHtmlParsing() {
+        val fakeRepo = FakeWorkspaceRepository()
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+
+        val sampleDdgHtml = """
+            <div class="result results_links">
+                <a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fkotlinlang.org%2Fdocs%2Fhome.html&amp;rut=123">Kotlin Docs &amp; Guides</a>
+                <a class="result__snippet" href="#">Comprehensive documentation for Kotlin programming language.</a>
+            </div>
+            <div class="result results_links">
+                <a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fdeveloper.android.com%2Fguide&amp;rut=456">Android Guides</a>
+                <a class="result__snippet" href="#">Official Android developer guide and architecture tutorials.</a>
+            </div>
+        """.trimIndent()
+
+        val results = executor.parseDuckDuckGoHtml(sampleDdgHtml, maxResults = 2)
+        assertEquals(2, results.size)
+        assertEquals("Kotlin Docs & Guides", results[0].title)
+        assertEquals("https://kotlinlang.org/docs/home.html", results[0].url)
+        assertTrue(results[0].snippet.contains("Comprehensive documentation"))
+
+        assertEquals("Android Guides", results[1].title)
+        assertEquals("https://developer.android.com/guide", results[1].url)
+    }
+
+    @Test
+    fun testVerifyWorkspaceCatchesJsonSyntaxError() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        fakeRepo.addFile("broken.json", "{\"name\": \"Klix\", unclosed")
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+        val dummyUri = mock(Uri::class.java)
+
+        val errors = executor.verifyWorkspace(dummyUri, setOf("broken.json"))
+        org.junit.Assert.assertNotNull(errors)
+        assertTrue(errors!!.contains("JSON Syntax Error in 'broken.json'"))
+    }
+
+    @Test
+    fun testVerifyWorkspaceCatchesCompilerErrorViaSandbox() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        fakeRepo.addFile("script.py", "def broken(:")
+        val fakeExec = FakeExecutionProvider(
+            outputToReturn = "SyntaxError: invalid syntax (script.py:1)",
+            exitCodeToReturn = 1
+        )
+        val executor = WorkspaceToolExecutor(fakeRepo, fakeExec)
+        val dummyUri = mock(Uri::class.java)
+
+        val errors = executor.verifyWorkspace(dummyUri, setOf("script.py"))
+        org.junit.Assert.assertNotNull(errors)
+        assertTrue(errors!!.contains("Verification error in 'script.py'"))
+        assertTrue(errors.contains("SyntaxError: invalid syntax"))
+    }
 }

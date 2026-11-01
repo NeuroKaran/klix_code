@@ -220,6 +220,44 @@ object AgentTools {
         )
     )
 
+    val FETCH_WEB_PAGE = ToolDefinition(
+        name = "fetch_web_page",
+        description = "Fetch content from a web URL and convert it into clean, readable text/markdown for documentation and reference.",
+        parameters = listOf(
+            ToolParameter(
+                name = "url",
+                type = "string",
+                description = "The HTTP or HTTPS URL to fetch content from.",
+                required = true
+            ),
+            ToolParameter(
+                name = "max_length",
+                type = "integer",
+                description = "Optional maximum character length to return (default: 10000).",
+                required = false
+            )
+        )
+    )
+
+    val SEARCH_WEB = ToolDefinition(
+        name = "search_web",
+        description = "Search the web for up-to-date documentation, APIs, error solutions, and code references.",
+        parameters = listOf(
+            ToolParameter(
+                name = "query",
+                type = "string",
+                description = "The web search query.",
+                required = true
+            ),
+            ToolParameter(
+                name = "max_results",
+                type = "integer",
+                description = "Optional maximum number of search results to return (default: 5, max: 10).",
+                required = false
+            )
+        )
+    )
+
     val ALL_TOOLS = listOf(
         READ_FILE,
         WRITE_FILE,
@@ -227,7 +265,9 @@ object AgentTools {
         MULTI_REPLACE_FILE_CONTENT,
         LIST_DIR,
         SEARCH_FILES,
-        RUN_COMMAND
+        RUN_COMMAND,
+        FETCH_WEB_PAGE,
+        SEARCH_WEB
     )
 
     fun isDestructive(toolName: String): Boolean {

@@ -57,5 +57,6 @@ data class ProviderSettings(
     val customEndpointUrl: String = ModelProvider.CUSTOM_OPENAI_COMPATIBLE.defaultEndpoint,
     val autoApproveReadTools: Boolean = true,
     val autoApproveWriteTools: Boolean = false,
+    val autoVerifyEdits: Boolean = true,
     val temperature: Float = 0.2f
 )
