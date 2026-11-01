@@ -23,9 +23,11 @@ class WorkspaceToolExecutor(
         val cleanName = toolCall.name.removePrefix("default_api:").trim()
         return try {
             when (cleanName) {
-                AgentTools.READ_FILE.name -> executeReadFile(rootTreeUri, toolCall)
+                AgentTools.READ_FILE.name, "view_file" -> executeReadFile(rootTreeUri, toolCall)
                 AgentTools.WRITE_FILE.name -> executeWriteFile(rootTreeUri, toolCall, dryRunWrite)
-                AgentTools.EDIT_FILE.name -> executeEditFile(rootTreeUri, toolCall, dryRunWrite)
+                AgentTools.EDIT_FILE.name, "replace_file_content" -> executeEditFile(rootTreeUri, toolCall, dryRunWrite)
+                AgentTools.MULTI_REPLACE_FILE_CONTENT.name, "multi_replace_file_content", "multi_replace" ->
+                    executeMultiReplaceFileContent(rootTreeUri, toolCall, dryRunWrite)
                 AgentTools.LIST_DIR.name -> executeListDir(rootTreeUri, toolCall)
                 AgentTools.SEARCH_FILES.name -> executeSearchFiles(rootTreeUri, toolCall)
                 AgentTools.RUN_COMMAND.name -> executeRunCommand(toolCall)
@@ -64,11 +66,66 @@ class WorkspaceToolExecutor(
         }
 
         val content = repository.readFile(doc.uri)
+        if (content.isEmpty()) {
+            return ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = true,
+                output = "(File is empty)"
+            )
+        }
+
+        val lines = content.split("\n")
+        val totalLines = lines.size
+
+        val startLineArg = toolCall.parsedArguments["start_line"]?.toIntOrNull()
+            ?: toolCall.parsedArguments["startLine"]?.toIntOrNull()
+        val endLineArg = toolCall.parsedArguments["end_line"]?.toIntOrNull()
+            ?: toolCall.parsedArguments["endLine"]?.toIntOrNull()
+
+        val start = if (startLineArg != null) maxOf(1, startLineArg) else 1
+        if (start > totalLines) {
+            return ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = false,
+                output = "",
+                error = "start_line ($start) exceeds total lines in file ($totalLines)."
+            )
+        }
+
+        val end = if (endLineArg != null) {
+            minOf(totalLines, maxOf(start, endLineArg))
+        } else {
+            if (startLineArg == null && totalLines > 800) 800 else totalLines
+        }
+
+        if (start > end) {
+            return ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = false,
+                output = "",
+                error = "start_line ($start) is greater than end_line ($end)."
+            )
+        }
+
+        val sb = StringBuilder()
+        for (i in start..end) {
+            val lineContent = lines[i - 1].removeSuffix("\r")
+            sb.append(i).append(": ").append(lineContent)
+            if (i < end) sb.append("\n")
+        }
+
+        if (startLineArg == null && endLineArg == null && totalLines > 800) {
+            sb.append("\n\n[File has $totalLines lines. Showing lines 1 to 800. Use start_line and end_line to inspect specific ranges.]")
+        }
+
         return ToolCallResult(
             toolCallId = toolCall.id,
             name = toolCall.name,
             isSuccess = true,
-            output = content
+            output = sb.toString()
         )
     }
 
@@ -135,26 +192,56 @@ class WorkspaceToolExecutor(
         val rawPath = toolCall.parsedArguments["path"]
             ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'path'.")
         val path = rawPath.trim().removePrefix("./").removePrefix("/")
+
         val oldString = toolCall.parsedArguments["old_string"]
+            ?: toolCall.parsedArguments["target_content"]
+            ?: toolCall.parsedArguments["targetContent"]
             ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'old_string'.")
-        val newString = toolCall.parsedArguments["new_string"] ?: ""
+
+        val newString = if (toolCall.parsedArguments.containsKey("new_string")) {
+            toolCall.parsedArguments["new_string"] ?: ""
+        } else if (toolCall.parsedArguments.containsKey("replacement_content")) {
+            toolCall.parsedArguments["replacement_content"] ?: ""
+        } else if (toolCall.parsedArguments.containsKey("replacementContent")) {
+            toolCall.parsedArguments["replacementContent"] ?: ""
+        } else {
+            ""
+        }
+
+        val startLine = toolCall.parsedArguments["start_line"]?.toIntOrNull()
+            ?: toolCall.parsedArguments["startLine"]?.toIntOrNull()
+        val endLine = toolCall.parsedArguments["end_line"]?.toIntOrNull()
+            ?: toolCall.parsedArguments["endLine"]?.toIntOrNull()
 
         val existingDoc = repository.findDocumentByPath(rootTreeUri, path)
             ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "File not found: '$path'.")
 
         val originalText = repository.readFile(existingDoc.uri)
-        if (!originalText.contains(oldString)) {
+
+        val match = findMatchRange(originalText, oldString, startLine, endLine)
+        if (match == null) {
             return ToolCallResult(
                 toolCallId = toolCall.id,
                 name = toolCall.name,
                 isSuccess = false,
                 output = "",
-                error = "Target old_string was not found in '$path'. Please ensure exact match including whitespace."
+                error = "Target old_string was not found in '$path'${if (startLine != null) " within lines $startLine..$endLine" else ""}. Please verify exact match or use 'read_file'."
             )
         }
 
-        // Replace target content
-        val modifiedText = originalText.replaceFirst(oldString, newString)
+        if (match.ambiguousCount > 1) {
+            val occurrences = findOccurrences(originalText, oldString)
+            val lineNumbers = occurrences.map { getLineNumberForOffset(originalText, it) }
+            return ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = false,
+                output = "",
+                error = "Target old_string was found ${match.ambiguousCount} times in '$path' at lines $lineNumbers. Please specify 'start_line' and 'end_line' to disambiguate which occurrence to replace."
+            )
+        }
+
+        val modifiedText = originalText.substring(0, match.startIndex) + newString + originalText.substring(match.endIndex)
 
         val diff = DiffCalculator.computeDiff(
             filePath = path,
@@ -179,6 +266,149 @@ class WorkspaceToolExecutor(
             name = toolCall.name,
             isSuccess = true,
             output = "Successfully edited '$path'.",
+            proposedDiff = diff
+        )
+    }
+
+    private suspend fun executeMultiReplaceFileContent(
+        rootTreeUri: Uri?,
+        toolCall: ToolCallRequest,
+        dryRunWrite: Boolean
+    ): ToolCallResult {
+        if (rootTreeUri == null) {
+            return ToolCallResult(toolCall.id, toolCall.name, false, "", "No workspace open.")
+        }
+        val rawPath = toolCall.parsedArguments["path"]
+            ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'path'.")
+        val path = rawPath.trim().removePrefix("./").removePrefix("/")
+
+        val rawChunks = toolCall.parsedArguments["replacement_chunks"]
+            ?: toolCall.parsedArguments["chunks"]
+            ?: toolCall.parsedArguments["replacements"]
+            ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'replacement_chunks'.")
+
+        val existingDoc = repository.findDocumentByPath(rootTreeUri, path)
+            ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "File not found: '$path'.")
+
+        val originalText = repository.readFile(existingDoc.uri)
+
+        val chunksArray = try {
+            org.json.JSONArray(rawChunks)
+        } catch (e: Exception) {
+            return ToolCallResult(toolCall.id, toolCall.name, false, "", "Failed to parse replacement_chunks as JSON array: ${e.message}")
+        }
+
+        if (chunksArray.length() == 0) {
+            return ToolCallResult(toolCall.id, toolCall.name, false, "", "replacement_chunks cannot be empty.")
+        }
+
+        data class ChunkPlan(
+            val chunkIndex: Int,
+            val startIndex: Int,
+            val endIndex: Int,
+            val replacement: String
+        )
+
+        val plannedChunks = mutableListOf<ChunkPlan>()
+
+        for (i in 0 until chunksArray.length()) {
+            val chunkObj = chunksArray.optJSONObject(i)
+                ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Chunk at index $i is not a valid JSON object.")
+
+            val oldString = chunkObj.optString("old_string")
+                .ifEmpty { chunkObj.optString("target_content") }
+                .ifEmpty { chunkObj.optString("targetContent") }
+
+            if (oldString.isEmpty()) {
+                return ToolCallResult(toolCall.id, toolCall.name, false, "", "Chunk $i missing required 'old_string'.")
+            }
+
+            val newString = if (chunkObj.has("new_string")) {
+                chunkObj.optString("new_string")
+            } else if (chunkObj.has("replacement_content")) {
+                chunkObj.optString("replacement_content")
+            } else if (chunkObj.has("replacementContent")) {
+                chunkObj.optString("replacementContent")
+            } else {
+                ""
+            }
+
+            val startLine = if (chunkObj.has("start_line")) chunkObj.optInt("start_line")
+            else if (chunkObj.has("startLine")) chunkObj.optInt("startLine")
+            else null
+            val endLine = if (chunkObj.has("end_line")) chunkObj.optInt("end_line")
+            else if (chunkObj.has("endLine")) chunkObj.optInt("endLine")
+            else null
+
+            val match = findMatchRange(originalText, oldString, startLine, endLine)
+            if (match == null) {
+                return ToolCallResult(
+                    toolCallId = toolCall.id,
+                    name = toolCall.name,
+                    isSuccess = false,
+                    output = "",
+                    error = "Chunk $i: target old_string was not found in '$path'${if (startLine != null) " (lines $startLine..$endLine)" else ""}. Please verify exact content."
+                )
+            }
+            if (match.ambiguousCount > 1) {
+                return ToolCallResult(
+                    toolCallId = toolCall.id,
+                    name = toolCall.name,
+                    isSuccess = false,
+                    output = "",
+                    error = "Chunk $i: target old_string occurs ${match.ambiguousCount} times in '$path'. Please specify 'start_line' and 'end_line' for this chunk."
+                )
+            }
+
+            plannedChunks.add(ChunkPlan(i, match.startIndex, match.endIndex, newString))
+        }
+
+        // Check for overlapping chunk ranges
+        val sortedByStart = plannedChunks.sortedBy { it.startIndex }
+        for (k in 0 until sortedByStart.size - 1) {
+            val cur = sortedByStart[k]
+            val next = sortedByStart[k + 1]
+            if (cur.endIndex > next.startIndex) {
+                return ToolCallResult(
+                    toolCallId = toolCall.id,
+                    name = toolCall.name,
+                    isSuccess = false,
+                    output = "",
+                    error = "Replacement chunks ${cur.chunkIndex} and ${next.chunkIndex} overlap. Ensure all chunk targets are non-overlapping."
+                )
+            }
+        }
+
+        // Apply replacements from bottom to top (highest startIndex first) to maintain character offsets
+        val sortedDescending = plannedChunks.sortedByDescending { it.startIndex }
+        var modifiedText = originalText
+        for (chunk in sortedDescending) {
+            modifiedText = modifiedText.substring(0, chunk.startIndex) + chunk.replacement + modifiedText.substring(chunk.endIndex)
+        }
+
+        val diff = DiffCalculator.computeDiff(
+            filePath = path,
+            originalText = originalText,
+            modifiedText = modifiedText,
+            fileUri = existingDoc.uri
+        )
+
+        if (dryRunWrite) {
+            return ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = true,
+                output = "Diff generated for multi-replace on '$path' (${plannedChunks.size} chunks, +${diff.additionsCount} / -${diff.deletionsCount}). Awaiting approval.",
+                proposedDiff = diff
+            )
+        }
+
+        repository.writeFile(existingDoc.uri, modifiedText)
+        return ToolCallResult(
+            toolCallId = toolCall.id,
+            name = toolCall.name,
+            isSuccess = true,
+            output = "Successfully applied ${plannedChunks.size} replacement chunks to '$path'.",
             proposedDiff = diff
         )
     }
@@ -260,5 +490,152 @@ class WorkspaceToolExecutor(
             output = result.combinedOutput.ifEmpty { "(Process completed with exit code ${result.exitCode})" },
             error = if (!result.isSuccess && result.stderr.isNotBlank()) result.stderr else null
         )
+    }
+
+    private data class MatchResult(
+        val startIndex: Int,
+        val endIndex: Int,
+        val ambiguousCount: Int = 1
+    )
+
+    private fun findMatchRange(
+        text: String,
+        oldString: String,
+        startLine: Int?,
+        endLine: Int?
+    ): MatchResult? {
+        val lines = text.split("\n")
+        if (startLine != null || endLine != null) {
+            val s = maxOf(1, startLine ?: 1)
+            val e = minOf(lines.size, endLine ?: lines.size)
+            if (s > lines.size || s > e) return null
+
+            val lineOffsets = computeLineOffsets(lines)
+            val windowStart = lineOffsets[s - 1]
+            val windowEnd = lineOffsets[e - 1] + lines[e - 1].length
+            val windowText = text.substring(windowStart, windowEnd)
+
+            var idx = windowText.indexOf(oldString)
+            var matchedLen = oldString.length
+            if (idx == -1) {
+                val stripped = stripLineNumberPrefixes(oldString)
+                if (stripped != oldString) {
+                    idx = windowText.indexOf(stripped)
+                    matchedLen = stripped.length
+                }
+            }
+            if (idx == -1) {
+                val normOld = oldString.replace("\r", "")
+                idx = indexOfIgnoringCr(windowText, normOld)
+                if (idx != -1) {
+                    matchedLen = normOld.length
+                }
+            }
+
+            if (idx != -1) {
+                return MatchResult(windowStart + idx, windowStart + idx + matchedLen, 1)
+            }
+            return null
+        }
+
+        val matches = findOccurrences(text, oldString)
+        if (matches.isNotEmpty()) {
+            if (matches.size > 1) {
+                return MatchResult(-1, -1, ambiguousCount = matches.size)
+            }
+            return MatchResult(matches[0], matches[0] + oldString.length, 1)
+        }
+
+        val stripped = stripLineNumberPrefixes(oldString)
+        if (stripped != oldString) {
+            val strippedMatches = findOccurrences(text, stripped)
+            if (strippedMatches.isNotEmpty()) {
+                if (strippedMatches.size > 1) {
+                    return MatchResult(-1, -1, ambiguousCount = strippedMatches.size)
+                }
+                return MatchResult(strippedMatches[0], strippedMatches[0] + stripped.length, 1)
+            }
+        }
+
+        val normOld = oldString.replace("\r", "")
+        val normMatches = findOccurrences(text.replace("\r", ""), normOld)
+        if (normMatches.size == 1) {
+            val idx = indexOfIgnoringCr(text, normOld)
+            if (idx != -1) {
+                return MatchResult(idx, idx + normOld.length, 1)
+            }
+        } else if (normMatches.size > 1) {
+            return MatchResult(-1, -1, ambiguousCount = normMatches.size)
+        }
+
+        return null
+    }
+
+    private fun computeLineOffsets(lines: List<String>): List<Int> {
+        val offsets = ArrayList<Int>(lines.size)
+        var cur = 0
+        for (line in lines) {
+            offsets.add(cur)
+            cur += line.length + 1
+        }
+        return offsets
+    }
+
+    private fun findOccurrences(text: String, pattern: String): List<Int> {
+        if (pattern.isEmpty()) return emptyList()
+        val list = mutableListOf<Int>()
+        var idx = 0
+        while (true) {
+            val found = text.indexOf(pattern, idx)
+            if (found == -1) break
+            list.add(found)
+            idx = found + maxOf(1, pattern.length)
+        }
+        return list
+    }
+
+    private fun getLineNumberForOffset(text: String, offset: Int): Int {
+        var line = 1
+        val limit = minOf(offset, text.length)
+        for (i in 0 until limit) {
+            if (text[i] == '\n') line++
+        }
+        return line
+    }
+
+    private fun stripLineNumberPrefixes(text: String): String {
+        val prefixRegex = Regex("""^\s*\d+[:|]\s?""")
+        return text.lines().joinToString("\n") { line ->
+            prefixRegex.replace(line, "")
+        }
+    }
+
+    private fun indexOfIgnoringCr(haystack: String, needleNoCr: String): Int {
+        if (needleNoCr.isEmpty()) return 0
+        var hIdx = 0
+        var nIdx = 0
+        var matchStart = -1
+
+        while (hIdx < haystack.length) {
+            if (haystack[hIdx] == '\r') {
+                hIdx++
+                continue
+            }
+            if (haystack[hIdx] == needleNoCr[nIdx]) {
+                if (nIdx == 0) matchStart = hIdx
+                nIdx++
+                hIdx++
+                if (nIdx == needleNoCr.length) return matchStart
+            } else {
+                if (matchStart != -1) {
+                    hIdx = matchStart + 1
+                    matchStart = -1
+                    nIdx = 0
+                } else {
+                    hIdx++
+                }
+            }
+        }
+        return -1
     }
 }

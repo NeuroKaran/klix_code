@@ -8,7 +8,8 @@ data class ToolParameter(
     val name: String,
     val type: String,
     val description: String,
-    val required: Boolean = true
+    val required: Boolean = true,
+    val items: JSONObject? = null
 )
 
 data class ToolDefinition(
@@ -30,6 +31,9 @@ data class ToolDefinition(
             val paramObj = JSONObject()
             paramObj.put("type", param.type)
             paramObj.put("description", param.description)
+            if (param.items != null) {
+                paramObj.put("items", param.items)
+            }
             properties.put(param.name, paramObj)
 
             if (param.required) {
@@ -63,13 +67,25 @@ data class ToolCallResult(
 object AgentTools {
     val READ_FILE = ToolDefinition(
         name = "read_file",
-        description = "Read the content of a file in the workspace by its relative path.",
+        description = "Read the content of a file in the workspace by its relative path. Supports line-range slicing with 1-indexed line numbers.",
         parameters = listOf(
             ToolParameter(
                 name = "path",
                 type = "string",
                 description = "The relative path to the file from the workspace root (e.g., 'src/Main.kt' or 'package.json').",
                 required = true
+            ),
+            ToolParameter(
+                name = "start_line",
+                type = "integer",
+                description = "Optional 1-indexed line number to start reading from.",
+                required = false
+            ),
+            ToolParameter(
+                name = "end_line",
+                type = "integer",
+                description = "Optional 1-indexed line number to stop reading at (inclusive).",
+                required = false
             )
         )
     )
@@ -95,7 +111,7 @@ object AgentTools {
 
     val EDIT_FILE = ToolDefinition(
         name = "edit_file",
-        description = "Perform a targeted replacement in an existing file by replacing old_string with new_string.",
+        description = "Perform a targeted replacement in an existing file by replacing old_string with new_string. Optional start_line and end_line restrict replacement to a specific line range.",
         parameters = listOf(
             ToolParameter(
                 name = "path",
@@ -114,6 +130,47 @@ object AgentTools {
                 type = "string",
                 description = "The replacement content.",
                 required = true
+            ),
+            ToolParameter(
+                name = "start_line",
+                type = "integer",
+                description = "Optional starting line number (1-indexed) containing the target content.",
+                required = false
+            ),
+            ToolParameter(
+                name = "end_line",
+                type = "integer",
+                description = "Optional ending line number (1-indexed) containing the target content.",
+                required = false
+            )
+        )
+    )
+
+    val MULTI_REPLACE_FILE_CONTENT = ToolDefinition(
+        name = "multi_replace_file_content",
+        description = "Perform multiple non-contiguous or contiguous replacements in an existing file in a single atomic operation.",
+        parameters = listOf(
+            ToolParameter(
+                name = "path",
+                type = "string",
+                description = "The relative path to the file to edit.",
+                required = true
+            ),
+            ToolParameter(
+                name = "replacement_chunks",
+                type = "array",
+                description = "List of replacement chunks, each specifying old_string and new_string, with optional start_line and end_line.",
+                required = true,
+                items = JSONObject().apply {
+                    put("type", "object")
+                    val props = JSONObject()
+                    props.put("old_string", JSONObject().put("type", "string").put("description", "The exact content to replace in this chunk."))
+                    props.put("new_string", JSONObject().put("type", "string").put("description", "The replacement content."))
+                    props.put("start_line", JSONObject().put("type", "integer").put("description", "Optional 1-indexed starting line number."))
+                    props.put("end_line", JSONObject().put("type", "integer").put("description", "Optional 1-indexed ending line number."))
+                    put("properties", props)
+                    put("required", JSONArray().put("old_string").put("new_string"))
+                }
             )
         )
     )
@@ -167,13 +224,14 @@ object AgentTools {
         READ_FILE,
         WRITE_FILE,
         EDIT_FILE,
+        MULTI_REPLACE_FILE_CONTENT,
         LIST_DIR,
         SEARCH_FILES,
         RUN_COMMAND
     )
 
     fun isDestructive(toolName: String): Boolean {
-        return toolName in listOf("write_file", "edit_file", "run_command")
+        return toolName in listOf("write_file", "edit_file", "multi_replace_file_content", "multi_replace", "run_command")
     }
 
     fun parseArguments(rawJson: String): Map<String, String> {

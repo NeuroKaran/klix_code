@@ -262,13 +262,14 @@ class AgentHarness(
 
             if (requiresApproval) {
                 // If write or edit, generate preview diff first
-                val previewResult = if (cleanName in listOf("write_file", "edit_file")) {
+                val previewResult = if (cleanName in listOf("write_file", "edit_file", "multi_replace_file_content", "multi_replace")) {
                     toolExecutor.execute(currentWorkspaceUri, toolCall, dryRunWrite = true)
                 } else null
 
                 val promptMsg = when (cleanName) {
                     "write_file" -> "Proposing to write file '${toolCall.parsedArguments["path"]}'"
                     "edit_file" -> "Proposing targeted edit on '${toolCall.parsedArguments["path"]}'"
+                    "multi_replace_file_content", "multi_replace" -> "Proposing multi-chunk edits on '${toolCall.parsedArguments["path"]}'"
                     "run_command" -> "Proposing shell command: `${toolCall.parsedArguments["command"]}`"
                     else -> "Approval needed to execute '${cleanName}'"
                 }
@@ -328,9 +329,11 @@ class AgentHarness(
         sb.append("\n### Operating Guidelines:\n")
         sb.append("1. **Plan-Then-Execute**: For complex or non-trivial requests, outline the inspection steps and planned edits before invoking modification tools.\n")
         sb.append("2. **Inspect First**: Always inspect existing files using `read_file`, `list_dir`, or `search_files` before modifying them. Never guess file paths or content.\n")
-        sb.append("3. **Targeted Modifications**: Use `edit_file` for surgical changes by specifying exact `old_string` matches (including exact indentation and line breaks). Use `write_file` for creating new files or complete rewrites.\n")
-        sb.append("4. **Workspace Paths**: All tool paths must be relative to the workspace root without leading slashes (e.g., 'app/src/Main.kt').\n")
-        sb.append("5. **Concise Explanations**: Provide mobile-friendly, crisp summaries of changes made.\n")
+        sb.append("3. **Line-Sliced Reading**: Use `read_file` with optional `start_line` and `end_line` to inspect specific sections of large files. Output is 1-indexed.\n")
+        sb.append("4. **Pinpoint Surgical Edits**: Use `edit_file` for single contiguous changes, specifying `start_line` and `end_line` whenever possible along with exact `old_string`.\n")
+        sb.append("5. **Multi-Chunk Edits**: Use `multi_replace_file_content` when making multiple non-contiguous edits across a file in a single operation.\n")
+        sb.append("6. **Workspace Paths**: All tool paths must be relative to the workspace root without leading slashes (e.g., 'app/src/Main.kt').\n")
+        sb.append("7. **Concise Explanations**: Provide mobile-friendly, crisp summaries of changes made.\n")
 
         return sb.toString()
     }

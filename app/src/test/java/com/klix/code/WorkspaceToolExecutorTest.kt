@@ -38,6 +38,19 @@ class WorkspaceToolExecutorTest {
 
     private class FakeWorkspaceRepository : WorkspaceRepository {
         val files = mutableMapOf<String, String>()
+        val docs = mutableMapOf<String, DocumentFile>()
+
+        fun addFile(relativePath: String, content: String): DocumentFile {
+            val fileUri = mock(Uri::class.java)
+            org.mockito.Mockito.`when`(fileUri.toString()).thenReturn("fake://$relativePath")
+            val doc = mock(DocumentFile::class.java)
+            org.mockito.Mockito.`when`(doc.uri).thenReturn(fileUri)
+            org.mockito.Mockito.`when`(doc.isDirectory).thenReturn(false)
+            org.mockito.Mockito.`when`(doc.name).thenReturn(relativePath.substringAfterLast("/"))
+            files[fileUri.toString()] = content
+            docs[relativePath] = doc
+            return doc
+        }
 
         override suspend fun persistProjectPermission(uri: Uri, name: String) {}
         override suspend fun getRecentProjects(): List<ProjectItem> = emptyList()
@@ -52,8 +65,10 @@ class WorkspaceToolExecutorTest {
         override suspend fun delete(targetUri: Uri): Boolean = true
         override suspend fun rename(targetUri: Uri, newName: String): Boolean = true
 
-        override suspend fun findDocumentByPath(treeUri: Uri, relativePath: String): DocumentFile? = null
-        override suspend fun findOrCreateDocumentByPath(treeUri: Uri, relativePath: String): DocumentFile? = null
+        override suspend fun findDocumentByPath(treeUri: Uri, relativePath: String): DocumentFile? = docs[relativePath]
+        override suspend fun findOrCreateDocumentByPath(treeUri: Uri, relativePath: String): DocumentFile? {
+            return docs[relativePath] ?: addFile(relativePath, "")
+        }
 
         override suspend fun searchFiles(
             treeUri: Uri,
@@ -166,5 +181,129 @@ class WorkspaceToolExecutorTest {
         assertNotNull(result.proposedDiff)
         assertEquals("hello.py", result.proposedDiff?.filePath)
         assertEquals(1, result.proposedDiff?.additionsCount)
+    }
+
+    @Test
+    fun testReadFileWithLineSlicingAndNumbering() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        fakeRepo.addFile(
+            "src/Example.kt",
+            "line one\nline two\nline three\nline four\nline five"
+        )
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+        val dummyUri = mock(Uri::class.java)
+
+        val toolCall = ToolCallRequest(
+            id = "call_read_slice",
+            name = "read_file",
+            rawArguments = """{"path": "src/Example.kt", "start_line": 2, "end_line": 4}""",
+            parsedArguments = mapOf(
+                "path" to "src/Example.kt",
+                "start_line" to "2",
+                "end_line" to "4"
+            )
+        )
+
+        val result = executor.execute(dummyUri, toolCall)
+        assertTrue(result.isSuccess)
+        val expected = "2: line two\n3: line three\n4: line four"
+        assertEquals(expected, result.output)
+    }
+
+    @Test
+    fun testEditFileWithLineBoundsAndDisambiguation() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val original = """
+            fun a() {
+                return false
+            }
+            fun b() {
+                return false
+            }
+        """.trimIndent()
+        fakeRepo.addFile("src/Logic.kt", original)
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+        val dummyUri = mock(Uri::class.java)
+
+        // 1. Without line bounds: duplicate target returns ambiguous error
+        val ambiguousCall = ToolCallRequest(
+            id = "call_ambiguous",
+            name = "edit_file",
+            rawArguments = """{"path": "src/Logic.kt", "old_string": "    return false", "new_string": "    return true"}""",
+            parsedArguments = mapOf(
+                "path" to "src/Logic.kt",
+                "old_string" to "    return false",
+                "new_string" to "    return true"
+            )
+        )
+        val ambiguousResult = executor.execute(dummyUri, ambiguousCall)
+        org.junit.Assert.assertFalse(ambiguousResult.isSuccess)
+        assertTrue(ambiguousResult.error!!.contains("found 2 times"))
+
+        // 2. With line bounds targeting lines 4..7: replaces only second occurrence
+        val boundedCall = ToolCallRequest(
+            id = "call_bounded",
+            name = "edit_file",
+            rawArguments = """{"path": "src/Logic.kt", "old_string": "    return false", "new_string": "    return true", "start_line": 4, "end_line": 6}""",
+            parsedArguments = mapOf(
+                "path" to "src/Logic.kt",
+                "old_string" to "    return false",
+                "new_string" to "    return true",
+                "start_line" to "4",
+                "end_line" to "6"
+            )
+        )
+        val boundedResult = executor.execute(dummyUri, boundedCall, dryRunWrite = false)
+        assertTrue(boundedResult.isSuccess)
+
+        val doc = fakeRepo.findDocumentByPath(dummyUri, "src/Logic.kt")!!
+        val updatedText = fakeRepo.readFile(doc.uri)
+        assertTrue(updatedText.contains("fun a() {\n    return false"))
+        assertTrue(updatedText.contains("fun b() {\n    return true"))
+    }
+
+    @Test
+    fun testMultiReplaceFileContent() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val original = """
+            import alpha
+            
+            fun calculate() {
+                val x = 10
+                val y = 20
+                return x + y
+            }
+        """.trimIndent()
+        fakeRepo.addFile("src/Calc.kt", original)
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+        val dummyUri = mock(Uri::class.java)
+
+        val chunksJson = """
+            [
+              {"old_string": "import alpha", "new_string": "import alpha\nimport beta"},
+              {"old_string": "val x = 10", "new_string": "val x = 100"},
+              {"old_string": "return x + y", "new_string": "return (x + y) * 2"}
+            ]
+        """.trimIndent()
+
+        val toolCall = ToolCallRequest(
+            id = "call_multi",
+            name = "multi_replace_file_content",
+            rawArguments = """{"path": "src/Calc.kt", "replacement_chunks": $chunksJson}""",
+            parsedArguments = mapOf(
+                "path" to "src/Calc.kt",
+                "replacement_chunks" to chunksJson
+            )
+        )
+
+        val result = executor.execute(dummyUri, toolCall, dryRunWrite = false)
+        assertTrue(result.isSuccess)
+        assertTrue(result.output.contains("Successfully applied 3 replacement chunks"))
+
+        val doc = fakeRepo.findDocumentByPath(dummyUri, "src/Calc.kt")!!
+        val updatedText = fakeRepo.readFile(doc.uri)
+        assertTrue(updatedText.contains("import alpha\nimport beta"))
+        assertTrue(updatedText.contains("val x = 100"))
+        assertTrue(updatedText.contains("return (x + y) * 2"))
     }
 }
