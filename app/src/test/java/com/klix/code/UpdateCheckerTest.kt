@@ -137,4 +137,12 @@ class UpdateCheckerTest {
 
         assertTrue(result.isFailure)
     }
+
+    @Test
+    fun testUpdateViewModel_AndroidViewModelFactoryConstructorExists() {
+        val appClass = android.app.Application::class.java
+        val constructor = com.klix.code.ui.viewmodel.UpdateViewModel::class.java.getConstructor(appClass)
+        org.junit.Assert.assertNotNull("UpdateViewModel must have (Application) constructor for AndroidViewModelFactory", constructor)
+    }
 }
+

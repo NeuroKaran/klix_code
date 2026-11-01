@@ -858,9 +858,6 @@ class MainActivity : ComponentActivity() {
                 if (isUpdateDialogVisible) {
                     UpdateDialog(
                         state = updateState,
-                        onStartDownload = { info -> updateViewModel.startDownload(applicationContext, info) },
-                        onInstallApk = { apkFile -> updateViewModel.installApk(applicationContext, apkFile) },
-                        onRequestPermission = { updateViewModel.requestInstallPermission(this@MainActivity) },
                         onOpenInBrowser = { url -> updateViewModel.openInBrowser(this@MainActivity, url) },
                         onDismiss = { postpone -> updateViewModel.dismissDialog(applicationContext, postpone) }
                     )

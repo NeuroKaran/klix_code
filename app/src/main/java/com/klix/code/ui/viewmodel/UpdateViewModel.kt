@@ -13,25 +13,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
 
 sealed class UpdateUIState {
     object Idle : UpdateUIState()
     object Checking : UpdateUIState()
     data class Available(val updateInfo: UpdateInfo) : UpdateUIState()
     data class UpToDate(val versionName: String) : UpdateUIState()
-    data class Downloading(
-        val updateInfo: UpdateInfo,
-        val progressPercent: Int,
-        val bytesRead: Long,
-        val totalBytes: Long
-    ) : UpdateUIState()
-    data class ReadyToInstall(val updateInfo: UpdateInfo, val apkFile: File) : UpdateUIState()
-    data class PermissionRequired(val updateInfo: UpdateInfo, val apkFile: File) : UpdateUIState()
     data class Error(val message: String, val updateInfo: UpdateInfo? = null) : UpdateUIState()
 }
 
-class UpdateViewModel(
+class UpdateViewModel @JvmOverloads constructor(
     application: Application,
     private val checker: UpdateChecker = UpdateChecker(),
     private val downloader: UpdateDownloader = UpdateDownloader()
@@ -109,100 +100,18 @@ class UpdateViewModel(
         }
     }
 
-    fun startDownload(context: Context, updateInfo: UpdateInfo) {
-        _uiState.value = UpdateUIState.Downloading(
-            updateInfo = updateInfo,
-            progressPercent = 0,
-            bytesRead = 0,
-            totalBytes = 0
-        )
-        _isDialogVisible.value = true
-
-        viewModelScope.launch {
-            KlixTelemetry.recordBreadcrumb(
-                category = "update",
-                message = "Starting APK download: v${updateInfo.latestVersionName}"
-            )
-
-            val downloadResult = downloader.downloadApk(
-                context = context,
-                updateInfo = updateInfo,
-                onProgress = { percent, bytesRead, totalBytes ->
-                    _uiState.value = UpdateUIState.Downloading(
-                        updateInfo = updateInfo,
-                        progressPercent = percent,
-                        bytesRead = bytesRead,
-                        totalBytes = totalBytes
-                    )
-                }
-            )
-
-            downloadResult.fold(
-                onSuccess = { apkFile ->
-                    if (downloader.canRequestPackageInstalls(context)) {
-                        _uiState.value = UpdateUIState.ReadyToInstall(updateInfo, apkFile)
-                        // Automatically trigger install prompt
-                        installApk(context, apkFile)
-                    } else {
-                        _uiState.value = UpdateUIState.PermissionRequired(updateInfo, apkFile)
-                    }
-                },
-                onFailure = { error ->
-                    KlixTelemetry.recordError(error, "APK download failed", mapOf("action" to "download_apk"))
-                    _uiState.value = UpdateUIState.Error(
-                        message = error.message ?: "Download failed",
-                        updateInfo = updateInfo
-                    )
-                }
-            )
-        }
-    }
-
-    fun installApk(context: Context, apkFile: File) {
-        if (!downloader.canRequestPackageInstalls(context)) {
-            val currentInfo = (_uiState.value as? UpdateUIState.ReadyToInstall)?.updateInfo
-                ?: (_uiState.value as? UpdateUIState.PermissionRequired)?.updateInfo
-            if (currentInfo != null) {
-                _uiState.value = UpdateUIState.PermissionRequired(currentInfo, apkFile)
-            }
-            downloader.openInstallPermissionSettings(context)
-            return
-        }
-
-        val result = downloader.installApk(context, apkFile)
-        result.onFailure { error ->
-            KlixTelemetry.recordError(error, "APK install launch failed", mapOf("action" to "install_apk"))
-            _snackMessage.value = "Failed to launch installer: ${error.message}"
-        }
-    }
-
-    fun requestInstallPermission(context: Context) {
-        downloader.openInstallPermissionSettings(context)
-    }
-
     fun openInBrowser(context: Context, url: String) {
-        downloader.openInBrowser(context, url)
+        downloader.openInBrowser(context, url).onFailure { error ->
+            KlixTelemetry.recordError(error, "Failed to open update URL", mapOf("url" to url))
+            _snackMessage.value = "Failed to open browser: ${error.message}"
+        }
         _isDialogVisible.value = false
     }
 
     fun dismissDialog(context: Context, postpone: Boolean = false) {
         val currentState = _uiState.value
-        if (postpone) {
-            when (currentState) {
-                is UpdateUIState.Available -> {
-                    UpdateChecker.postponeVersion(context, currentState.updateInfo.latestVersionCode)
-                }
-                is UpdateUIState.Downloading -> {
-                    UpdateChecker.postponeVersion(context, currentState.updateInfo.latestVersionCode)
-                }
-                is UpdateUIState.ReadyToInstall -> {
-                    UpdateChecker.postponeVersion(context, currentState.updateInfo.latestVersionCode)
-                }
-                is UpdateUIState.PermissionRequired -> {
-                    UpdateChecker.postponeVersion(context, currentState.updateInfo.latestVersionCode)
-                }
-                else -> {}
-            }
+        if (postpone && currentState is UpdateUIState.Available) {
+            UpdateChecker.postponeVersion(context, currentState.updateInfo.latestVersionCode)
         }
         _isDialogVisible.value = false
     }
