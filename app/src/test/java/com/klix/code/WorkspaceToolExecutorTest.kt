@@ -392,4 +392,29 @@ class WorkspaceToolExecutorTest {
         assertTrue(errors!!.contains("Verification error in 'script.py'"))
         assertTrue(errors.contains("SyntaxError: invalid syntax"))
     }
+
+    @Test
+    fun testInvokeSubagentToolExecution() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+
+        executor.subagentRunner = { task, maxTurns ->
+            "Subagent Report for '$task': Found 3 matching auth routes in src/routes/auth.kt (lines 12-45)."
+        }
+
+        val toolCall = ToolCallRequest(
+            id = "call_subagent_1",
+            name = "invoke_subagent",
+            rawArguments = """{"task": "Find auth validation endpoints", "max_turns": 5}""",
+            parsedArguments = mapOf(
+                "task" to "Find auth validation endpoints",
+                "max_turns" to "5"
+            )
+        )
+
+        val result = executor.execute(null, toolCall)
+        assertTrue(result.isSuccess)
+        assertTrue(result.output.contains("Subagent Report for 'Find auth validation endpoints'"))
+        assertTrue(result.output.contains("Found 3 matching auth routes"))
+    }
 }

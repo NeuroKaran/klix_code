@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class HarnessStatus {
     IDLE,
@@ -79,6 +80,12 @@ class AgentHarness(
     private var currentTurnCount = 0
     private var autoCorrectionAttempts = 0
     private val modifiedFilesInCurrentTask = mutableSetOf<String>()
+
+    init {
+        toolExecutor.subagentRunner = { task, maxTurns ->
+            runSubagentSession(task, maxTurns)
+        }
+    }
 
     fun updateContext(
         workspaceUri: Uri?,
@@ -380,7 +387,86 @@ class AgentHarness(
         sb.append("7. **Automated Verification**: When you make code changes, the environment automatically verifies syntax and compilation. If errors are found, you will receive feedback to self-correct.\n")
         sb.append("8. **Workspace Paths**: All tool paths must be relative to the workspace root without leading slashes (e.g., 'app/src/Main.kt').\n")
         sb.append("9. **Concise Explanations**: Provide mobile-friendly, crisp summaries of changes made.\n")
+        sb.append("10. **Subagent Delegation**: Use 'invoke_subagent' when an investigation, extensive search, or complex exploration would clutter your context window. The subagent will run independently and return a synthesized summary.\n")
 
         return sb.toString()
+    }
+
+    private suspend fun runSubagentSession(task: String, maxTurns: Int): String = withContext(Dispatchers.IO) {
+        val adapter = ProviderAdapterFactory.getAdapter(currentSettings.activeProvider)
+        val subagentPrompt = buildString {
+            append("You are a specialized autonomous subagent inside KlixCode IDE.\n")
+            append("Your objective is to execute an isolated investigation or research subtask and return a concise, structured final report.\n\n")
+            append("### Subagent Task:\n")
+            append("$task\n\n")
+            append("### Guidelines:\n")
+            append("1. Use 'read_file', 'list_dir', and 'search_files' to inspect codebase files and symbols.\n")
+            append("2. Use 'search_web' and 'fetch_web_page' if web documentation is required.\n")
+            append("3. Once your investigation is complete, synthesize your findings into a clear, comprehensive markdown report with exact file paths, line ranges, and actionable findings.\n")
+        }
+
+        val subMessages = mutableListOf<ChatMessage>()
+        subMessages.add(ChatMessage(role = MessageRole.USER, content = task))
+
+        var turns = 0
+        var finalSummary = ""
+
+        while (turns < maxTurns) {
+            turns++
+            val turnRequest = ProviderTurnRequest(
+                systemPrompt = subagentPrompt,
+                messages = subMessages,
+                tools = AgentTools.SUBAGENT_TOOLS,
+                model = currentSettings.activeModel,
+                apiKey = currentApiKey,
+                customEndpoint = if (currentSettings.activeProvider == ModelProvider.CUSTOM_OPENAI_COMPATIBLE) {
+                    currentSettings.customEndpointUrl
+                } else null,
+                temperature = currentSettings.temperature
+            )
+
+            val response = adapter.sendTurn(turnRequest)
+            _totalPromptTokens.value += response.promptTokens
+            _totalCompletionTokens.value += response.completionTokens
+
+            val assistantMsg = ChatMessage(
+                role = MessageRole.ASSISTANT,
+                content = response.textResponse ?: "",
+                thought = response.thoughtResponse,
+                toolCalls = response.toolCalls
+            )
+            subMessages.add(assistantMsg)
+
+            if (response.toolCalls.isEmpty()) {
+                finalSummary = response.textResponse ?: "(Subagent completed without textual response)"
+                break
+            }
+
+            // Execute subagent tool calls
+            val toolResults = mutableListOf<ToolCallResult>()
+            for (tc in response.toolCalls) {
+                val res = toolExecutor.execute(
+                    rootTreeUri = currentWorkspaceUri,
+                    toolCall = tc,
+                    dryRunWrite = false
+                )
+                toolResults.add(res)
+            }
+
+            subMessages.add(
+                ChatMessage(
+                    role = MessageRole.USER,
+                    content = "",
+                    toolResults = toolResults
+                )
+            )
+        }
+
+        if (finalSummary.isBlank()) {
+            finalSummary = subMessages.lastOrNull { it.role == MessageRole.ASSISTANT && it.content.isNotBlank() }?.content
+                ?: "(Subagent reached turn budget without generating final report)"
+        }
+
+        finalSummary
     }
 }

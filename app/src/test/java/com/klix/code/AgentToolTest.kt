@@ -11,7 +11,7 @@ class AgentToolTest {
     @Test
     fun testToolDefinitionsAndSchemas() {
         val tools = AgentTools.ALL_TOOLS
-        assertEquals(9, tools.size)
+        assertEquals(10, tools.size)
 
         val readFileTool = AgentTools.READ_FILE
         val schema = readFileTool.toJsonSchema()
@@ -41,6 +41,15 @@ class AgentToolTest {
         val searchTool = AgentTools.SEARCH_WEB
         val searchSchema = searchTool.toJsonSchema()
         assertTrue(searchSchema.getJSONObject("properties").has("query"))
+
+        val subagentTool = AgentTools.INVOKE_SUBAGENT
+        val subagentSchema = subagentTool.toJsonSchema()
+        assertTrue(subagentSchema.getJSONObject("properties").has("task"))
+        assertTrue(subagentSchema.getJSONObject("properties").has("max_turns"))
+
+        // Subagent tools must exclude invoke_subagent to prevent recursive delegation loops
+        assertFalse(AgentTools.SUBAGENT_TOOLS.contains(AgentTools.INVOKE_SUBAGENT))
+        assertEquals(6, AgentTools.SUBAGENT_TOOLS.size)
     }
 
     @Test
@@ -56,6 +65,7 @@ class AgentToolTest {
         assertFalse(AgentTools.isDestructive("search_files"))
         assertFalse(AgentTools.isDestructive("fetch_web_page"))
         assertFalse(AgentTools.isDestructive("search_web"))
+        assertFalse(AgentTools.isDestructive("invoke_subagent"))
     }
 
     @Test

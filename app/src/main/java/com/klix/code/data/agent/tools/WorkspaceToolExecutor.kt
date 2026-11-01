@@ -24,6 +24,8 @@ class WorkspaceToolExecutor(
         .build()
 ) {
 
+    var subagentRunner: (suspend (task: String, maxTurns: Int) -> String)? = null
+
     /**
      * Executes or previews a normalized tool call against the specified workspace tree.
      */
@@ -45,6 +47,7 @@ class WorkspaceToolExecutor(
                 AgentTools.RUN_COMMAND.name -> executeRunCommand(toolCall)
                 AgentTools.FETCH_WEB_PAGE.name, "read_url_content", "fetch_url" -> executeFetchWebPage(toolCall)
                 AgentTools.SEARCH_WEB.name -> executeSearchWeb(toolCall)
+                AgentTools.INVOKE_SUBAGENT.name, "subagent" -> executeInvokeSubagent(toolCall)
                 else -> ToolCallResult(
                     toolCallId = toolCall.id,
                     name = toolCall.name,
@@ -60,6 +63,33 @@ class WorkspaceToolExecutor(
                 isSuccess = false,
                 output = "",
                 error = "Tool execution error: ${e.message}"
+            )
+        }
+    }
+
+    private suspend fun executeInvokeSubagent(toolCall: ToolCallRequest): ToolCallResult {
+        val task = toolCall.parsedArguments["task"]
+            ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'task'.")
+        val maxTurns = minOf(15, maxOf(1, toolCall.parsedArguments["max_turns"]?.toIntOrNull() ?: 8))
+
+        val runner = subagentRunner
+            ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Subagent execution runner is not configured.")
+
+        return try {
+            val report = runner.invoke(task, maxTurns)
+            ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = true,
+                output = report
+            )
+        } catch (e: Exception) {
+            ToolCallResult(
+                toolCallId = toolCall.id,
+                name = toolCall.name,
+                isSuccess = false,
+                output = "",
+                error = "Subagent error: ${e.message}"
             )
         }
     }

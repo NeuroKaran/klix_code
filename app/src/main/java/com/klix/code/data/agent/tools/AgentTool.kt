@@ -258,6 +258,34 @@ object AgentTools {
         )
     )
 
+    val INVOKE_SUBAGENT = ToolDefinition(
+        name = "invoke_subagent",
+        description = "Spawn an isolated subagent to perform an exploration, research, or multi-step investigation task. The subagent runs independently and returns a synthesized summary report back to you, keeping your main context window clean.",
+        parameters = listOf(
+            ToolParameter(
+                name = "task",
+                type = "string",
+                description = "The clear, actionable task for the subagent to perform.",
+                required = true
+            ),
+            ToolParameter(
+                name = "max_turns",
+                type = "integer",
+                description = "Optional maximum turn budget for the subagent (default: 8, max: 15).",
+                required = false
+            )
+        )
+    )
+
+    val SUBAGENT_TOOLS = listOf(
+        READ_FILE,
+        LIST_DIR,
+        SEARCH_FILES,
+        FETCH_WEB_PAGE,
+        SEARCH_WEB,
+        RUN_COMMAND
+    )
+
     val ALL_TOOLS = listOf(
         READ_FILE,
         WRITE_FILE,
@@ -267,7 +295,8 @@ object AgentTools {
         SEARCH_FILES,
         RUN_COMMAND,
         FETCH_WEB_PAGE,
-        SEARCH_WEB
+        SEARCH_WEB,
+        INVOKE_SUBAGENT
     )
 
     fun isDestructive(toolName: String): Boolean {
