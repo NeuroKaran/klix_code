@@ -34,8 +34,11 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SecurityUpdateGood
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Warning
+import com.klix.code.BuildConfig
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -81,9 +84,11 @@ fun FileTreeView(
     activeFileUri: Uri?,
     currentProjectName: String? = null,
     isSandboxInstalled: Boolean = true,
+    isUpdateAvailable: Boolean = false,
     onShowSandboxWarning: (() -> Unit)? = null,
     onConfigureSandbox: (() -> Unit)? = null,
     onOpenSandboxWorkspace: (() -> Unit)? = null,
+    onCheckForUpdates: (() -> Unit)? = null,
     onFileClick: (FileNode) -> Unit,
     onCreateFile: (parentUri: Uri, fileName: String) -> Unit,
     onCreateDirectory: (parentUri: Uri, dirName: String) -> Unit,
@@ -143,15 +148,33 @@ fun FileTreeView(
                     letterSpacing = 1.sp,
                     color = TextPrimary
                 )
-                Text(
-                    text = "v0.3.0",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AccentPrimary,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .background(AccentPrimary.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
+                        .background(
+                            if (isUpdateAvailable) AccentSecondary.copy(alpha = 0.2f)
+                            else AccentPrimary.copy(alpha = 0.15f)
+                        )
                         .padding(horizontal = 4.dp, vertical = 1.dp)
-                )
+                ) {
+                    if (isUpdateAvailable) {
+                        Box(
+                            modifier = Modifier
+                                .size(5.dp)
+                                .clip(CircleShape)
+                                .background(AccentSecondary)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                    }
+                    Text(
+                        text = "v${BuildConfig.VERSION_NAME}",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isUpdateAvailable) AccentSecondary else AccentPrimary
+                    )
+                }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -260,6 +283,11 @@ fun FileTreeView(
 
         HorizontalDivider(color = DarkBorder, thickness = 1.dp)
 
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
         if (rootNode == null) {
             Column(
                 modifier = Modifier
@@ -466,6 +494,44 @@ fun FileTreeView(
                     }
                 }
             }
+        }
+        }
+
+        // Persistent Drawer Footer: App Version & In-App Update Checker
+        HorizontalDivider(color = DarkBorder, thickness = 1.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(DarkSurfaceVariant.copy(alpha = 0.5f))
+                .clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = if (isUpdateAvailable) Icons.Default.SecurityUpdateGood else Icons.Default.SystemUpdate,
+                    contentDescription = null,
+                    tint = if (isUpdateAvailable) AccentSecondary else TextMuted,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = if (isUpdateAvailable) "Update Available" else "Klix Code v${BuildConfig.VERSION_NAME}",
+                    fontSize = 12.sp,
+                    fontWeight = if (isUpdateAvailable) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isUpdateAvailable) AccentSecondary else TextSecondary
+                )
+            }
+
+            Text(
+                text = if (isUpdateAvailable) "Update" else "Check",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isUpdateAvailable) AccentSecondary else AccentPrimary
+            )
         }
     }
 

@@ -109,6 +109,10 @@ import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
 import com.klix.code.ui.viewmodel.EditorViewModel
+import com.klix.code.ui.viewmodel.UpdateViewModel
+import com.klix.code.ui.viewmodel.UpdateUIState
+import com.klix.code.ui.components.update.UpdateDialog
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -120,6 +124,7 @@ class MainActivity : ComponentActivity() {
     private val viewModel: EditorViewModel by viewModels()
     private val agentViewModel: AgentViewModel by viewModels()
     private val terminalViewModel: TerminalViewModel by viewModels()
+    private val updateViewModel: UpdateViewModel by viewModels()
 
     private var pendingWidgetAction by mutableStateOf<String?>(null)
     private var pendingProjectToOpen by mutableStateOf<Pair<Uri, String>?>(null)
@@ -209,6 +214,23 @@ class MainActivity : ComponentActivity() {
                 val isSandboxInstalled = sandboxStatus == SandboxStatus.READY && terminalViewModel.sandboxManager.isInstalled()
                 var showSandboxWarningDialog by rememberSaveable { mutableStateOf(false) }
 
+                val updateState by updateViewModel.uiState.collectAsState()
+                val isUpdateDialogVisible by updateViewModel.isDialogVisible.collectAsState()
+                val snackMessage by updateViewModel.snackMessage.collectAsState()
+
+                // Check for updates in background on launch (respects interval cooldown)
+                LaunchedEffect(Unit) {
+                    updateViewModel.checkForUpdates(applicationContext, isManual = false)
+                }
+
+                // Show toast when update status changes or manual check runs
+                LaunchedEffect(snackMessage) {
+                    snackMessage?.let { msg ->
+                        Toast.makeText(applicationContext, msg, Toast.LENGTH_SHORT).show()
+                        updateViewModel.clearSnackMessage()
+                    }
+                }
+
                 val editorController = rememberEditorController()
 
                 // Sync workspace context with Agent
@@ -284,6 +306,7 @@ class MainActivity : ComponentActivity() {
                                 activeFileUri = activeTabUri,
                                 currentProjectName = currentProject?.name,
                                 isSandboxInstalled = isSandboxInstalled,
+                                isUpdateAvailable = updateState is UpdateUIState.Available,
                                 onShowSandboxWarning = {
                                     showSandboxWarningDialog = true
                                 },
@@ -297,6 +320,9 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         viewModel.openSandboxWorkspace()
                                     }
+                                },
+                                onCheckForUpdates = {
+                                    updateViewModel.checkForUpdates(applicationContext, isManual = true)
                                 },
                                 onFileClick = { fileNode ->
                                     viewModel.openFile(fileNode)
@@ -825,6 +851,18 @@ class MainActivity : ComponentActivity() {
                             scope.launch { drawerState.close() }
                             terminalViewModel.openSetupDialog()
                         }
+                    )
+                }
+
+                // In-App Update Dialog
+                if (isUpdateDialogVisible) {
+                    UpdateDialog(
+                        state = updateState,
+                        onStartDownload = { info -> updateViewModel.startDownload(applicationContext, info) },
+                        onInstallApk = { apkFile -> updateViewModel.installApk(applicationContext, apkFile) },
+                        onRequestPermission = { updateViewModel.requestInstallPermission(this@MainActivity) },
+                        onOpenInBrowser = { url -> updateViewModel.openInBrowser(this@MainActivity, url) },
+                        onDismiss = { postpone -> updateViewModel.dismissDialog(applicationContext, postpone) }
                     )
                 }
             }

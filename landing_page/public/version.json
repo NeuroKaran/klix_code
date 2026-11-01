@@ -1,0 +1,9 @@
+{
+  "versionCode": 6,
+  "versionName": "0.3.6",
+  "minSupportedVersionCode": 1,
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.6.apk",
+  "releaseNotes": "• Sora Editor with syntax highlighting & custom font sizing\n• Proot Alpine Linux sandbox execution & offline packages\n• Klix AI Coding Agent with tool approval & diff viewer\n• Android Home Screen Widgets for Streaks & Recent Projects\n• In-app update checker service",
+  "releaseDate": "2026-11-01",
+  "forceUpdate": false
+}
