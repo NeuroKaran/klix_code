@@ -1,9 +1,9 @@
 {
-  "versionCode": 6,
-  "versionName": "0.3.6",
+  "versionCode": 7,
+  "versionName": "0.3.7",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.6.apk",
-  "releaseNotes": "• Sora Editor with syntax highlighting & custom font sizing\n• Proot Alpine Linux sandbox execution & offline packages\n• Klix AI Coding Agent with tool approval & diff viewer\n• Android Home Screen Widgets for Streaks & Recent Projects\n• In-app update checker service",
-  "releaseDate": "2026-11-01",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.7.apk",
+  "releaseNotes": "• Multiple Chat Interface with session switching & full chat history\n• Persistent session-based history (automatically restores on continue)\n• Workspace file & folder tagging using '@' with live autocomplete\n• Automatic '@' tagged file reading & directory tree injection in AI harness\n• Overhauled chat typography with markdown, code syntax blocks & copy buttons\n• Alpine Linux sandbox & Sora editor enhancements",
+  "releaseDate": "2026-11-02",
   "forceUpdate": false
 }

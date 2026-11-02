@@ -33,9 +33,9 @@ export function trackEvent(eventName, eventData = {}) {
 }
 
 export function trackDownload({
-  version = 'v0.3.6',
+  version = 'v0.3.7',
   source = 'unknown',
-  fileName = 'klix-code-v0.3.6.apk',
+  fileName = 'klix-code-v0.3.7.apk',
 } = {}) {
   trackEvent('apk_download', {
     version,
@@ -61,8 +61,8 @@ export function getDownloadSource(element) {
 }
 
 export function initDownloadTracking({
-  version = 'v0.3.6',
-  fileName = 'klix-code-v0.3.6.apk',
+  version = 'v0.3.7',
+  fileName = 'klix-code-v0.3.7.apk',
   onDownload = null,
 } = {}) {
   if (typeof document === 'undefined') return;

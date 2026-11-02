@@ -20,7 +20,7 @@
 
   <p align="center">
     <a href="https://klixcode.vercel.app/"><b>🌐 Official Website</b></a> •
-    <a href="https://klixcode.vercel.app/klix-code-v0.3.6.apk"><b>📦 Download APK (v0.3.6)</b></a> •
+    <a href="https://klixcode.vercel.app/klix-code-v0.3.7.apk"><b>📦 Download APK (v0.3.7)</b></a> •
     <a href="#-architecture"><b>🏗️ Architecture</b></a> •
     <a href="#-features"><b>✨ Features</b></a> •
     <a href="#-getting-started"><b>🚀 Quick Start</b></a>
