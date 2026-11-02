@@ -1,6 +1,10 @@
 package com.klix.code.ui.components.agent
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,51 +24,71 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AlternateEmail
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Difference
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,6 +97,8 @@ import com.klix.code.data.agent.harness.PendingApproval
 import com.klix.code.data.agent.model.ProviderSettings
 import com.klix.code.data.agent.provider.ChatMessage
 import com.klix.code.data.agent.provider.MessageRole
+import com.klix.code.data.agent.session.ChatSession
+import com.klix.code.data.agent.session.TaggedFileItem
 import com.klix.code.data.agent.tools.ToolCallRequest
 import com.klix.code.data.agent.tools.ToolCallResult
 import com.klix.code.data.model.FileDiff
@@ -88,7 +115,10 @@ import com.klix.code.ui.theme.DiffRemovedText
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgentChatPanel(
     messages: List<ChatMessage>,
@@ -97,6 +127,13 @@ fun AgentChatPanel(
     pendingApproval: PendingApproval?,
     settings: ProviderSettings,
     totalTokens: Int,
+    sessions: List<ChatSession> = emptyList(),
+    activeSessionId: String = "",
+    availableFiles: List<TaggedFileItem> = emptyList(),
+    onCreateSession: () -> Unit = {},
+    onSwitchSession: (String) -> Unit = {},
+    onDeleteSession: (String) -> Unit = {},
+    onRenameSession: (String, String) -> Unit = { _, _ -> },
     onSendPrompt: (String) -> Unit,
     onApproveTool: () -> Unit,
     onRejectTool: () -> Unit,
@@ -107,15 +144,37 @@ fun AgentChatPanel(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var promptInput by remember { mutableStateOf("") }
+    var promptInput by remember { mutableStateOf(TextFieldValue("")) }
     val listState = rememberLazyListState()
 
-    // Auto-scroll on new messages
+    var showSessionSheet by remember { mutableStateOf(false) }
+    var sessionToRename by remember { mutableStateOf<ChatSession?>(null) }
+    var renameTitleInput by remember { mutableStateOf("") }
+
+    val activeSession = sessions.find { it.id == activeSessionId } ?: sessions.firstOrNull()
+
+    // Auto-scroll on new messages or status changes
     LaunchedEffect(messages.size, status) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
         }
     }
+
+    // Inspect "@" tag autocomplete from cursor position
+    val cursor = promptInput.selection.end
+    val textBeforeCursor = promptInput.text.take(cursor)
+    val lastAtIndex = textBeforeCursor.lastIndexOf('@')
+    val isTaggingActive = if (lastAtIndex >= 0) {
+        val queryCandidate = textBeforeCursor.substring(lastAtIndex + 1)
+        !queryCandidate.contains(' ') && !queryCandidate.contains('\n')
+    } else false
+
+    val tagQuery = if (isTaggingActive) textBeforeCursor.substring(lastAtIndex + 1) else ""
+    val matchingTaggedItems = if (isTaggingActive) {
+        availableFiles.filter {
+            it.path.contains(tagQuery, ignoreCase = true) || it.fileName.contains(tagQuery, ignoreCase = true)
+        }.take(8)
+    } else emptyList()
 
     Column(
         modifier = modifier
@@ -124,7 +183,7 @@ fun AgentChatPanel(
             .navigationBarsPadding()
             .imePadding()
     ) {
-        // Header Bar
+        // Top Modern Header Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -135,14 +194,16 @@ fun AgentChatPanel(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Left: Bot Avatar & Interactive Session Switcher Pill
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f, fill = false)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .background(AccentPrimary.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -154,49 +215,78 @@ fun AgentChatPanel(
                     )
                 }
 
-                Column {
+                // Session Selector Button
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = DarkSurfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
+                    modifier = Modifier.clickable { showSessionSheet = true }
+                ) {
                     Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Text(
-                            text = "Klix AI",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                        Icon(
+                            imageVector = Icons.Default.ChatBubbleOutline,
+                            contentDescription = null,
+                            tint = AccentPrimary,
+                            modifier = Modifier.size(13.dp)
                         )
-
-                        // Model Badge
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(DarkSurfaceVariant)
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = settings.activeModel.substringAfterLast('/'),
-                                fontSize = 10.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = AccentPrimary
-                            )
-                        }
+                        Text(
+                            text = activeSession?.title ?: "Chat",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 130.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Switch Chat",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(14.dp)
+                        )
                     }
-
-                    // Token count / status
-                    Text(
-                        text = if (totalTokens > 0) "$totalTokens tokens used" else settings.activeProvider.displayName,
-                        fontSize = 10.sp,
-                        color = TextMuted
-                    )
                 }
             }
 
-            // Actions
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Right: Actions (New Chat, Settings, Clear, Close)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                // New Chat Button
+                IconButton(
+                    onClick = onCreateSession,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "New Chat",
+                        tint = AccentPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Chat History Drawer Button
+                IconButton(
+                    onClick = { showSessionSheet = true },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = "Chat History",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
                 IconButton(onClick = onClearChat, modifier = Modifier.size(32.dp)) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Clear Chat",
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "Clear Session",
                         tint = TextSecondary,
                         modifier = Modifier.size(18.dp)
                     )
@@ -222,17 +312,62 @@ fun AgentChatPanel(
             }
         }
 
-        // Messages Stream
+        // Subheader Info: Model Chip & Token Count
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(DarkSurface.copy(alpha = 0.5f))
+                .padding(horizontal = 14.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(DarkSurfaceVariant)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = settings.activeModel.substringAfterLast('/'),
+                        fontSize = 10.5.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = AccentPrimary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Text(
+                    text = settings.activeProvider.displayName,
+                    fontSize = 10.5.sp,
+                    color = TextMuted
+                )
+            }
+
+            Text(
+                text = if (totalTokens > 0) "$totalTokens tokens used" else "Ready",
+                fontSize = 10.5.sp,
+                fontFamily = FontFamily.Monospace,
+                color = TextMuted
+            )
+        }
+
+        // Messages Stream Container
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
         ) {
             if (messages.isEmpty()) {
-                // Empty State / Suggestions
                 EmptyAgentState(
+                    availableFiles = availableFiles,
                     onSelectSuggestion = { suggestion ->
-                        promptInput = suggestion
+                        promptInput = TextFieldValue(
+                            text = suggestion,
+                            selection = TextRange(suggestion.length)
+                        )
                     }
                 )
             } else {
@@ -241,11 +376,12 @@ fun AgentChatPanel(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     items(messages, key = { it.id }) { msg ->
                         ChatMessageItem(
                             message = msg,
+                            activeModel = settings.activeModel,
                             onReviewDiff = onReviewDiff
                         )
                     }
@@ -268,20 +404,146 @@ fun AgentChatPanel(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(DarkSurfaceVariant.copy(alpha = 0.6f))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(14.dp),
-                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.2.dp,
                                     color = AccentPrimary
                                 )
                                 Text(
                                     text = statusMessage ?: "Processing...",
-                                    fontSize = 12.sp,
-                                    color = TextSecondary
+                                    fontSize = 12.5.sp,
+                                    color = TextSecondary,
+                                    fontWeight = FontWeight.Medium
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tag Autocomplete Popup (Displays above text input when typing "@")
+        AnimatedVisibility(
+            visible = isTaggingActive && matchingTaggedItems.isNotEmpty(),
+            enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = DarkSurface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
+                shadowElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AlternateEmail,
+                                contentDescription = null,
+                                tint = AccentPrimary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = "PROJECT FILES & FOLDERS",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMuted,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+                        Text(
+                            text = "${matchingTaggedItems.size} match${if (matchingTaggedItems.size > 1) "es" else ""}",
+                            fontSize = 10.sp,
+                            color = TextMuted
+                        )
+                    }
+
+                    HorizontalDivider(color = DarkBorder, modifier = Modifier.padding(vertical = 4.dp))
+
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 200.dp)
+                    ) {
+                        items(matchingTaggedItems) { item ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        // Replace the current @query with @item.path
+                                        val before = textBeforeCursor.substring(0, lastAtIndex)
+                                        val after = promptInput.text.substring(cursor)
+                                        val insertion = "@${item.path} "
+                                        val newText = before + insertion + after
+                                        val newCursor = before.length + insertion.length
+                                        promptInput = TextFieldValue(
+                                            text = newText,
+                                            selection = TextRange(newCursor)
+                                        )
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (item.isDirectory) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
+                                    contentDescription = null,
+                                    tint = if (item.isDirectory) AccentWarning else AccentPrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = item.fileName,
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = TextPrimary
+                                    )
+                                    if (item.parentPath.isNotBlank()) {
+                                        Text(
+                                            text = item.parentPath,
+                                            fontSize = 10.5.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = TextMuted,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+
+                                if (item.isDirectory) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(DarkSurfaceVariant)
+                                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "DIR",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AccentWarning
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -295,16 +557,49 @@ fun AgentChatPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(DarkSurface)
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            // Quick "@" Tag Button
+            IconButton(
+                onClick = {
+                    val currentText = promptInput.text
+                    val sel = promptInput.selection.end
+                    val before = currentText.take(sel)
+                    val after = currentText.drop(sel)
+                    val needSpace = before.isNotEmpty() && !before.endsWith(" ")
+                    val insert = if (needSpace) " @" else "@"
+                    val newText = before + insert + after
+                    val newSel = sel + insert.length
+                    promptInput = TextFieldValue(text = newText, selection = TextRange(newSel))
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(DarkSurfaceVariant)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AlternateEmail,
+                    contentDescription = "Mention File/Folder",
+                    tint = AccentPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
             OutlinedTextField(
                 value = promptInput,
                 onValueChange = { promptInput = it },
-                placeholder = { Text("Ask Klix to code, inspect, or refactor...", color = TextMuted, fontSize = 13.sp) },
+                placeholder = {
+                    Text(
+                        text = "Ask Klix, or type @ to mention a file/folder...",
+                        color = TextMuted,
+                        fontSize = 13.sp
+                    )
+                },
                 modifier = Modifier.weight(1f),
-                maxLines = 4,
+                maxLines = 5,
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = DarkSurfaceVariant,
                     unfocusedContainerColor = DarkSurfaceVariant,
@@ -332,33 +627,279 @@ fun AgentChatPanel(
                     )
                 }
             } else {
+                val hasInput = promptInput.text.isNotBlank()
                 IconButton(
                     onClick = {
-                        if (promptInput.isNotBlank()) {
-                            onSendPrompt(promptInput.trim())
-                            promptInput = ""
+                        if (hasInput) {
+                            onSendPrompt(promptInput.text.trim())
+                            promptInput = TextFieldValue("")
                         }
                     },
-                    enabled = promptInput.isNotBlank(),
+                    enabled = hasInput,
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(if (promptInput.isNotBlank()) AccentPrimary else DarkSurfaceVariant)
+                        .background(if (hasInput) AccentPrimary else DarkSurfaceVariant)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send",
-                        tint = if (promptInput.isNotBlank()) Color.White else TextMuted,
+                        tint = if (hasInput) Color.White else TextMuted,
                         modifier = Modifier.size(18.dp)
                     )
                 }
             }
         }
     }
+
+    // Chat History / Sessions Modal Bottom Sheet
+    if (showSessionSheet) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = { showSessionSheet = false },
+            sheetState = sheetState,
+            containerColor = DarkBg,
+            dragHandle = null
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.75f)
+                    .padding(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            tint = AccentPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Chat History",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(DarkSurfaceVariant)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "${sessions.size}",
+                                fontSize = 11.sp,
+                                color = TextSecondary,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            onCreateSession()
+                            showSessionSheet = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("New Chat", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(color = DarkBorder)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Sessions List
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(sessions, key = { it.id }) { session ->
+                        val isActive = session.id == activeSessionId
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isActive) DarkSurfaceVariant else DarkSurface,
+                            border = androidx.compose.foundation.BorderStroke(
+                                if (isActive) 1.dp else 0.5.dp,
+                                if (isActive) AccentPrimary else DarkBorder
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSwitchSession(session.id)
+                                    showSessionSheet = false
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = session.title,
+                                            fontSize = 13.5.sp,
+                                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
+                                            color = if (isActive) AccentPrimary else TextPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+
+                                        if (isActive) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(3.dp))
+                                                    .background(AccentPrimary.copy(alpha = 0.2f))
+                                                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                                            ) {
+                                                Text(
+                                                    text = "ACTIVE",
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = AccentPrimary
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(3.dp))
+
+                                    Text(
+                                        text = session.previewText,
+                                        fontSize = 11.5.sp,
+                                        color = TextSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = formatRelativeTime(session.updatedAt),
+                                            fontSize = 10.5.sp,
+                                            color = TextMuted
+                                        )
+                                        Text(
+                                            text = "${session.messages.size} msgs",
+                                            fontSize = 10.5.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = TextMuted
+                                        )
+                                        if (session.totalTokens > 0) {
+                                            Text(
+                                                text = "${session.totalTokens} tokens",
+                                                fontSize = 10.5.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                color = TextMuted
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(
+                                        onClick = {
+                                            sessionToRename = session
+                                            renameTitleInput = session.title
+                                        },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Rename",
+                                            tint = TextSecondary,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                    }
+
+                                    IconButton(
+                                        onClick = { onDeleteSession(session.id) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = TextMuted,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Rename Session Dialog
+    sessionToRename?.let { session ->
+        AlertDialog(
+            onDismissRequest = { sessionToRename = null },
+            title = { Text("Rename Chat", fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = renameTitleInput,
+                    onValueChange = { renameTitleInput = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = AccentPrimary
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (renameTitleInput.isNotBlank()) {
+                            onRenameSession(session.id, renameTitleInput.trim())
+                        }
+                        sessionToRename = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
+                ) {
+                    Text("Rename")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { sessionToRename = null }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+            containerColor = DarkSurface
+        )
+    }
 }
 
 @Composable
-private fun EmptyAgentState(onSelectSuggestion: (String) -> Unit) {
+private fun EmptyAgentState(
+    availableFiles: List<TaggedFileItem>,
+    onSelectSuggestion: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -368,8 +909,8 @@ private fun EmptyAgentState(onSelectSuggestion: (String) -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .size(60.dp)
+                .clip(RoundedCornerShape(16.dp))
                 .background(AccentPrimary.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
@@ -377,33 +918,82 @@ private fun EmptyAgentState(onSelectSuggestion: (String) -> Unit) {
                 imageVector = Icons.Default.SmartToy,
                 contentDescription = null,
                 tint = AccentPrimary,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(34.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Klix AI Agent",
-            fontSize = 16.sp,
+            text = "Klix Agentic Assistant",
+            fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
         )
 
         Text(
-            text = "Describe a task, feature, or bugfix. All changes are shown as diffs before applying.",
-            fontSize = 12.sp,
+            text = "Plan features, inspect files, or tag project resources using @ for instant surgical edits.",
+            fontSize = 12.5.sp,
             color = TextSecondary,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
+            lineHeight = 17.sp,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Quick Tag Suggestions from project files if available
+        if (availableFiles.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AlternateEmail,
+                    contentDescription = null,
+                    tint = AccentPrimary,
+                    modifier = Modifier.size(13.dp)
+                )
+                Text(
+                    text = "Quick Mentions:",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextSecondary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                availableFiles.filter { !it.isDirectory }.take(3).forEach { item ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = DarkSurfaceVariant,
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
+                        modifier = Modifier.clickable { onSelectSuggestion("Inspect @${item.path} and summarize logic") }
+                    ) {
+                        Text(
+                            text = "@${item.fileName}",
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = AccentPrimary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
         val suggestions = listOf(
-            "Inspect workspace files and summarize structure",
+            "Inspect workspace files and summarize architecture",
             "Find all TODOs and unfinished items",
-            "Write a unit test for diff calculations",
-            "Refactor and clean up active file"
+            "Write comprehensive unit tests",
+            "Check for potential crashes or race conditions"
         )
 
         Column(
@@ -411,20 +1001,31 @@ private fun EmptyAgentState(onSelectSuggestion: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             suggestions.forEach { suggestion ->
-                Box(
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = DarkSurfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(DarkSurfaceVariant)
-                        .border(0.5.dp, DarkBorder, RoundedCornerShape(8.dp))
                         .clickable { onSelectSuggestion(suggestion) }
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
-                    Text(
-                        text = suggestion,
-                        fontSize = 12.sp,
-                        color = TextPrimary
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lightbulb,
+                            contentDescription = null,
+                            tint = AccentWarning,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = suggestion,
+                            fontSize = 12.5.sp,
+                            color = TextPrimary
+                        )
+                    }
                 }
             }
         }
@@ -434,45 +1035,145 @@ private fun EmptyAgentState(onSelectSuggestion: (String) -> Unit) {
 @Composable
 private fun ChatMessageItem(
     message: ChatMessage,
+    activeModel: String,
     onReviewDiff: (FileDiff) -> Unit
 ) {
     val isUser = message.role == MessageRole.USER
+    val clipboardManager = LocalClipboardManager.current
+    var isMessageCopied by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
-        // If assistant produced internal reasoning / thoughts, render expandable card
-        if (!isUser && !message.thought.isNullOrBlank()) {
-            ReasoningCard(thought = message.thought)
-            Spacer(modifier = Modifier.height(6.dp))
+        // Assistant Message Header
+        if (!isUser) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(AccentPrimary.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SmartToy,
+                            contentDescription = null,
+                            tint = AccentPrimary,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+
+                    Text(
+                        text = "Klix AI",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(DarkSurfaceVariant)
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = activeModel.substringAfterLast('/'),
+                            fontSize = 9.5.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = TextMuted
+                        )
+                    }
+                }
+
+                // Copy Response Button
+                if (message.content.isNotBlank()) {
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(message.content))
+                            isMessageCopied = true
+                            scope.launch {
+                                delay(2000)
+                                isMessageCopied = false
+                            }
+                        },
+                        modifier = Modifier.size(22.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isMessageCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                            contentDescription = "Copy Response",
+                            tint = if (isMessageCopied) Color(0xFF10B981) else TextMuted,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+                }
+            }
         }
 
+        // Reasoning / Thinking card (Expandable)
+        if (!isUser && !message.thought.isNullOrBlank()) {
+            ReasoningCard(thought = message.thought)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Message Content Body
         if (message.content.isNotBlank()) {
-            Box(
-                modifier = Modifier
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 12.dp,
-                            topEnd = 12.dp,
-                            bottomStart = if (isUser) 12.dp else 2.dp,
-                            bottomEnd = if (isUser) 2.dp else 12.dp
+            if (isUser) {
+                // User Message Bubble
+                Box(
+                    modifier = Modifier
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = 14.dp,
+                                topEnd = 14.dp,
+                                bottomStart = 14.dp,
+                                bottomEnd = 3.dp
+                            )
                         )
+                        .background(AccentPrimary.copy(alpha = 0.15f))
+                        .border(
+                            0.75.dp,
+                            AccentPrimary.copy(alpha = 0.35f),
+                            RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 14.dp, bottomEnd = 3.dp)
+                        )
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = buildMarkdownAnnotatedString(message.content, TextPrimary),
+                        fontSize = 14.sp,
+                        color = TextPrimary,
+                        lineHeight = 21.sp
                     )
-                    .background(if (isUser) DarkSurfaceVariant else DarkSurface)
-                    .border(
-                        0.5.dp,
-                        if (isUser) AccentPrimary.copy(alpha = 0.5f) else DarkBorder,
-                        RoundedCornerShape(12.dp)
+                }
+            } else {
+                // Assistant Message with rich typography & syntax highlighted code blocks
+                Surface(
+                    shape = RoundedCornerShape(
+                        topStart = 4.dp,
+                        topEnd = 12.dp,
+                        bottomStart = 12.dp,
+                        bottomEnd = 12.dp
+                    ),
+                    color = DarkSurface,
+                    border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    MarkdownMessageView(
+                        content = message.content,
+                        modifier = Modifier.padding(14.dp)
                     )
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-            ) {
-                Text(
-                    text = message.content,
-                    fontSize = 13.sp,
-                    color = TextPrimary,
-                    lineHeight = 18.sp
-                )
+                }
             }
         }
 
@@ -520,9 +1221,15 @@ private fun ReasoningCard(thought: String) {
                     )
                     Text(
                         text = "Reasoning Process",
-                        fontSize = 11.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextSecondary
+                    )
+                    Text(
+                        text = "(${thought.length} chars)",
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = TextMuted
                     )
                 }
 
@@ -530,7 +1237,7 @@ private fun ReasoningCard(thought: String) {
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
                     tint = TextSecondary,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(15.dp)
                 )
             }
 
@@ -538,10 +1245,10 @@ private fun ReasoningCard(thought: String) {
                 Column(modifier = Modifier.padding(top = 6.dp)) {
                     Text(
                         text = thought.trim(),
-                        fontSize = 11.sp,
+                        fontSize = 11.5.sp,
                         fontFamily = FontFamily.Monospace,
                         color = TextMuted,
-                        lineHeight = 15.sp,
+                        lineHeight = 16.sp,
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 240.dp)
@@ -587,7 +1294,7 @@ private fun ToolCallCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = toolCall.name,
+                        text = toolCall.name.removePrefix("default_api:"),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
@@ -660,7 +1367,7 @@ private fun ToolResultCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "${result.name} result",
+                        text = "${result.name.removePrefix("default_api:")} result",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextPrimary
@@ -840,11 +1547,28 @@ private fun PendingApprovalCard(
 }
 
 private fun getToolIcon(name: String): ImageVector {
-    return when (name) {
+    val clean = name.removePrefix("default_api:")
+    return when (clean) {
         "run_command" -> Icons.Default.Terminal
         "search_files" -> Icons.Default.Search
         "list_dir" -> Icons.Default.Folder
-        "write_file", "edit_file" -> Icons.Default.Difference
+        "write_file", "edit_file", "multi_replace_file_content" -> Icons.Default.Difference
         else -> Icons.Default.Tune
+    }
+}
+
+private fun formatRelativeTime(timestamp: Long): String {
+    val diff = System.currentTimeMillis() - timestamp
+    val seconds = diff / 1000
+    val minutes = seconds / 60
+    val hours = minutes / 60
+    val days = hours / 24
+
+    return when {
+        minutes < 1 -> "Just now"
+        minutes < 60 -> "${minutes}m ago"
+        hours < 24 -> "${hours}h ago"
+        days < 7 -> "${days}d ago"
+        else -> "${days / 7}w ago"
     }
 }

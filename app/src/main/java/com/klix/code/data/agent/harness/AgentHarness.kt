@@ -65,6 +65,9 @@ class AgentHarness(
     private val _totalCompletionTokens = MutableStateFlow(0)
     val totalCompletionTokens: StateFlow<Int> = _totalCompletionTokens.asStateFlow()
 
+    var onSessionUpdated: ((messages: List<ChatMessage>, promptTokens: Int, completionTokens: Int) -> Unit)? = null
+    private val detectedTaggedContext = mutableMapOf<String, String>()
+
     private var activeJob: Job? = null
     private var currentWorkspaceUri: Uri? = null
     private var currentWorkspaceName: String = "Workspace"
@@ -104,6 +107,62 @@ class AgentHarness(
         this.currentApiKey = apiKey
     }
 
+    fun restoreSession(messages: List<ChatMessage>, promptTokens: Int, completionTokens: Int) {
+        cancelTask()
+        _messages.value = messages
+        _totalPromptTokens.value = promptTokens
+        _totalCompletionTokens.value = completionTokens
+        currentTurnCount = 0
+        autoCorrectionAttempts = 0
+        modifiedFilesInCurrentTask.clear()
+        detectedTaggedContext.clear()
+        _status.value = HarnessStatus.IDLE
+        _statusMessage.value = "Ready"
+    }
+
+    private fun notifySessionUpdated() {
+        onSessionUpdated?.invoke(_messages.value, _totalPromptTokens.value, _totalCompletionTokens.value)
+    }
+
+    private suspend fun resolveTaggedResources(userPrompt: String) {
+        val tagRegex = Regex("""@([a-zA-Z0-9_.\-/]+)""")
+        val matched = tagRegex.findAll(userPrompt).map { it.groupValues[1].trim() }.distinct().toList()
+        if (matched.isEmpty() || currentWorkspaceUri == null) return
+
+        for (tag in matched) {
+            val cleanTag = tag.trim().removePrefix("./").removePrefix("/")
+            // Try reading as file first
+            val fileReq = ToolCallRequest(
+                id = "tag_read_${cleanTag.hashCode()}",
+                name = "read_file",
+                rawArguments = "{\"path\": \"$cleanTag\"}",
+                parsedArguments = mapOf("path" to cleanTag)
+            )
+            val fileRes = toolExecutor.execute(currentWorkspaceUri, fileReq, dryRunWrite = false)
+            if (fileRes.isSuccess && fileRes.output.isNotBlank()) {
+                val lines = fileRes.output.lines()
+                val truncatedOutput = if (lines.size > 200) {
+                    lines.take(200).joinToString("\n") + "\n... (truncated, ${lines.size} total lines)"
+                } else {
+                    fileRes.output
+                }
+                detectedTaggedContext[cleanTag] = truncatedOutput
+            } else {
+                // Try listing as directory
+                val dirReq = ToolCallRequest(
+                    id = "tag_dir_${cleanTag.hashCode()}",
+                    name = "list_dir",
+                    rawArguments = "{\"path\": \"$cleanTag\"}",
+                    parsedArguments = mapOf("path" to cleanTag)
+                )
+                val dirRes = toolExecutor.execute(currentWorkspaceUri, dirReq, dryRunWrite = false)
+                if (dirRes.isSuccess && dirRes.output.isNotBlank()) {
+                    detectedTaggedContext[cleanTag] = "[Directory Listing]\n${dirRes.output}"
+                }
+            }
+        }
+    }
+
     fun startTask(userPrompt: String) {
         if (userPrompt.isBlank()) return
         if (currentApiKey.isBlank()) {
@@ -114,6 +173,7 @@ class AgentHarness(
                 content = "API key missing for ${currentSettings.activeProvider.displayName}. Please open Agent Settings (gear icon) and add your API key."
             )
             _messages.value = _messages.value + errorMsg
+            notifySessionUpdated()
             return
         }
 
@@ -128,8 +188,14 @@ class AgentHarness(
             content = userPrompt
         )
         _messages.value = _messages.value + userMessage
+        notifySessionUpdated()
 
-        runOrchestrationLoop()
+        activeJob = scope.launch {
+            _status.value = HarnessStatus.THINKING
+            _statusMessage.value = "Detecting tagged project items..."
+            resolveTaggedResources(userPrompt)
+            runOrchestrationLoop()
+        }
     }
 
     fun approvePendingTool() {
@@ -195,8 +261,10 @@ class AgentHarness(
         currentTurnCount = 0
         autoCorrectionAttempts = 0
         modifiedFilesInCurrentTask.clear()
+        detectedTaggedContext.clear()
         _status.value = HarnessStatus.IDLE
         _statusMessage.value = "Chat reset."
+        notifySessionUpdated()
     }
 
     private fun runOrchestrationLoop() {
@@ -245,6 +313,7 @@ class AgentHarness(
                     toolCalls = response.toolCalls
                 )
                 _messages.value = _messages.value + assistantMsg
+                notifySessionUpdated()
 
                 if (response.toolCalls.isEmpty()) {
                     // Self-Correction & Verification Hook
@@ -263,6 +332,7 @@ class AgentHarness(
                                 content = "[Automated Verification Feedback]\nVerification detected the following error(s) after code modifications:\n```\n$verificationError\n```\nPlease inspect the error(s), inspect the relevant code using 'read_file', and apply a fix using 'edit_file' or 'multi_replace_file_content'."
                             )
                             _messages.value = _messages.value + feedbackMsg
+                            notifySessionUpdated()
 
                             // Automatically continue loop for self-correction
                             runOrchestrationLoop()
@@ -272,6 +342,7 @@ class AgentHarness(
 
                     _status.value = HarnessStatus.COMPLETED
                     _statusMessage.value = if (modifiedFilesInCurrentTask.isNotEmpty() && currentSettings.autoVerifyEdits) "Done (Verified)" else "Done"
+                    notifySessionUpdated()
                     return@launch
                 }
 
@@ -290,6 +361,7 @@ class AgentHarness(
                     content = "Encountered an error: ${e.message}"
                 )
                 _messages.value = _messages.value + errorMsg
+                notifySessionUpdated()
             }
         }
     }
@@ -357,6 +429,7 @@ class AgentHarness(
             )
             _messages.value = _messages.value + userResponseWithResults
             currentBatchResults.clear()
+            notifySessionUpdated()
         }
 
         // Continue next turn in orchestration loop
@@ -374,6 +447,15 @@ class AgentHarness(
             sb.append("- Currently Open File: $activeFileName\n")
             if (activeFileContent != null && activeFileContent!!.length < 3000) {
                 sb.append("```\n$activeFileContent\n```\n")
+            }
+        }
+
+        if (detectedTaggedContext.isNotEmpty()) {
+            sb.append("\n### Tagged Project Resources (@ Mentions):\n")
+            sb.append("The user specifically tagged and highlighted the following project files/folders:\n")
+            for ((tagPath, content) in detectedTaggedContext) {
+                sb.append("\n#### @$tagPath:\n")
+                sb.append("```\n$content\n```\n")
             }
         }
 

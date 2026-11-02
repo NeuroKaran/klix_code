@@ -10,25 +10,31 @@ import com.klix.code.data.agent.harness.PendingApproval
 import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.model.ProviderSettings
 import com.klix.code.data.agent.provider.ChatMessage
+import com.klix.code.data.agent.provider.MessageRole
+import com.klix.code.data.agent.session.ChatSession
+import com.klix.code.data.agent.session.ChatSessionRepository
+import com.klix.code.data.agent.session.ChatSessionRepositoryImpl
+import com.klix.code.data.agent.session.TaggedFileItem
 import com.klix.code.data.agent.tools.WorkspaceToolExecutor
 import com.klix.code.data.model.FileDiff
 import com.klix.code.data.repository.WorkspaceRepository
 import com.klix.code.data.repository.WorkspaceRepositoryImpl
 import com.klix.code.data.security.KeyManager
 import com.klix.code.data.security.KeyManagerImpl
-import kotlinx.coroutines.flow.MutableStateFlow
 import com.klix.code.data.sandbox.SandboxExecutionProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class AgentViewModel @JvmOverloads constructor(
     application: Application,
     private val repository: WorkspaceRepository = WorkspaceRepositoryImpl(application),
     private val keyManager: KeyManager = KeyManagerImpl(application),
-    private val executionProvider: SandboxExecutionProvider = SandboxExecutionProvider(application)
+    private val executionProvider: SandboxExecutionProvider = SandboxExecutionProvider(application),
+    private val sessionRepository: ChatSessionRepository = ChatSessionRepositoryImpl(application)
 ) : AndroidViewModel(application) {
 
     private val toolExecutor = WorkspaceToolExecutor(repository, executionProvider)
@@ -50,8 +56,176 @@ class AgentViewModel @JvmOverloads constructor(
     private val _isSettingsOpen = MutableStateFlow(false)
     val isSettingsOpen: StateFlow<Boolean> = _isSettingsOpen.asStateFlow()
 
+    // Multi-chat sessions state
+    private val _sessions = MutableStateFlow<List<ChatSession>>(emptyList())
+    val sessions: StateFlow<List<ChatSession>> = _sessions.asStateFlow()
+
+    private val _activeSessionId = MutableStateFlow<String>("")
+    val activeSessionId: StateFlow<String> = _activeSessionId.asStateFlow()
+
+    // Tagged files/folders in the project workspace
+    private val _availableWorkspaceFiles = MutableStateFlow<List<TaggedFileItem>>(emptyList())
+    val availableWorkspaceFiles: StateFlow<List<TaggedFileItem>> = _availableWorkspaceFiles.asStateFlow()
+
     init {
+        harness.onSessionUpdated = { msgs, promptTokens, completionTokens ->
+            onHarnessSessionUpdated(msgs, promptTokens, completionTokens)
+        }
         syncHarnessConfig()
+        loadSavedSessions()
+    }
+
+    private fun loadSavedSessions() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val list = sessionRepository.getSessions()
+            val savedActiveId = sessionRepository.getActiveSessionId()
+
+            if (list.isEmpty()) {
+                val initialSession = ChatSession(title = "Chat 1")
+                _sessions.value = listOf(initialSession)
+                _activeSessionId.value = initialSession.id
+                sessionRepository.saveSession(initialSession)
+                sessionRepository.setActiveSessionId(initialSession.id)
+                withContext(Dispatchers.Main) {
+                    harness.restoreSession(
+                        initialSession.messages,
+                        initialSession.promptTokens,
+                        initialSession.completionTokens
+                    )
+                }
+            } else {
+                _sessions.value = list
+                val target = list.find { it.id == savedActiveId } ?: list.first()
+                _activeSessionId.value = target.id
+                sessionRepository.setActiveSessionId(target.id)
+                withContext(Dispatchers.Main) {
+                    harness.restoreSession(
+                        target.messages,
+                        target.promptTokens,
+                        target.completionTokens
+                    )
+                }
+            }
+        }
+    }
+
+    private fun onHarnessSessionUpdated(
+        msgs: List<ChatMessage>,
+        promptTokens: Int,
+        completionTokens: Int
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentId = _activeSessionId.value
+            val currentList = _sessions.value.toMutableList()
+            val index = currentList.indexOfFirst { it.id == currentId }
+            if (index >= 0) {
+                val current = currentList[index]
+                // Automatically assign descriptive title if default
+                val title = if (current.title == "New Chat" || current.title.startsWith("Chat ")) {
+                    val firstUserMsg = msgs.firstOrNull { it.role == MessageRole.USER }?.content
+                    if (!firstUserMsg.isNullOrBlank()) {
+                        firstUserMsg.lines().first().take(35).trim()
+                    } else current.title
+                } else current.title
+
+                val updated = current.copy(
+                    title = title,
+                    updatedAt = System.currentTimeMillis(),
+                    messages = msgs,
+                    promptTokens = promptTokens,
+                    completionTokens = completionTokens
+                )
+                currentList[index] = updated
+                _sessions.value = currentList
+                sessionRepository.saveSession(updated)
+            }
+        }
+    }
+
+    fun createNewSession(title: String = "New Chat"): String {
+        harness.cancelTask()
+        val newSession = ChatSession(title = title)
+        val updatedList = listOf(newSession) + _sessions.value
+        _sessions.value = updatedList
+        _activeSessionId.value = newSession.id
+
+        harness.restoreSession(emptyList(), 0, 0)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            sessionRepository.saveSession(newSession)
+            sessionRepository.setActiveSessionId(newSession.id)
+        }
+        return newSession.id
+    }
+
+    fun switchSession(sessionId: String) {
+        if (sessionId == _activeSessionId.value) return
+        harness.cancelTask()
+
+        val target = _sessions.value.find { it.id == sessionId } ?: return
+        _activeSessionId.value = target.id
+        harness.restoreSession(target.messages, target.promptTokens, target.completionTokens)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            sessionRepository.setActiveSessionId(target.id)
+        }
+    }
+
+    fun deleteSession(sessionId: String) {
+        val currentList = _sessions.value.filter { it.id != sessionId }
+        val wasActive = _activeSessionId.value == sessionId
+
+        if (wasActive) {
+            harness.cancelTask()
+        }
+
+        if (currentList.isEmpty()) {
+            val fresh = ChatSession(title = "Chat 1")
+            _sessions.value = listOf(fresh)
+            _activeSessionId.value = fresh.id
+            harness.restoreSession(emptyList(), 0, 0)
+            viewModelScope.launch(Dispatchers.IO) {
+                sessionRepository.deleteSession(sessionId)
+                sessionRepository.saveSession(fresh)
+                sessionRepository.setActiveSessionId(fresh.id)
+            }
+        } else {
+            _sessions.value = currentList
+            if (wasActive) {
+                val nextSession = currentList.first()
+                _activeSessionId.value = nextSession.id
+                harness.restoreSession(nextSession.messages, nextSession.promptTokens, nextSession.completionTokens)
+                viewModelScope.launch(Dispatchers.IO) {
+                    sessionRepository.deleteSession(sessionId)
+                    sessionRepository.setActiveSessionId(nextSession.id)
+                }
+            } else {
+                viewModelScope.launch(Dispatchers.IO) {
+                    sessionRepository.deleteSession(sessionId)
+                }
+            }
+        }
+    }
+
+    fun renameSession(sessionId: String, newTitle: String) {
+        if (newTitle.isBlank()) return
+        val currentList = _sessions.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == sessionId }
+        if (index >= 0) {
+            val updated = currentList[index].copy(
+                title = newTitle.trim(),
+                updatedAt = System.currentTimeMillis()
+            )
+            currentList[index] = updated
+            _sessions.value = currentList
+            viewModelScope.launch(Dispatchers.IO) {
+                sessionRepository.saveSession(updated)
+            }
+        }
+    }
+
+    fun updateWorkspaceFiles(files: List<TaggedFileItem>) {
+        _availableWorkspaceFiles.value = files
     }
 
     fun syncHarnessConfig() {

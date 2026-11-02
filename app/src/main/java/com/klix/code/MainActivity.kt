@@ -73,6 +73,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.klix.code.data.sandbox.SandboxStatus
 import com.klix.code.data.stats.StreakManager
+import com.klix.code.data.agent.session.flattenFileTree
 import com.klix.code.ui.components.agent.AgentChatPanel
 import com.klix.code.ui.components.agent.AgentSettingsDialog
 import com.klix.code.ui.components.sandbox.SandboxSetupDialog
@@ -208,6 +209,9 @@ class MainActivity : ComponentActivity() {
                 val agentSettings by agentViewModel.settings.collectAsState()
                 val agentDiffToReview by agentViewModel.activeDiffToReview.collectAsState()
                 val isAgentSettingsOpen by agentViewModel.isSettingsOpen.collectAsState()
+                val agentSessions by agentViewModel.sessions.collectAsState()
+                val agentActiveSessionId by agentViewModel.activeSessionId.collectAsState()
+                val agentAvailableFiles by agentViewModel.availableWorkspaceFiles.collectAsState()
                 val showSandboxSetup by terminalViewModel.showSetupDialog.collectAsState()
 
                 val sandboxStatus by terminalViewModel.sandboxManager.status.collectAsState()
@@ -233,8 +237,8 @@ class MainActivity : ComponentActivity() {
 
                 val editorController = rememberEditorController()
 
-                // Sync workspace context with Agent
-                LaunchedEffect(currentProject, activeTabUri, openTabs) {
+                // Sync workspace context and tagged project files with Agent
+                LaunchedEffect(currentProject, activeTabUri, openTabs, fileTree) {
                     val activeTab = openTabs.find { it.uri == activeTabUri }
                     agentViewModel.updateWorkspaceContext(
                         workspaceUri = currentProject?.uri,
@@ -242,6 +246,9 @@ class MainActivity : ComponentActivity() {
                         activeFileName = activeTab?.name,
                         activeFileContent = activeTab?.content
                     )
+                    if (fileTree != null) {
+                        agentViewModel.updateWorkspaceFiles(flattenFileTree(fileTree))
+                    }
                 }
 
                 // Sync terminal file changes to GUI when terminal closes
@@ -767,6 +774,13 @@ class MainActivity : ComponentActivity() {
                             pendingApproval = agentPendingApproval,
                             settings = agentSettings,
                             totalTokens = agentPromptTokens + agentCompletionTokens,
+                            sessions = agentSessions,
+                            activeSessionId = agentActiveSessionId,
+                            availableFiles = agentAvailableFiles,
+                            onCreateSession = { agentViewModel.createNewSession() },
+                            onSwitchSession = { id -> agentViewModel.switchSession(id) },
+                            onDeleteSession = { id -> agentViewModel.deleteSession(id) },
+                            onRenameSession = { id, title -> agentViewModel.renameSession(id, title) },
                             onSendPrompt = { prompt -> agentViewModel.sendPrompt(prompt) },
                             onApproveTool = {
                                 agentViewModel.approvePendingTool()
