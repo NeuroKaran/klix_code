@@ -24,8 +24,8 @@ android {
         applicationId = "com.klix.code"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.3.8"
+        versionCode = 9
+        versionName = "0.3.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -1,9 +1,9 @@
 {
-  "versionCode": 8,
-  "versionName": "0.3.8",
+  "versionCode": 9,
+  "versionName": "0.3.9",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.8.apk",
-  "releaseNotes": "• Dynamic Reasoning & Thinking Budgets: Configurable thinking budgets with Gemini 2.5/3 thinkingConfig & Claude 3.7 hybrid thinking\n• Intelligent Context Compaction: Auto-summarizes extended multi-turn sessions to prevent token overflow while preserving active goals and file diffs\n• Interactive Requirements Clarification: New 'ask_question' agent tool with interactive single/multi-choice selection cards in chat\n• Workspace URI Canonicalization: Fixes CJK character decoding and duplicate project entries (Antigravity 2.0.1 parity)\n• Built-in & Custom Slash Commands: Rapid prompt workflows (/explain, /fix, /refactor, /test, /doc, /review, /commit, /commands)\n• Optimized build performance and incremental compilation stability",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.9.apk",
+  "releaseNotes": "• Daily Login Consistent Streak: Interactive animated daily streak check-in button with fire explosion, morphing dot, weekly streak row addition, and automatic 12:00 AM midnight refresh\n• Daily Streak Widget Integration: Seamless launch of the Daily Streak modal from the Android home screen widget\n• Dynamic Reasoning & Thinking Budgets: Configurable thinking budgets with Gemini 2.5/3 and Claude 3.7\n• Intelligent Context Compaction: Auto-summarizes extended multi-turn sessions preserving active goals and file diffs\n• Interactive Requirements Clarification: New 'ask_question' agent tool with interactive selection cards in chat\n• Workspace URI Canonicalization & Slash Commands System (/explain, /fix, /refactor, /test, /doc, /review, /commit, /commands)",
   "releaseDate": "2026-11-04",
   "forceUpdate": false
 }
