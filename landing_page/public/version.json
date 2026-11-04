@@ -1,9 +1,9 @@
 {
-  "versionCode": 7,
-  "versionName": "0.3.7",
+  "versionCode": 8,
+  "versionName": "0.3.8",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.7.apk",
-  "releaseNotes": "• Multiple Chat Interface with session switching & full chat history\n• Persistent session-based history (automatically restores on continue)\n• Workspace file & folder tagging using '@' with live autocomplete\n• Automatic '@' tagged file reading & directory tree injection in AI harness\n• Overhauled chat typography with markdown, code syntax blocks & copy buttons\n• Alpine Linux sandbox & Sora editor enhancements",
-  "releaseDate": "2026-11-02",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.8.apk",
+  "releaseNotes": "• Dynamic Reasoning & Thinking Budgets: Configurable thinking budgets with Gemini 2.5/3 thinkingConfig & Claude 3.7 hybrid thinking\n• Intelligent Context Compaction: Auto-summarizes extended multi-turn sessions to prevent token overflow while preserving active goals and file diffs\n• Interactive Requirements Clarification: New 'ask_question' agent tool with interactive single/multi-choice selection cards in chat\n• Workspace URI Canonicalization: Fixes CJK character decoding and duplicate project entries (Antigravity 2.0.1 parity)\n• Built-in & Custom Slash Commands: Rapid prompt workflows (/explain, /fix, /refactor, /test, /doc, /review, /commit, /commands)\n• Optimized build performance and incremental compilation stability",
+  "releaseDate": "2026-11-04",
   "forceUpdate": false
 }
