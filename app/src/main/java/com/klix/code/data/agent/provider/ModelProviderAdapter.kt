@@ -27,7 +27,8 @@ data class ProviderTurnRequest(
     val model: String,
     val apiKey: String,
     val customEndpoint: String? = null,
-    val temperature: Float = 0.2f
+    val temperature: Float = 0.2f,
+    val thinkingBudget: Int = 0
 )
 
 data class ProviderTurnResponse(

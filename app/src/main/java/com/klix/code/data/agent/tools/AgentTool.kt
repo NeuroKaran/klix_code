@@ -277,6 +277,34 @@ object AgentTools {
         )
     )
 
+    val ASK_QUESTION = ToolDefinition(
+        name = "ask_question",
+        description = "Ask the user one or more multiple-choice questions to clarify requirements, design decisions, or ambiguous instructions.",
+        parameters = listOf(
+            ToolParameter(
+                name = "question",
+                type = "string",
+                description = "The specific question to ask the user.",
+                required = true
+            ),
+            ToolParameter(
+                name = "options",
+                type = "array",
+                description = "List of choices for the user to select from.",
+                required = true,
+                items = JSONObject().apply {
+                    put("type", "string")
+                }
+            ),
+            ToolParameter(
+                name = "allow_multiple",
+                type = "boolean",
+                description = "Whether the user can select multiple options (default: false).",
+                required = false
+            )
+        )
+    )
+
     val SUBAGENT_TOOLS = listOf(
         READ_FILE,
         LIST_DIR,
@@ -296,8 +324,27 @@ object AgentTools {
         RUN_COMMAND,
         FETCH_WEB_PAGE,
         SEARCH_WEB,
-        INVOKE_SUBAGENT
+        INVOKE_SUBAGENT,
+        ASK_QUESTION
     )
+
+    fun parseStringList(raw: String?): List<String> {
+        if (raw.isNullOrBlank()) return emptyList()
+        val list = mutableListOf<String>()
+        try {
+            val trimmed = raw.trim()
+            if (trimmed.startsWith("[")) {
+                val arr = JSONArray(trimmed)
+                for (i in 0 until arr.length()) {
+                    list.add(arr.getString(i))
+                }
+                return list
+            }
+        } catch (_: Exception) {
+            // Ignore parse exceptions and fallback
+        }
+        return raw.split(",").map { it.trim().trim('"', '\'') }.filter { it.isNotBlank() }
+    }
 
     fun isDestructive(toolName: String): Boolean {
         return toolName in listOf("write_file", "edit_file", "multi_replace_file_content", "multi_replace", "run_command")

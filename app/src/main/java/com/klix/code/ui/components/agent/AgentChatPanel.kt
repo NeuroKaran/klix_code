@@ -140,6 +140,7 @@ fun AgentChatPanel(
     onSendPrompt: (String) -> Unit,
     onApproveTool: () -> Unit,
     onRejectTool: () -> Unit,
+    onAnswerQuestion: (List<String>) -> Unit = {},
     onCancelTask: () -> Unit,
     onClearChat: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -423,7 +424,8 @@ fun AgentChatPanel(
                                 pending = pendingApproval,
                                 onApprove = onApproveTool,
                                 onReject = onRejectTool,
-                                onReviewDiff = onReviewDiff
+                                onReviewDiff = onReviewDiff,
+                                onAnswerQuestion = onAnswerQuestion
                             )
                         }
                     }
@@ -1660,12 +1662,23 @@ private fun PendingApprovalCard(
     pending: PendingApproval,
     onApprove: () -> Unit,
     onReject: () -> Unit,
-    onReviewDiff: (FileDiff) -> Unit
+    onReviewDiff: (FileDiff) -> Unit,
+    onAnswerQuestion: ((List<String>) -> Unit)? = null
 ) {
+    val isQuestion = !pending.questionOptions.isNullOrEmpty()
+    val selectedOptions = remember(pending.toolCall.id) {
+        val initial = if (isQuestion && !pending.questionOptions.isNullOrEmpty()) {
+            listOf(pending.questionOptions.first())
+        } else {
+            emptyList()
+        }
+        androidx.compose.runtime.mutableStateListOf<String>().apply { addAll(initial) }
+    }
+
     Surface(
         shape = RoundedCornerShape(10.dp),
         color = DarkSurfaceVariant,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AccentWarning),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isQuestion) AccentPrimary else AccentWarning),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -1677,17 +1690,17 @@ private fun PendingApprovalCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Tune,
+                    imageVector = if (isQuestion) Icons.Default.ChatBubbleOutline else Icons.Default.Tune,
                     contentDescription = null,
-                    tint = AccentWarning,
+                    tint = if (isQuestion) AccentPrimary else AccentWarning,
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "ACTION APPROVAL REQUIRED",
+                    text = if (isQuestion) "REQUIREMENTS CLARIFICATION" else "ACTION APPROVAL REQUIRED",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
-                    color = AccentWarning
+                    color = if (isQuestion) AccentPrimary else AccentWarning
                 )
             }
 
@@ -1697,6 +1710,80 @@ private fun PendingApprovalCard(
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
+
+            // If question options available, render interactive options list
+            if (isQuestion) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = if (pending.allowMultiple) "Select one or more options:" else "Select an option:",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextMuted
+                    )
+                    pending.questionOptions.forEachIndexed { idx, opt ->
+                        val isSelected = selectedOptions.contains(opt)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (isSelected) AccentPrimary.copy(alpha = 0.18f) else DarkBg)
+                                .border(
+                                    width = if (isSelected) 1.dp else 0.5.dp,
+                                    color = if (isSelected) AccentPrimary else DarkBorder,
+                                    shape = RoundedCornerShape(6.dp)
+                                )
+                                .clickable {
+                                    if (pending.allowMultiple) {
+                                        if (isSelected) {
+                                            selectedOptions.remove(opt)
+                                        } else {
+                                            selectedOptions.add(opt)
+                                        }
+                                    } else {
+                                        selectedOptions.clear()
+                                        selectedOptions.add(opt)
+                                    }
+                                }
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isSelected) AccentPrimary else Color.Transparent)
+                                        .border(1.5.dp, if (isSelected) AccentPrimary else TextMuted, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = DarkBg,
+                                            modifier = Modifier.size(10.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "${idx + 1}. $opt",
+                                    fontSize = 12.sp,
+                                    color = if (isSelected) TextPrimary else TextSecondary,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             // If diff available, offer Review button
             if (pending.diff != null) {
@@ -1754,16 +1841,27 @@ private fun PendingApprovalCard(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentError),
                     shape = RoundedCornerShape(6.dp)
                 ) {
-                    Text("Deny", fontSize = 12.sp)
+                    Text(if (isQuestion) "Decline" else "Deny", fontSize = 12.sp)
                 }
 
                 Button(
-                    onClick = onApprove,
+                    onClick = {
+                        if (isQuestion) {
+                            if (onAnswerQuestion != null) {
+                                onAnswerQuestion(selectedOptions.toList())
+                            } else {
+                                onApprove()
+                            }
+                        } else {
+                            onApprove()
+                        }
+                    },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentSecondary),
-                    shape = RoundedCornerShape(6.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isQuestion) AccentPrimary else AccentSecondary),
+                    shape = RoundedCornerShape(6.dp),
+                    enabled = !isQuestion || selectedOptions.isNotEmpty()
                 ) {
-                    Text("Approve & Run", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(if (isQuestion) "Confirm Option" else "Approve & Run", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1777,6 +1875,7 @@ private fun getToolIcon(name: String): ImageVector {
         "search_files" -> Icons.Default.Search
         "list_dir" -> Icons.Default.Folder
         "write_file", "edit_file", "multi_replace_file_content" -> Icons.Default.Difference
+        "ask_question" -> Icons.Default.ChatBubbleOutline
         else -> Icons.Default.Tune
     }
 }

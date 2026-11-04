@@ -48,6 +48,7 @@ class WorkspaceToolExecutor(
                 AgentTools.FETCH_WEB_PAGE.name, "read_url_content", "fetch_url" -> executeFetchWebPage(toolCall)
                 AgentTools.SEARCH_WEB.name -> executeSearchWeb(toolCall)
                 AgentTools.INVOKE_SUBAGENT.name, "subagent" -> executeInvokeSubagent(toolCall)
+                AgentTools.ASK_QUESTION.name, "ask_question" -> executeAskQuestion(toolCall)
                 else -> ToolCallResult(
                     toolCallId = toolCall.id,
                     name = toolCall.name,
@@ -92,6 +93,32 @@ class WorkspaceToolExecutor(
                 error = "Subagent error: ${e.message}"
             )
         }
+    }
+
+    private fun executeAskQuestion(toolCall: ToolCallRequest): ToolCallResult {
+        val question = toolCall.parsedArguments["question"]
+            ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'question'.")
+        val optionsList = AgentTools.parseStringList(toolCall.parsedArguments["options"])
+        val allowMultiple = toolCall.parsedArguments["allow_multiple"]?.toBoolean() ?: false
+
+        val formattedOptions = if (optionsList.isNotEmpty()) {
+            optionsList.mapIndexed { idx, opt -> "${idx + 1}. $opt" }.joinToString("\n")
+        } else {
+            "(No predefined options provided)"
+        }
+
+        val output = buildString {
+            append("Question: ").append(question).append("\n")
+            append("Options:\n").append(formattedOptions).append("\n")
+            append("Allow Multiple: ").append(allowMultiple)
+        }
+
+        return ToolCallResult(
+            toolCallId = toolCall.id,
+            name = toolCall.name,
+            isSuccess = true,
+            output = output
+        )
     }
 
     private suspend fun executeReadFile(rootTreeUri: Uri?, toolCall: ToolCallRequest): ToolCallResult {

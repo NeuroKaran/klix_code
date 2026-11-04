@@ -34,7 +34,16 @@ enum class HarnessStatus {
 data class PendingApproval(
     val toolCall: ToolCallRequest,
     val diff: FileDiff? = null,
-    val promptMessage: String
+    val promptMessage: String,
+    val questionOptions: List<String>? = null,
+    val allowMultiple: Boolean = false
+)
+
+data class PendingQuestion(
+    val toolCall: ToolCallRequest,
+    val question: String,
+    val options: List<String>,
+    val allowMultiple: Boolean = false
 )
 
 class AgentHarness(
@@ -45,6 +54,8 @@ class AgentHarness(
     companion object {
         const val MAX_TURNS_PER_TASK = 25
         const val MAX_AUTO_CORRECTIONS = 3
+        const val COMPACTION_MESSAGE_THRESHOLD = 12
+        const val COMPACTION_TOKEN_THRESHOLD = 50_000
     }
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -58,6 +69,9 @@ class AgentHarness(
 
     private val _pendingApproval = MutableStateFlow<PendingApproval?>(null)
     val pendingApproval: StateFlow<PendingApproval?> = _pendingApproval.asStateFlow()
+
+    private val _pendingQuestion = MutableStateFlow<PendingQuestion?>(null)
+    val pendingQuestion: StateFlow<PendingQuestion?> = _pendingQuestion.asStateFlow()
 
     private val _totalPromptTokens = MutableStateFlow(0)
     val totalPromptTokens: StateFlow<Int> = _totalPromptTokens.asStateFlow()
@@ -116,6 +130,7 @@ class AgentHarness(
         autoCorrectionAttempts = 0
         modifiedFilesInCurrentTask.clear()
         detectedTaggedContext.clear()
+        _pendingQuestion.value = null
         _status.value = HarnessStatus.IDLE
         _statusMessage.value = "Ready"
     }
@@ -208,9 +223,20 @@ class AgentHarness(
         }
     }
 
-    fun approvePendingTool() {
+    fun approvePendingTool(selectedAnswers: List<String>? = null) {
         val pending = _pendingApproval.value ?: return
         _pendingApproval.value = null
+
+        val cleanName = pending.toolCall.name.removePrefix("default_api:").trim()
+        if (cleanName == "ask_question") {
+            val answersToUse = if (!selectedAnswers.isNullOrEmpty()) {
+                selectedAnswers
+            } else {
+                listOf(pending.questionOptions?.firstOrNull() ?: "Confirmed")
+            }
+            answerQuestion(answersToUse)
+            return
+        }
 
         activeJob = scope.launch {
             _status.value = HarnessStatus.EXECUTING_TOOL
@@ -223,7 +249,6 @@ class AgentHarness(
                 dryRunWrite = false
             )
 
-            val cleanName = pending.toolCall.name.removePrefix("default_api:").trim()
             if (result.isSuccess && cleanName in listOf("write_file", "edit_file", "multi_replace_file_content", "multi_replace")) {
                 val path = pending.toolCall.parsedArguments["path"]
                 if (!path.isNullOrBlank()) {
@@ -240,6 +265,12 @@ class AgentHarness(
         val pending = _pendingApproval.value ?: return
         _pendingApproval.value = null
 
+        val cleanName = pending.toolCall.name.removePrefix("default_api:").trim()
+        if (cleanName == "ask_question") {
+            rejectPendingQuestion(reason)
+            return
+        }
+
         val result = ToolCallResult(
             toolCallId = pending.toolCall.id,
             name = pending.toolCall.name,
@@ -254,6 +285,119 @@ class AgentHarness(
         }
     }
 
+    fun answerQuestion(answers: List<String>) {
+        val pending = _pendingQuestion.value ?: return
+        _pendingQuestion.value = null
+        _pendingApproval.value = null
+
+        val answerText = if (answers.isEmpty()) "No option selected" else answers.joinToString(", ")
+        val result = ToolCallResult(
+            toolCallId = pending.toolCall.id,
+            name = pending.toolCall.name,
+            isSuccess = true,
+            output = "User selected: $answerText"
+        )
+        currentBatchResults.add(result)
+        activeJob = scope.launch {
+            processNextToolInBatch()
+        }
+    }
+
+    fun rejectPendingQuestion(reason: String = "User declined to answer question.") {
+        val pending = _pendingQuestion.value ?: return
+        _pendingQuestion.value = null
+        _pendingApproval.value = null
+
+        val result = ToolCallResult(
+            toolCallId = pending.toolCall.id,
+            name = pending.toolCall.name,
+            isSuccess = false,
+            output = "",
+            error = reason
+        )
+        currentBatchResults.add(result)
+        activeJob = scope.launch {
+            processNextToolInBatch()
+        }
+    }
+
+    fun compactHistory() {
+        val current = _messages.value
+        if (current.size <= 5) return
+
+        val root = current.first()
+        val recent = current.takeLast(4)
+        val middle = current.subList(1, current.size - 4)
+        if (middle.isEmpty()) return
+
+        val summary = buildCompactionSummary(middle)
+        val summaryMsg = ChatMessage(
+            role = MessageRole.ASSISTANT,
+            content = summary
+        )
+
+        _messages.value = listOf(root, summaryMsg) + recent
+        notifySessionUpdated()
+    }
+
+    private fun buildCompactionSummary(middle: List<ChatMessage>): String {
+        val sb = StringBuilder()
+        sb.append("[Context Compaction Summary of Prior Steps]\n")
+        sb.append("Prior conversation was compacted to preserve context budget while maintaining task progress.\n\n")
+
+        if (modifiedFilesInCurrentTask.isNotEmpty()) {
+            sb.append("Files modified during this task:\n")
+            modifiedFilesInCurrentTask.forEach { file ->
+                sb.append("- ").append(file).append("\n")
+            }
+            sb.append("\n")
+        }
+
+        val actions = mutableListOf<String>()
+        for (msg in middle) {
+            for (tc in msg.toolCalls) {
+                val path = tc.parsedArguments["path"]
+                val cmd = tc.parsedArguments["command"]
+                val desc = when {
+                    path != null -> "${tc.name}($path)"
+                    cmd != null -> "${tc.name}(`$cmd`)"
+                    else -> tc.name
+                }
+                actions.add(desc)
+            }
+            for (res in msg.toolResults) {
+                if (!res.isSuccess) {
+                    val err = res.error?.take(120)?.replace("\n", " ") ?: "Error"
+                    actions.add("${res.name} failed: $err")
+                }
+            }
+        }
+
+        if (actions.isNotEmpty()) {
+            sb.append("Key actions completed in compacted turns:\n")
+            actions.take(15).forEach { action ->
+                sb.append("- ").append(action).append("\n")
+            }
+            if (actions.size > 15) {
+                sb.append("... and ").append(actions.size - 15).append(" other actions.\n")
+            }
+            sb.append("\n")
+        }
+
+        val notes = middle.filter { it.role == MessageRole.ASSISTANT && it.content.isNotBlank() }
+            .mapNotNull { it.content.lines().firstOrNull { l -> l.isNotBlank() }?.take(100) }
+        if (notes.isNotEmpty()) {
+            sb.append("Prior assistant observations:\n")
+            notes.take(5).forEach { note ->
+                sb.append("- ").append(note).append("\n")
+            }
+            sb.append("\n")
+        }
+
+        sb.append("Task goal context and recent conversation follow below.")
+        return sb.toString().trim()
+    }
+
     fun cancelTask() {
         activeJob?.cancel()
         currentBatchResults.clear()
@@ -261,6 +405,7 @@ class AgentHarness(
         _status.value = HarnessStatus.IDLE
         _statusMessage.value = "Task cancelled by user."
         _pendingApproval.value = null
+        _pendingQuestion.value = null
     }
 
     fun clearHistory() {
@@ -274,6 +419,7 @@ class AgentHarness(
         detectedTaggedContext.clear()
         _status.value = HarnessStatus.IDLE
         _statusMessage.value = "Chat reset."
+        _pendingQuestion.value = null
         notifySessionUpdated()
     }
 
@@ -288,6 +434,13 @@ class AgentHarness(
             )
             _messages.value = _messages.value + warningMsg
             return
+        }
+
+        // Automatic context compaction when threshold is reached
+        if (_messages.value.size > COMPACTION_MESSAGE_THRESHOLD ||
+            (_totalPromptTokens.value + _totalCompletionTokens.value) > COMPACTION_TOKEN_THRESHOLD
+        ) {
+            compactHistory()
         }
 
         activeJob = scope.launch {
@@ -307,7 +460,8 @@ class AgentHarness(
                     customEndpoint = if (currentSettings.activeProvider == ModelProvider.CUSTOM_OPENAI_COMPATIBLE) {
                         currentSettings.customEndpointUrl
                     } else null,
-                    temperature = currentSettings.temperature
+                    temperature = currentSettings.temperature,
+                    thinkingBudget = currentSettings.thinkingBudget
                 )
 
                 val response = adapter.sendTurn(turnRequest)
@@ -380,6 +534,31 @@ class AgentHarness(
         while (remainingPendingTools.isNotEmpty()) {
             val toolCall = remainingPendingTools.removeAt(0)
             val cleanName = toolCall.name.removePrefix("default_api:").trim()
+
+            if (cleanName == "ask_question") {
+                val question = toolCall.parsedArguments["question"] ?: "Clarification needed"
+                val options = AgentTools.parseStringList(toolCall.parsedArguments["options"])
+                val allowMultiple = toolCall.parsedArguments["allow_multiple"]?.toBoolean() ?: false
+
+                _status.value = HarnessStatus.AWAITING_APPROVAL
+                _statusMessage.value = "Awaiting response: $question"
+                val pendingQ = PendingQuestion(
+                    toolCall = toolCall,
+                    question = question,
+                    options = options,
+                    allowMultiple = allowMultiple
+                )
+                _pendingQuestion.value = pendingQ
+                _pendingApproval.value = PendingApproval(
+                    toolCall = toolCall,
+                    diff = null,
+                    promptMessage = question,
+                    questionOptions = options,
+                    allowMultiple = allowMultiple
+                )
+                return
+            }
+
             val isDestructive = AgentTools.isDestructive(cleanName)
             val requiresApproval = if (isDestructive) {
                 !currentSettings.autoApproveWriteTools
@@ -480,6 +659,7 @@ class AgentHarness(
         sb.append("8. **Workspace Paths**: All tool paths must be relative to the workspace root without leading slashes (e.g., 'app/src/Main.kt').\n")
         sb.append("9. **Concise Explanations**: Provide mobile-friendly, crisp summaries of changes made.\n")
         sb.append("10. **Subagent Delegation**: Use 'invoke_subagent' when an investigation, extensive search, or complex exploration would clutter your context window. The subagent will run independently and return a synthesized summary.\n")
+        sb.append("11. **Interactive Clarification**: If requirements or implementation options are ambiguous, use 'ask_question' with clear options to clarify with the user.\n")
 
         return sb.toString()
     }
@@ -514,7 +694,8 @@ class AgentHarness(
                 customEndpoint = if (currentSettings.activeProvider == ModelProvider.CUSTOM_OPENAI_COMPATIBLE) {
                     currentSettings.customEndpointUrl
                 } else null,
-                temperature = currentSettings.temperature
+                temperature = currentSettings.temperature,
+                thinkingBudget = currentSettings.thinkingBudget
             )
 
             val response = adapter.sendTurn(turnRequest)

@@ -11,7 +11,7 @@ class AgentToolTest {
     @Test
     fun testToolDefinitionsAndSchemas() {
         val tools = AgentTools.ALL_TOOLS
-        assertEquals(10, tools.size)
+        assertEquals(11, tools.size)
 
         val readFileTool = AgentTools.READ_FILE
         val schema = readFileTool.toJsonSchema()
@@ -47,6 +47,14 @@ class AgentToolTest {
         assertTrue(subagentSchema.getJSONObject("properties").has("task"))
         assertTrue(subagentSchema.getJSONObject("properties").has("max_turns"))
 
+        val askQuestionTool = AgentTools.ASK_QUESTION
+        val askSchema = askQuestionTool.toJsonSchema()
+        assertTrue(askSchema.getJSONObject("properties").has("question"))
+        assertTrue(askSchema.getJSONObject("properties").has("options"))
+        assertTrue(askSchema.getJSONObject("properties").has("allow_multiple"))
+        val askRequired = askSchema.getJSONArray("required")
+        assertTrue(askRequired.length() >= 2)
+
         // Subagent tools must exclude invoke_subagent to prevent recursive delegation loops
         assertFalse(AgentTools.SUBAGENT_TOOLS.contains(AgentTools.INVOKE_SUBAGENT))
         assertEquals(6, AgentTools.SUBAGENT_TOOLS.size)
@@ -66,6 +74,27 @@ class AgentToolTest {
         assertFalse(AgentTools.isDestructive("fetch_web_page"))
         assertFalse(AgentTools.isDestructive("search_web"))
         assertFalse(AgentTools.isDestructive("invoke_subagent"))
+        assertFalse(AgentTools.isDestructive("ask_question"))
+    }
+
+    @Test
+    fun testParseStringList() {
+        val jsonArray = """["Option 1", "Option 2", "Option 3"]"""
+        val parsedJson = AgentTools.parseStringList(jsonArray)
+        assertEquals(3, parsedJson.size)
+        assertEquals("Option 1", parsedJson[0])
+        assertEquals("Option 2", parsedJson[1])
+        assertEquals("Option 3", parsedJson[2])
+
+        val commaSeparated = "Alpha, Beta, Gamma"
+        val parsedComma = AgentTools.parseStringList(commaSeparated)
+        assertEquals(3, parsedComma.size)
+        assertEquals("Alpha", parsedComma[0])
+        assertEquals("Beta", parsedComma[1])
+        assertEquals("Gamma", parsedComma[2])
+
+        val empty = AgentTools.parseStringList("")
+        assertTrue(empty.isEmpty())
     }
 
     @Test

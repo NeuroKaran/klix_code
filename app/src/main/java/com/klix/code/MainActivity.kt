@@ -792,6 +792,7 @@ class MainActivity : ComponentActivity() {
                                 viewModel.refreshTree()
                             },
                             onRejectTool = { agentViewModel.rejectPendingTool() },
+                            onAnswerQuestion = { answers -> agentViewModel.answerQuestion(answers) },
                             onCancelTask = { agentViewModel.cancelTask() },
                             onClearChat = { agentViewModel.clearChat() },
                             onOpenSettings = { agentViewModel.toggleSettings() },

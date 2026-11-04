@@ -58,5 +58,6 @@ data class ProviderSettings(
     val autoApproveReadTools: Boolean = true,
     val autoApproveWriteTools: Boolean = false,
     val autoVerifyEdits: Boolean = true,
-    val temperature: Float = 0.2f
+    val temperature: Float = 0.2f,
+    val thinkingBudget: Int = 2048
 )

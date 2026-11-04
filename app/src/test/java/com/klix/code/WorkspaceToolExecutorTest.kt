@@ -417,4 +417,45 @@ class WorkspaceToolExecutorTest {
         assertTrue(result.output.contains("Subagent Report for 'Find auth validation endpoints'"))
         assertTrue(result.output.contains("Found 3 matching auth routes"))
     }
+
+    @Test
+    fun testAskQuestionToolExecution() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+
+        val toolCall = ToolCallRequest(
+            id = "call_ask_1",
+            name = "ask_question",
+            rawArguments = """{"question": "Which architecture pattern should be used?", "options": ["MVI", "MVVM"], "allow_multiple": false}""",
+            parsedArguments = mapOf(
+                "question" to "Which architecture pattern should be used?",
+                "options" to "[\"MVI\", \"MVVM\"]",
+                "allow_multiple" to "false"
+            )
+        )
+
+        val result = executor.execute(null, toolCall)
+        assertTrue(result.isSuccess)
+        assertTrue(result.output.contains("Question: Which architecture pattern should be used?"))
+        assertTrue(result.output.contains("1. MVI"))
+        assertTrue(result.output.contains("2. MVVM"))
+        assertTrue(result.output.contains("Allow Multiple: false"))
+    }
+
+    @Test
+    fun testAskQuestionToolMissingQuestion() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val executor = WorkspaceToolExecutor(fakeRepo, FakeExecutionProvider())
+
+        val toolCall = ToolCallRequest(
+            id = "call_ask_err",
+            name = "ask_question",
+            rawArguments = """{}""",
+            parsedArguments = emptyMap()
+        )
+
+        val result = executor.execute(null, toolCall)
+        org.junit.Assert.assertFalse(result.isSuccess)
+        assertTrue(result.error!!.contains("Missing required parameter 'question'"))
+    }
 }

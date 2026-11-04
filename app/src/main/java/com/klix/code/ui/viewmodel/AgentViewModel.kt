@@ -13,6 +13,7 @@ import com.klix.code.data.agent.command.SlashCommandRepositoryImpl
 import com.klix.code.data.agent.harness.AgentHarness
 import com.klix.code.data.agent.harness.HarnessStatus
 import com.klix.code.data.agent.harness.PendingApproval
+import com.klix.code.data.agent.harness.PendingQuestion
 import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.model.ProviderSettings
 import com.klix.code.data.agent.provider.ChatMessage
@@ -51,6 +52,7 @@ class AgentViewModel @JvmOverloads constructor(
     val status: StateFlow<HarnessStatus> = harness.status
     val statusMessage: StateFlow<String?> = harness.statusMessage
     val pendingApproval: StateFlow<PendingApproval?> = harness.pendingApproval
+    val pendingQuestion: StateFlow<PendingQuestion?> = harness.pendingQuestion
     val totalPromptTokens: StateFlow<Int> = harness.totalPromptTokens
     val totalCompletionTokens: StateFlow<Int> = harness.totalCompletionTokens
 
@@ -378,12 +380,24 @@ class AgentViewModel @JvmOverloads constructor(
         harness.postAssistantInfo(sb.toString())
     }
 
-    fun approvePendingTool() {
-        harness.approvePendingTool()
+    fun approvePendingTool(selectedAnswers: List<String>? = null) {
+        harness.approvePendingTool(selectedAnswers)
     }
 
     fun rejectPendingTool(reason: String = "Rejected by user.") {
         harness.rejectPendingTool(reason)
+    }
+
+    fun answerQuestion(answers: List<String>) {
+        harness.answerQuestion(answers)
+    }
+
+    fun rejectQuestion(reason: String = "Declined by user.") {
+        harness.rejectPendingQuestion(reason)
+    }
+
+    fun compactHistory() {
+        harness.compactHistory()
     }
 
     fun cancelTask() {

@@ -34,10 +34,19 @@ class GeminiAdapter(
 
         // Contents
         val contentsArray = JSONArray()
+        var currentRole: String? = null
+        var currentPartsArray: JSONArray? = null
+
         for (msg in request.messages) {
-            val contentObj = JSONObject()
-            contentObj.put("role", if (msg.role == MessageRole.USER) "user" else "model")
+            val role = if (msg.role == MessageRole.USER) "user" else "model"
             val partsArray = JSONArray()
+
+            if (msg.role != MessageRole.USER && !msg.thought.isNullOrBlank()) {
+                val thoughtPart = JSONObject()
+                thoughtPart.put("text", msg.thought)
+                thoughtPart.put("thought", true)
+                partsArray.put(thoughtPart)
+            }
 
             if (msg.content.isNotBlank()) {
                 partsArray.put(JSONObject().put("text", msg.content))
@@ -69,9 +78,19 @@ class GeminiAdapter(
                 partsArray.put(JSONObject().put("functionResponse", frObj))
             }
 
-            if (partsArray.length() > 0) {
+            if (partsArray.length() == 0) continue
+
+            if (role == currentRole && currentPartsArray != null) {
+                for (i in 0 until partsArray.length()) {
+                    currentPartsArray.put(partsArray.getJSONObject(i))
+                }
+            } else {
+                val contentObj = JSONObject()
+                contentObj.put("role", role)
                 contentObj.put("parts", partsArray)
                 contentsArray.put(contentObj)
+                currentRole = role
+                currentPartsArray = partsArray
             }
         }
         root.put("contents", contentsArray)
@@ -93,6 +112,11 @@ class GeminiAdapter(
         // Generation Config
         val genConfig = JSONObject()
         genConfig.put("temperature", request.temperature.toDouble())
+        if (request.thinkingBudget > 0 && !request.model.contains("1.5")) {
+            val thinkingConfig = JSONObject()
+            thinkingConfig.put("thinkingBudget", request.thinkingBudget)
+            genConfig.put("thinkingConfig", thinkingConfig)
+        }
         root.put("generationConfig", genConfig)
 
         val requestBody = root.toString().toRequestBody("application/json; charset=utf-8".toMediaType())

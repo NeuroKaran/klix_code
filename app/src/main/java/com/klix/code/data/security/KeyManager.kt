@@ -71,6 +71,7 @@ class KeyManagerImpl(private val context: Context) : KeyManager {
         val autoWrite = prefs.getBoolean("auto_approve_write", false)
         val autoVerify = prefs.getBoolean("auto_verify_edits", true)
         val temp = prefs.getFloat("temperature", 0.2f)
+        val thinkingBudget = prefs.getInt("thinking_budget", 2048)
 
         return ProviderSettings(
             activeProvider = provider,
@@ -79,7 +80,8 @@ class KeyManagerImpl(private val context: Context) : KeyManager {
             autoApproveReadTools = autoRead,
             autoApproveWriteTools = autoWrite,
             autoVerifyEdits = autoVerify,
-            temperature = temp
+            temperature = temp,
+            thinkingBudget = thinkingBudget
         )
     }
 
@@ -92,6 +94,7 @@ class KeyManagerImpl(private val context: Context) : KeyManager {
             .putBoolean("auto_approve_write", settings.autoApproveWriteTools)
             .putBoolean("auto_verify_edits", settings.autoVerifyEdits)
             .putFloat("temperature", settings.temperature)
+            .putInt("thinking_budget", settings.thinkingBudget)
             .apply()
     }
 

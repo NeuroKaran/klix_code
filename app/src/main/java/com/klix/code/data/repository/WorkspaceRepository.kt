@@ -16,6 +16,7 @@ import com.klix.code.widget.KlixWidgets
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
+import java.net.URLDecoder
 
 data class SearchMatch(
     val filePath: String,
@@ -59,15 +60,12 @@ class WorkspaceRepositoryImpl(
         }
 
         val projects = getRecentProjects().toMutableList()
-        val existingIndex = projects.indexOfFirst { it.uri.toString() == uri.toString() }
+        val canonicalTarget = canonicalizeUri(uri)
+        val existingIndex = projects.indexOfFirst { canonicalizeUri(it.uri) == canonicalTarget }
         if (existingIndex >= 0) {
-            projects[existingIndex] = projects[existingIndex].copy(
-                name = name,
-                lastOpened = System.currentTimeMillis()
-            )
-        } else {
-            projects.add(0, ProjectItem(uri = uri, name = name, lastOpened = System.currentTimeMillis()))
+            projects.removeAt(existingIndex)
         }
+        projects.add(0, ProjectItem(uri = uri, name = name, lastOpened = System.currentTimeMillis()))
         StreakManager.recordActivity(context)
         saveRecentProjects(projects)
     }
@@ -87,12 +85,34 @@ class WorkspaceRepositoryImpl(
         } catch (_: Exception) {
             // Ignore malformed preferences
         }
-        list.sortedByDescending { it.lastOpened }
+        val sorted = list.sortedByDescending { it.lastOpened }
+        val seen = mutableSetOf<String>()
+        val deduplicated = mutableListOf<ProjectItem>()
+        for (item in sorted) {
+            val canon = canonicalizeUri(item.uri)
+            if (seen.add(canon)) {
+                deduplicated.add(item)
+            }
+        }
+        deduplicated
     }
 
     override suspend fun removeRecentProject(uri: Uri) = withContext(Dispatchers.IO) {
-        val projects = getRecentProjects().filter { it.uri.toString() != uri.toString() }
+        val canonicalTarget = canonicalizeUri(uri)
+        val projects = getRecentProjects().filter { canonicalizeUri(it.uri) != canonicalTarget }
         saveRecentProjects(projects)
+    }
+
+    companion object {
+        fun canonicalizeUri(uri: Uri): String {
+            val raw = uri.toString()
+            return try {
+                val safeRaw = raw.replace("+", "%2B")
+                URLDecoder.decode(safeRaw, "UTF-8").trimEnd('/')
+            } catch (_: Exception) {
+                raw.trimEnd('/')
+            }
+        }
     }
 
     private fun saveRecentProjects(projects: List<ProjectItem>) {

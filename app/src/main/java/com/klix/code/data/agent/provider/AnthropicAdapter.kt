@@ -23,9 +23,22 @@ class AnthropicAdapter(
     override suspend fun sendTurn(request: ProviderTurnRequest): ProviderTurnResponse = withContext(Dispatchers.IO) {
         val root = JSONObject()
         root.put("model", request.model)
-        root.put("max_tokens", 4096)
         root.put("system", request.systemPrompt)
-        root.put("temperature", request.temperature.toDouble())
+
+        if (request.thinkingBudget > 0) {
+            val budget = maxOf(1024, request.thinkingBudget)
+            val thinkingObj = JSONObject()
+            thinkingObj.put("type", "enabled")
+            thinkingObj.put("budget_tokens", budget)
+            root.put("thinking", thinkingObj)
+            // Claude API requires max_tokens to be strictly greater than budget_tokens
+            root.put("max_tokens", maxOf(4096, budget + 4096))
+            // Claude API requires temperature = 1.0 when thinking is enabled
+            root.put("temperature", 1.0)
+        } else {
+            root.put("max_tokens", 4096)
+            root.put("temperature", request.temperature.toDouble())
+        }
 
         // Tools
         val toolsArray = JSONArray()
@@ -40,11 +53,11 @@ class AnthropicAdapter(
 
         // Messages
         val messagesArray = JSONArray()
-        for (msg in request.messages) {
-            val msgObj = JSONObject()
-            val role = if (msg.role == MessageRole.USER) "user" else "assistant"
-            msgObj.put("role", role)
+        var currentRole: String? = null
+        var currentContentArray: JSONArray? = null
 
+        for (msg in request.messages) {
+            val role = if (msg.role == MessageRole.USER) "user" else "assistant"
             val contentArray = JSONArray()
 
             if (msg.content.isNotBlank()) {
@@ -78,9 +91,19 @@ class AnthropicAdapter(
                 contentArray.put(toolResultBlock)
             }
 
-            if (contentArray.length() > 0) {
+            if (contentArray.length() == 0) continue
+
+            if (role == currentRole && currentContentArray != null) {
+                for (i in 0 until contentArray.length()) {
+                    currentContentArray.put(contentArray.getJSONObject(i))
+                }
+            } else {
+                val msgObj = JSONObject()
+                msgObj.put("role", role)
                 msgObj.put("content", contentArray)
                 messagesArray.put(msgObj)
+                currentRole = role
+                currentContentArray = contentArray
             }
         }
         root.put("messages", messagesArray)

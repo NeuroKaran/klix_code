@@ -35,6 +35,7 @@ class ProviderAdapterTest {
         assertEquals("claude-3-7-sonnet-20250219", settings.activeModel)
         assertTrue(settings.autoApproveReadTools)
         assertEquals(false, settings.autoApproveWriteTools)
+        assertEquals(2048, settings.thinkingBudget)
     }
 
     @Test
@@ -46,5 +47,29 @@ class ProviderAdapterTest {
             assertTrue(provider.supportedModels.isNotEmpty())
             assertTrue(provider.supportedModels.contains(provider.defaultModel))
         }
+    }
+
+    @Test
+    fun testProviderTurnRequestThinkingBudget() {
+        val reqDefault = com.klix.code.data.agent.provider.ProviderTurnRequest(
+            systemPrompt = "",
+            messages = emptyList(),
+            tools = emptyList(),
+            model = "claude-3-7-sonnet-20250219",
+            apiKey = "key"
+        )
+        assertEquals(0, reqDefault.thinkingBudget)
+
+        val reqWithBudget = reqDefault.copy(thinkingBudget = 4096)
+        assertEquals(4096, reqWithBudget.thinkingBudget)
+    }
+
+    @Test
+    fun testThinkingBudgetSettingsClampingAndCustomValues() {
+        val customSettings = ProviderSettings(thinkingBudget = 1024)
+        assertEquals(1024, customSettings.thinkingBudget)
+
+        val disabledSettings = ProviderSettings(thinkingBudget = 0)
+        assertEquals(0, disabledSettings.thinkingBudget)
     }
 }
