@@ -76,6 +76,7 @@ import com.klix.code.data.stats.StreakManager
 import com.klix.code.data.agent.session.flattenFileTree
 import com.klix.code.ui.components.agent.AgentChatPanel
 import com.klix.code.ui.components.agent.AgentSettingsDialog
+import com.klix.code.ui.components.agent.CustomSlashCommandsDialog
 import com.klix.code.ui.components.sandbox.SandboxSetupDialog
 import com.klix.code.ui.components.sandbox.SandboxWarningDialog
 import com.klix.code.ui.components.terminal.TerminalView
@@ -212,6 +213,8 @@ class MainActivity : ComponentActivity() {
                 val agentSessions by agentViewModel.sessions.collectAsState()
                 val agentActiveSessionId by agentViewModel.activeSessionId.collectAsState()
                 val agentAvailableFiles by agentViewModel.availableWorkspaceFiles.collectAsState()
+                val agentSlashCommands by agentViewModel.slashCommands.collectAsState()
+                val isSlashCommandManagerOpen by agentViewModel.isSlashCommandManagerOpen.collectAsState()
                 val showSandboxSetup by terminalViewModel.showSetupDialog.collectAsState()
 
                 val sandboxStatus by terminalViewModel.sandboxManager.status.collectAsState()
@@ -777,6 +780,8 @@ class MainActivity : ComponentActivity() {
                             sessions = agentSessions,
                             activeSessionId = agentActiveSessionId,
                             availableFiles = agentAvailableFiles,
+                            availableSlashCommands = agentSlashCommands,
+                            onOpenSlashCommandManager = { agentViewModel.toggleSlashCommandManager(true) },
                             onCreateSession = { agentViewModel.createNewSession() },
                             onSwitchSession = { id -> agentViewModel.switchSession(id) },
                             onDeleteSession = { id -> agentViewModel.deleteSession(id) },
@@ -825,6 +830,16 @@ class MainActivity : ComponentActivity() {
                         onSaveApiKey = { provider, key -> agentViewModel.saveApiKey(provider, key) },
                         onSaveSettings = { updated -> agentViewModel.updateSettings(updated) },
                         onDismiss = { agentViewModel.toggleSettings() }
+                    )
+                }
+
+                // Custom Slash Commands Dialog
+                if (isSlashCommandManagerOpen) {
+                    CustomSlashCommandsDialog(
+                        commands = agentSlashCommands,
+                        onSaveCommand = { command -> agentViewModel.saveCustomCommand(command) },
+                        onDeleteCommand = { id -> agentViewModel.deleteCustomCommand(id) },
+                        onDismiss = { agentViewModel.toggleSlashCommandManager(false) }
                     )
                 }
 

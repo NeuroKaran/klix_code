@@ -92,6 +92,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.klix.code.data.agent.command.SlashCommand
 import com.klix.code.data.agent.harness.HarnessStatus
 import com.klix.code.data.agent.harness.PendingApproval
 import com.klix.code.data.agent.model.ProviderSettings
@@ -130,6 +131,8 @@ fun AgentChatPanel(
     sessions: List<ChatSession> = emptyList(),
     activeSessionId: String = "",
     availableFiles: List<TaggedFileItem> = emptyList(),
+    availableSlashCommands: List<SlashCommand> = emptyList(),
+    onOpenSlashCommandManager: () -> Unit = {},
     onCreateSession: () -> Unit = {},
     onSwitchSession: (String) -> Unit = {},
     onDeleteSession: (String) -> Unit = {},
@@ -174,6 +177,24 @@ fun AgentChatPanel(
         availableFiles.filter {
             it.path.contains(tagQuery, ignoreCase = true) || it.fileName.contains(tagQuery, ignoreCase = true)
         }.take(8)
+    } else emptyList()
+
+    // Inspect "/" slash command autocomplete from cursor position
+    val lastSlashIndex = textBeforeCursor.lastIndexOf('/')
+    val isSlashCommandActive = if (lastSlashIndex >= 0 && !isTaggingActive) {
+        val isAtStart = lastSlashIndex == 0 || textBeforeCursor[lastSlashIndex - 1].isWhitespace()
+        if (isAtStart) {
+            val queryCandidate = textBeforeCursor.substring(lastSlashIndex + 1)
+            !queryCandidate.contains(' ') && !queryCandidate.contains('\n')
+        } else false
+    } else false
+
+    val slashQuery = if (isSlashCommandActive) textBeforeCursor.substring(lastSlashIndex + 1) else ""
+    val matchingSlashCommands = if (isSlashCommandActive) {
+        availableSlashCommands.filter {
+            it.trigger.contains(slashQuery, ignoreCase = true) ||
+            it.description.contains(slashQuery, ignoreCase = true)
+        }
     } else emptyList()
 
     Column(
@@ -287,6 +308,15 @@ fun AgentChatPanel(
                     Icon(
                         imageVector = Icons.Default.DeleteOutline,
                         contentDescription = "Clear Session",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                IconButton(onClick = onOpenSlashCommandManager, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Terminal,
+                        contentDescription = "Slash Commands",
                         tint = TextSecondary,
                         modifier = Modifier.size(18.dp)
                     )
@@ -551,6 +581,148 @@ fun AgentChatPanel(
             }
         }
 
+        // Slash Command Autocomplete Popup (Displays above text input when typing "/")
+        AnimatedVisibility(
+            visible = isSlashCommandActive && matchingSlashCommands.isNotEmpty(),
+            enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = DarkSurface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
+                shadowElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Terminal,
+                                contentDescription = null,
+                                tint = AccentPrimary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "SLASH COMMANDS",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMuted,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "${matchingSlashCommands.size} match${if (matchingSlashCommands.size > 1) "es" else ""}",
+                                fontSize = 10.sp,
+                                color = TextMuted
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(DarkSurfaceVariant)
+                                    .clickable { onOpenSlashCommandManager() }
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "+ Custom",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = AccentPrimary
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = DarkBorder, modifier = Modifier.padding(vertical = 4.dp))
+
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 220.dp)
+                    ) {
+                        items(matchingSlashCommands) { cmd ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        // Replace current /query with /command
+                                        val before = textBeforeCursor.substring(0, lastSlashIndex)
+                                        val after = promptInput.text.substring(cursor)
+                                        val insertion = "/${cmd.trigger} "
+                                        val newText = before + insertion + after
+                                        val newCursor = before.length + insertion.length
+                                        promptInput = TextFieldValue(
+                                            text = newText,
+                                            selection = TextRange(newCursor)
+                                        )
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (cmd.isBuiltIn) DarkSurfaceVariant else Color(0xFF8B5CF6).copy(alpha = 0.2f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "/${cmd.trigger}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = if (cmd.isBuiltIn) AccentPrimary else Color(0xFFA78BFA)
+                                    )
+                                }
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = cmd.description,
+                                        fontSize = 12.sp,
+                                        color = TextPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                if (!cmd.isBuiltIn) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(Color(0xFF8B5CF6).copy(alpha = 0.2f))
+                                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "CUSTOM",
+                                            fontSize = 8.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFA78BFA)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Bottom Input Bar
         HorizontalDivider(color = DarkBorder)
         Row(
@@ -561,6 +733,32 @@ fun AgentChatPanel(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            // Quick "/" Slash Command Button
+            IconButton(
+                onClick = {
+                    val currentText = promptInput.text
+                    val sel = promptInput.selection.end
+                    val before = currentText.take(sel)
+                    val after = currentText.drop(sel)
+                    val needSpace = before.isNotEmpty() && !before.endsWith(" ")
+                    val insert = if (needSpace) " /" else "/"
+                    val newText = before + insert + after
+                    val newSel = sel + insert.length
+                    promptInput = TextFieldValue(text = newText, selection = TextRange(newSel))
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(DarkSurfaceVariant)
+            ) {
+                Text(
+                    text = "/",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentPrimary
+                )
+            }
+
             // Quick "@" Tag Button
             IconButton(
                 onClick = {
@@ -592,7 +790,7 @@ fun AgentChatPanel(
                 onValueChange = { promptInput = it },
                 placeholder = {
                     Text(
-                        text = "Ask Klix, or type @ to mention a file/folder...",
+                        text = "Ask Klix, type / for commands, or @ for files...",
                         color = TextMuted,
                         fontSize = 13.sp
                     )
@@ -1131,30 +1329,56 @@ private fun ChatMessageItem(
         if (message.content.isNotBlank()) {
             if (isUser) {
                 // User Message Bubble
-                Box(
-                    modifier = Modifier
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = 14.dp,
-                                topEnd = 14.dp,
-                                bottomStart = 14.dp,
-                                bottomEnd = 3.dp
+                Column(horizontalAlignment = Alignment.End) {
+                    if (!message.command.isNullOrBlank()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(bottom = 4.dp, end = 2.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(AccentPrimary.copy(alpha = 0.2f))
+                                    .border(0.5.dp, AccentPrimary.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = message.command,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = AccentPrimary
+                                )
+                            }
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(
+                                RoundedCornerShape(
+                                    topStart = 14.dp,
+                                    topEnd = 14.dp,
+                                    bottomStart = 14.dp,
+                                    bottomEnd = 3.dp
+                                )
                             )
+                            .background(AccentPrimary.copy(alpha = 0.15f))
+                            .border(
+                                0.75.dp,
+                                AccentPrimary.copy(alpha = 0.35f),
+                                RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 14.dp, bottomEnd = 3.dp)
+                            )
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = buildMarkdownAnnotatedString(message.content, TextPrimary),
+                            fontSize = 14.sp,
+                            color = TextPrimary,
+                            lineHeight = 21.sp
                         )
-                        .background(AccentPrimary.copy(alpha = 0.15f))
-                        .border(
-                            0.75.dp,
-                            AccentPrimary.copy(alpha = 0.35f),
-                            RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 14.dp, bottomEnd = 3.dp)
-                        )
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                ) {
-                    Text(
-                        text = buildMarkdownAnnotatedString(message.content, TextPrimary),
-                        fontSize = 14.sp,
-                        color = TextPrimary,
-                        lineHeight = 21.sp
-                    )
+                    }
                 }
             } else {
                 // Assistant Message with rich typography & syntax highlighted code blocks

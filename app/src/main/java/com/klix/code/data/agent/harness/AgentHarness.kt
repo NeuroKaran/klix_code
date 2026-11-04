@@ -163,7 +163,16 @@ class AgentHarness(
         }
     }
 
-    fun startTask(userPrompt: String) {
+    fun postAssistantInfo(message: String) {
+        val infoMsg = ChatMessage(
+            role = MessageRole.ASSISTANT,
+            content = message
+        )
+        _messages.value = _messages.value + infoMsg
+        notifySessionUpdated()
+    }
+
+    fun startTask(userPrompt: String, command: String? = null) {
         if (userPrompt.isBlank()) return
         if (currentApiKey.isBlank()) {
             _status.value = HarnessStatus.ERROR
@@ -185,7 +194,8 @@ class AgentHarness(
 
         val userMessage = ChatMessage(
             role = MessageRole.USER,
-            content = userPrompt
+            content = userPrompt,
+            command = command
         )
         _messages.value = _messages.value + userMessage
         notifySessionUpdated()

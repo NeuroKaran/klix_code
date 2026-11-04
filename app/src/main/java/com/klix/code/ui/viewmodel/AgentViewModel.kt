@@ -4,6 +4,12 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.klix.code.data.agent.command.BuiltInSlashCommands
+import com.klix.code.data.agent.command.SlashCommand
+import com.klix.code.data.agent.command.SlashCommandActionType
+import com.klix.code.data.agent.command.SlashCommandProcessor
+import com.klix.code.data.agent.command.SlashCommandRepository
+import com.klix.code.data.agent.command.SlashCommandRepositoryImpl
 import com.klix.code.data.agent.harness.AgentHarness
 import com.klix.code.data.agent.harness.HarnessStatus
 import com.klix.code.data.agent.harness.PendingApproval
@@ -34,7 +40,8 @@ class AgentViewModel @JvmOverloads constructor(
     private val repository: WorkspaceRepository = WorkspaceRepositoryImpl(application),
     private val keyManager: KeyManager = KeyManagerImpl(application),
     private val executionProvider: SandboxExecutionProvider = SandboxExecutionProvider(application),
-    private val sessionRepository: ChatSessionRepository = ChatSessionRepositoryImpl(application)
+    private val sessionRepository: ChatSessionRepository = ChatSessionRepositoryImpl(application),
+    private val slashCommandRepository: SlashCommandRepository = SlashCommandRepositoryImpl(application)
 ) : AndroidViewModel(application) {
 
     private val toolExecutor = WorkspaceToolExecutor(repository, executionProvider)
@@ -67,12 +74,30 @@ class AgentViewModel @JvmOverloads constructor(
     private val _availableWorkspaceFiles = MutableStateFlow<List<TaggedFileItem>>(emptyList())
     val availableWorkspaceFiles: StateFlow<List<TaggedFileItem>> = _availableWorkspaceFiles.asStateFlow()
 
+    // Slash commands state
+    private val _slashCommands = MutableStateFlow<List<SlashCommand>>(emptyList())
+    val slashCommands: StateFlow<List<SlashCommand>> = _slashCommands.asStateFlow()
+
+    private val _isSlashCommandManagerOpen = MutableStateFlow(false)
+    val isSlashCommandManagerOpen: StateFlow<Boolean> = _isSlashCommandManagerOpen.asStateFlow()
+
+    // Active workspace context tracked for slash command template expansions
+    var currentWorkspaceUri: Uri? = null
+        private set
+    var currentWorkspaceName: String = "Workspace"
+        private set
+    var activeFileName: String? = null
+        private set
+    var activeFileContent: String? = null
+        private set
+
     init {
         harness.onSessionUpdated = { msgs, promptTokens, completionTokens ->
             onHarnessSessionUpdated(msgs, promptTokens, completionTokens)
         }
         syncHarnessConfig()
         loadSavedSessions()
+        loadSlashCommands()
     }
 
     private fun loadSavedSessions() {
@@ -243,12 +268,114 @@ class AgentViewModel @JvmOverloads constructor(
         activeFileName: String? = null,
         activeFileContent: String? = null
     ) {
+        this.currentWorkspaceUri = workspaceUri
+        this.currentWorkspaceName = workspaceName
+        this.activeFileName = activeFileName
+        this.activeFileContent = activeFileContent
         harness.updateContext(workspaceUri, workspaceName, activeFileName, activeFileContent)
     }
 
+    fun loadSlashCommands() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _slashCommands.value = slashCommandRepository.getAllCommands()
+        }
+    }
+
+    fun saveCustomCommand(command: SlashCommand) {
+        viewModelScope.launch(Dispatchers.IO) {
+            slashCommandRepository.saveCustomCommand(command)
+            loadSlashCommands()
+        }
+    }
+
+    fun deleteCustomCommand(commandId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            slashCommandRepository.deleteCustomCommand(commandId)
+            loadSlashCommands()
+        }
+    }
+
+    fun toggleSlashCommandManager(open: Boolean? = null) {
+        _isSlashCommandManagerOpen.value = open ?: !_isSlashCommandManagerOpen.value
+    }
+
     fun sendPrompt(prompt: String) {
+        val trimmed = prompt.trim()
+        if (trimmed.startsWith("/")) {
+            handleSlashCommand(trimmed)
+            return
+        }
         syncHarnessConfig()
         harness.startTask(prompt)
+    }
+
+    private fun handleSlashCommand(rawPrompt: String) {
+        val commandToken = rawPrompt.substring(1).substringBefore(" ").trim()
+        val commandArgs = if (rawPrompt.contains(" ")) rawPrompt.substringAfter(" ").trim() else ""
+
+        val command = _slashCommands.value.find { it.trigger.equals(commandToken, ignoreCase = true) }
+        if (command == null) {
+            harness.postAssistantInfo(
+                "Unknown slash command `/$commandToken`.\n\n" +
+                "Type `/help` to see all available commands, or `/commands` to create your own custom commands."
+            )
+            return
+        }
+
+        when (command.actionType) {
+            SlashCommandActionType.CLEAR_CHAT -> {
+                clearChat()
+            }
+            SlashCommandActionType.NEW_CHAT -> {
+                createNewSession()
+            }
+            SlashCommandActionType.SETTINGS -> {
+                toggleSettings()
+            }
+            SlashCommandActionType.COMMANDS -> {
+                toggleSlashCommandManager(true)
+            }
+            SlashCommandActionType.HELP -> {
+                displayHelpMessage()
+            }
+            SlashCommandActionType.PROMPT -> {
+                val expandedPrompt = SlashCommandProcessor.resolveTemplate(
+                    template = command.template,
+                    input = commandArgs,
+                    fileName = activeFileName,
+                    fileContent = activeFileContent
+                )
+                syncHarnessConfig()
+                harness.startTask(userPrompt = expandedPrompt, command = "/${command.trigger}")
+            }
+        }
+    }
+
+    private fun displayHelpMessage() {
+        val builtIns = _slashCommands.value.filter { it.isBuiltIn }
+        val customs = _slashCommands.value.filter { !it.isBuiltIn }
+
+        val sb = StringBuilder()
+        sb.append("### Available Slash Commands\n\n")
+        sb.append("**Built-in Commands:**\n")
+        for (cmd in builtIns) {
+            sb.append("- `/${cmd.trigger}` — ${cmd.description}\n")
+        }
+
+        if (customs.isNotEmpty()) {
+            sb.append("\n**Custom Commands:**\n")
+            for (cmd in customs) {
+                sb.append("- `/${cmd.trigger}` — ${cmd.description}\n")
+            }
+        }
+
+        sb.append("\n**Template Placeholders for Custom Commands:**\n")
+        sb.append("- `{input}`: Arguments or query typed after the command\n")
+        sb.append("- `{file}`: Active editor file name\n")
+        sb.append("- `{code}`: Active editor file contents\n\n")
+        sb.append("Type `/commands` or tap the **/** button to create and manage your custom slash commands!")
+
+        harness.postAssistantInfo(sb.toString())
     }
 
     fun approvePendingTool() {

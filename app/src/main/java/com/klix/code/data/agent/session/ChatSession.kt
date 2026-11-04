@@ -97,6 +97,9 @@ data class ChatSession(
                 obj.put("thought", msg.thought)
             }
             obj.put("timestamp", msg.timestamp)
+            if (msg.command != null) {
+                obj.put("command", msg.command)
+            }
 
             if (msg.toolCalls.isNotEmpty()) {
                 val tcArray = JSONArray()
@@ -146,6 +149,7 @@ data class ChatSession(
             val content = obj.optString("content", "")
             val thought = if (obj.has("thought")) obj.optString("thought") else null
             val timestamp = obj.optLong("timestamp", System.currentTimeMillis())
+            val command = if (obj.has("command")) obj.optString("command") else null
 
             val toolCalls = mutableListOf<ToolCallRequest>()
             val tcArray = obj.optJSONArray("toolCalls")
@@ -209,7 +213,8 @@ data class ChatSession(
                 thought = thought,
                 toolCalls = toolCalls,
                 toolResults = toolResults,
-                timestamp = timestamp
+                timestamp = timestamp,
+                command = command
             )
         }
     }

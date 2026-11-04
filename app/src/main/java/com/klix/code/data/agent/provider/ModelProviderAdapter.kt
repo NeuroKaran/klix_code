@@ -16,7 +16,8 @@ data class ChatMessage(
     val thought: String? = null,
     val toolCalls: List<ToolCallRequest> = emptyList(),
     val toolResults: List<ToolCallResult> = emptyList(),
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val command: String? = null
 )
 
 data class ProviderTurnRequest(
