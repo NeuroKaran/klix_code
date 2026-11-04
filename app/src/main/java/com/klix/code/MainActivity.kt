@@ -114,6 +114,10 @@ import com.klix.code.ui.viewmodel.EditorViewModel
 import com.klix.code.ui.viewmodel.UpdateViewModel
 import com.klix.code.ui.viewmodel.UpdateUIState
 import com.klix.code.ui.components.update.UpdateDialog
+import com.klix.code.ui.components.streak.DailyStreakDialog
+import com.klix.code.ui.components.streak.StreakPillButton
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -122,6 +126,11 @@ import io.sentry.Sentry
 import com.klix.code.data.telemetry.KlixTelemetry
 
 class MainActivity : ComponentActivity() {
+
+    override fun onResume() {
+        super.onResume()
+        StreakManager.refresh(applicationContext)
+    }
 
     private val viewModel: EditorViewModel by viewModels()
     private val agentViewModel: AgentViewModel by viewModels()
@@ -157,7 +166,8 @@ class MainActivity : ComponentActivity() {
             KlixWidgets.ACTION_NEW_PROJECT,
             KlixWidgets.ACTION_OPEN_FOLDER,
             KlixWidgets.ACTION_SEE_ALL_PROJECTS,
-            KlixWidgets.ACTION_ASK_AGENT -> {
+            KlixWidgets.ACTION_ASK_AGENT,
+            KlixWidgets.ACTION_OPEN_STREAK -> {
                 pendingWidgetAction = intent.action
             }
         }
@@ -168,7 +178,7 @@ class MainActivity : ComponentActivity() {
         setTheme(R.style.Theme_KlixCode)
         super.onCreate(savedInstanceState)
         lifecycleScope.launch(Dispatchers.IO) {
-            StreakManager.recordActivity(applicationContext)
+            StreakManager.refresh(applicationContext)
         }
         parseWidgetIntent(intent)
         KlixTelemetry.recordBreadcrumb(
@@ -220,6 +230,19 @@ class MainActivity : ComponentActivity() {
                 val sandboxStatus by terminalViewModel.sandboxManager.status.collectAsState()
                 val isSandboxInstalled = sandboxStatus == SandboxStatus.READY && terminalViewModel.sandboxManager.isInstalled()
                 var showSandboxWarningDialog by rememberSaveable { mutableStateOf(false) }
+
+                val streakState by StreakManager.streakState.collectAsState()
+                var showDailyStreakDialog by rememberSaveable { mutableStateOf(false) }
+
+                // Auto-refresh streak state at 12 midnight
+                LaunchedEffect(Unit) {
+                    while (isActive) {
+                        val delayMs = StreakManager.getMillisUntilNextMidnight()
+                        delay(delayMs + 500L)
+                        StreakManager.refresh(applicationContext)
+                        KlixWidgets.updateAll(applicationContext)
+                    }
+                }
 
                 val updateState by updateViewModel.uiState.collectAsState()
                 val isUpdateDialogVisible by updateViewModel.isDialogVisible.collectAsState()
@@ -286,6 +309,9 @@ class MainActivity : ComponentActivity() {
                         KlixWidgets.ACTION_ASK_AGENT -> {
                             isAgentPanelOpen = true
                         }
+                        KlixWidgets.ACTION_OPEN_STREAK -> {
+                            showDailyStreakDialog = true
+                        }
                     }
                     pendingWidgetAction = null
                 }
@@ -333,6 +359,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onCheckForUpdates = {
                                     updateViewModel.checkForUpdates(applicationContext, isManual = true)
+                                },
+                                onOpenStreak = {
+                                    showDailyStreakDialog = true
                                 },
                                 onFileClick = { fileNode ->
                                     viewModel.openFile(fileNode)
@@ -404,6 +433,13 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 actions = {
+                                    // Daily Login Streak Button
+                                    StreakPillButton(
+                                        streakCount = streakState.streakCount,
+                                        isClaimedToday = streakState.isClaimedToday,
+                                        onClick = { showDailyStreakDialog = true }
+                                    )
+
                                     // Save Button
                                     val activeTab = openTabs.find { it.uri == activeTabUri }
                                     IconButton(
@@ -890,6 +926,13 @@ class MainActivity : ComponentActivity() {
                         state = updateState,
                         onOpenInBrowser = { url -> updateViewModel.openInBrowser(this@MainActivity, url) },
                         onDismiss = { postpone -> updateViewModel.dismissDialog(applicationContext, postpone) }
+                    )
+                }
+
+                // Daily Streak Dialog
+                if (showDailyStreakDialog) {
+                    DailyStreakDialog(
+                        onDismiss = { showDailyStreakDialog = false }
                     )
                 }
             }

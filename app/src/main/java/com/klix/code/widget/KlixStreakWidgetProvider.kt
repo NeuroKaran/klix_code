@@ -41,8 +41,9 @@ class KlixStreakWidgetProvider : AppWidgetProvider() {
             views.setImageViewResource(dotIds[i], res)
         }
 
-        // Tap widget -> Open KlixCode
+        // Tap widget -> Open KlixCode & open Streak Dialog
         val intent = Intent(context, MainActivity::class.java).apply {
+            action = KlixWidgets.ACTION_OPEN_STREAK
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(

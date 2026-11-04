@@ -38,6 +38,9 @@ import androidx.compose.material.icons.filled.SecurityUpdateGood
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Warning
+import com.klix.code.data.stats.StreakManager
+import com.klix.code.ui.components.streak.StreakSidebarCard
+import androidx.compose.runtime.collectAsState
 import com.klix.code.BuildConfig
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -89,6 +92,7 @@ fun FileTreeView(
     onConfigureSandbox: (() -> Unit)? = null,
     onOpenSandboxWorkspace: (() -> Unit)? = null,
     onCheckForUpdates: (() -> Unit)? = null,
+    onOpenStreak: (() -> Unit)? = null,
     onFileClick: (FileNode) -> Unit,
     onCreateFile: (parentUri: Uri, fileName: String) -> Unit,
     onCreateDirectory: (parentUri: Uri, dirName: String) -> Unit,
@@ -99,6 +103,7 @@ fun FileTreeView(
 ) {
     // Keep track of which directory URIs are expanded
     val expandedMap = remember { mutableStateMapOf<String, Boolean>() }
+    val streakState by StreakManager.streakState.collectAsState()
 
     var showCreateFileDialog by remember { mutableStateOf<Uri?>(null) }
     var showCreateDirDialog by remember { mutableStateOf<Uri?>(null) }
@@ -282,6 +287,18 @@ fun FileTreeView(
         }
 
         HorizontalDivider(color = DarkBorder, thickness = 1.dp)
+
+        if (onOpenStreak != null) {
+            StreakSidebarCard(
+                streakCount = streakState.streakCount,
+                isClaimedToday = streakState.isClaimedToday,
+                weeklyActive = streakState.weeklyActive,
+                todayIndex = streakState.todayIndex,
+                onClick = onOpenStreak,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            )
+            HorizontalDivider(color = DarkBorder, thickness = 1.dp)
+        }
 
         Box(
             modifier = Modifier
