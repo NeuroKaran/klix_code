@@ -2,11 +2,12 @@ package com.klix.code.ui.components
 
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula
+import io.github.rosemoe.sora.widget.schemes.SchemeGitHub
 
 object EditorSetup {
     fun createColorScheme(isDark: Boolean = false): EditorColorScheme {
         if (!isDark) {
-            val scheme = EditorColorScheme()
+            val scheme = SchemeGitHub()
             scheme.setColor(EditorColorScheme.WHOLE_BACKGROUND, android.graphics.Color.parseColor("#FFFFFF"))
             scheme.setColor(EditorColorScheme.LINE_NUMBER_BACKGROUND, android.graphics.Color.parseColor("#F8FAFC"))
             scheme.setColor(EditorColorScheme.LINE_NUMBER, android.graphics.Color.parseColor("#94A3B8"))

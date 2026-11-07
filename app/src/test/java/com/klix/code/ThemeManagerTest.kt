@@ -106,5 +106,22 @@ class ThemeManagerTest {
         assertFalse(ThemeManager.isDarkTheme(systemInDark = false))
         assertTrue(ThemeManager.isDarkTheme(systemInDark = true))
     }
+
+    @Test
+    fun testPaletteInvariants() {
+        assertFalse(com.klix.code.ui.theme.LightKlixColors.isDark)
+        assertTrue(com.klix.code.ui.theme.DarkKlixColors.isDark)
+
+        // Light theme background must differ from dark theme background
+        org.junit.Assert.assertNotEquals(
+            com.klix.code.ui.theme.LightKlixColors.background,
+            com.klix.code.ui.theme.DarkKlixColors.background
+        )
+        // Light theme text primary must differ from dark theme text primary
+        org.junit.Assert.assertNotEquals(
+            com.klix.code.ui.theme.LightKlixColors.textPrimary,
+            com.klix.code.ui.theme.DarkKlixColors.textPrimary
+        )
+    }
 }
 

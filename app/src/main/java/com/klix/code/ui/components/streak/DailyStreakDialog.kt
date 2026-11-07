@@ -85,6 +85,7 @@ import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
+import com.klix.code.ui.theme.LocalIsDarkTheme
 import com.klix.code.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -99,7 +100,9 @@ private val KlixNeonLime = Color(0xFFD4FF32)
 private val FlameOrange = Color(0xFFFF9800)
 private val FlameDeepOrange = Color(0xFFFF5722)
 private val FlameGold = Color(0xFFFFD54F)
-private val DotInactiveColor = Color(0xFF2B313E)
+private val DotInactiveColor: Color
+    @Composable
+    get() = if (LocalIsDarkTheme.current) Color(0xFF2B313E) else Color(0xFFD0D7DE)
 
 private enum class StreakAnimStage {
     IDLE,

@@ -31,6 +31,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -93,10 +94,11 @@ fun RecentProjectsDialog(
                     Icon(
                         imageVector = Icons.Default.Terminal,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Sandbox Workspace (/workspace)", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                    Text("Sandbox Workspace (/workspace)", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))

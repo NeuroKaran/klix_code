@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,7 +28,6 @@ import androidx.compose.ui.unit.sp
 import com.klix.code.ui.theme.AccentPrimary
 import com.klix.code.ui.theme.AccentWarning
 import com.klix.code.ui.theme.DarkBg
-import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
 
@@ -85,13 +85,13 @@ fun SandboxWarningDialog(
                 Icon(
                     imageVector = Icons.Default.Terminal,
                     contentDescription = null,
-                    tint = DarkSurface,
+                    tint = Color.White,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = "Install Sandbox",
-                    color = DarkSurface,
+                    color = Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )

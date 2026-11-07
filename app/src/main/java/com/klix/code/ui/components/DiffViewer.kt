@@ -168,10 +168,11 @@ fun DiffViewerDialog(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Apply Diff", color = Color.Black, fontWeight = FontWeight.Bold)
+                        Text("Apply Diff", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }

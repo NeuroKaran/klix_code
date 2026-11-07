@@ -71,6 +71,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.data.sandbox.SandboxStatus
+import com.klix.code.ui.terminal.TerminalColors
 import com.klix.code.ui.terminal.TerminalLine
 import com.klix.code.ui.terminal.TerminalTab
 import com.klix.code.ui.terminal.TerminalViewModel
@@ -464,11 +465,21 @@ private fun TerminalOutputList(
             modifier = Modifier.fillMaxSize()
         ) {
             items(lines, key = { it.id }) { line ->
+                val textColor = when (line.color) {
+                    TerminalColors.Primary -> AccentPrimary
+                    TerminalColors.Secondary -> AccentSecondary
+                    TerminalColors.Warning -> AccentWarning
+                    TerminalColors.Error -> AccentError
+                    TerminalColors.TextSecondary -> TextSecondary
+                    TerminalColors.TextMuted -> TextMuted
+                    Color.Unspecified -> TextPrimary
+                    else -> line.color
+                }
                 Text(
                     text = line.text,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = if (line.color != Color.Unspecified) line.color else TextPrimary,
+                    color = textColor,
                     lineHeight = 16.sp,
                     modifier = Modifier.padding(vertical = 1.dp)
                 )

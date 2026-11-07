@@ -97,6 +97,7 @@ fun SoraEditorView(
     val isDark = LocalIsDarkTheme.current
     var lastKnownText by remember { mutableStateOf(content) }
     var lastExtension by remember { mutableStateOf(extension) }
+    var lastIsDark by remember { mutableStateOf(isDark) }
 
     LaunchedEffect(Unit) {
         TextMateHelper.init(context)
@@ -144,8 +145,11 @@ fun SoraEditorView(
         },
         update = { editor ->
             controller.editor = editor
-            // Dynamically update color scheme if theme mode changes
-            editor.colorScheme = EditorSetup.createColorScheme(isDark)
+            // Dynamically update color scheme only when theme mode changes
+            if (isDark != lastIsDark) {
+                lastIsDark = isDark
+                editor.colorScheme = EditorSetup.createColorScheme(isDark)
+            }
             // Only update text externally if it changed outside of user keystrokes (e.g. diff or reload)
             // to avoid restarting IME input connection and dropping keyboard mode
             if (content != lastKnownText && editor.text.toString() != content) {

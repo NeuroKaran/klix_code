@@ -43,6 +43,7 @@ import com.klix.code.R
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.theme.LocalIsDarkTheme
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -50,7 +51,9 @@ import com.klix.code.ui.theme.TextSecondary
 private val KlixNeonLime = Color(0xFFD4FF32)
 private val FlameOrange = Color(0xFFFF9800)
 private val FlameRed = Color(0xFFFF5722)
-private val DotInactiveColor = Color(0xFF2B313E)
+private val DotInactiveColor: Color
+    @Composable
+    get() = if (LocalIsDarkTheme.current) Color(0xFF2B313E) else Color(0xFFD0D7DE)
 
 /**
  * Compact Streak Pill Button for the TopAppBar.
