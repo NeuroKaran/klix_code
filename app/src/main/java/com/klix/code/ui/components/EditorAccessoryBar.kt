@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
@@ -103,10 +104,10 @@ fun EditorAccessoryBar(
                     .fillMaxHeight()
                     .widthIn(min = if (key.label.length > 1) 42.dp else 32.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(if (key.isAction) DarkSurfaceVariant else Color(0xFF1E232B))
+                    .background(if (key.isAction) DarkSurfaceVariant else DarkBg)
                     .border(
                         width = 0.8.dp,
-                        color = if (key.isAction) DarkBorder else Color(0xFF2C323D),
+                        color = DarkBorder,
                         shape = RoundedCornerShape(6.dp)
                     )
                     .clickable { key.onClick() }

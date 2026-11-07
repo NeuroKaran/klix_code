@@ -16,6 +16,7 @@ import io.github.rosemoe.sora.event.ContentChangeEvent
 import io.github.rosemoe.sora.event.SelectionChangeEvent
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.EditorSearcher
+import com.klix.code.ui.theme.LocalIsDarkTheme
 
 class EditorController {
     var editor: CodeEditor? = null
@@ -93,6 +94,7 @@ fun SoraEditorView(
     controller: EditorController = rememberEditorController()
 ) {
     val context = LocalContext.current
+    val isDark = LocalIsDarkTheme.current
     var lastKnownText by remember { mutableStateOf(content) }
     var lastExtension by remember { mutableStateOf(extension) }
 
@@ -106,7 +108,7 @@ fun SoraEditorView(
                 controller.editor = this
                 isLineNumberEnabled = true
                 typefaceText = Typeface.MONOSPACE
-                colorScheme = EditorSetup.createColorScheme()
+                colorScheme = EditorSetup.createColorScheme(isDark)
                 setTextSize(fontSizeSp)
                 this.isWordwrap = isWordWrap
 
@@ -142,6 +144,8 @@ fun SoraEditorView(
         },
         update = { editor ->
             controller.editor = editor
+            // Dynamically update color scheme if theme mode changes
+            editor.colorScheme = EditorSetup.createColorScheme(isDark)
             // Only update text externally if it changed outside of user keystrokes (e.g. diff or reload)
             // to avoid restarting IME input connection and dropping keyboard mode
             if (content != lastKnownText && editor.text.toString() != content) {

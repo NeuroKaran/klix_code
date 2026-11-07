@@ -1,9 +1,9 @@
 {
-  "versionCode": 9,
-  "versionName": "0.3.9",
+  "versionCode": 10,
+  "versionName": "0.3.10",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.9.apk",
-  "releaseNotes": "• Daily Login Consistent Streak: Interactive animated daily streak check-in button with fire explosion, morphing dot, weekly streak row addition, and automatic 12:00 AM midnight refresh\n• Daily Streak Widget Integration: Seamless launch of the Daily Streak modal from the Android home screen widget\n• Dynamic Reasoning & Thinking Budgets: Configurable thinking budgets with Gemini 2.5/3 and Claude 3.7\n• Intelligent Context Compaction: Auto-summarizes extended multi-turn sessions preserving active goals and file diffs\n• Interactive Requirements Clarification: New 'ask_question' agent tool with interactive selection cards in chat\n• Workspace URI Canonicalization & Slash Commands System (/explain, /fix, /refactor, /test, /doc, /review, /commit, /commands)",
-  "releaseDate": "2026-11-04",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.10.apk",
+  "releaseNotes": "• Default Light Theme: Fresh, modern, high-contrast light theme enabled as the out-of-the-box default across the entire app\n• User Theme Switcher: Switch anytime between Light (Default), Dark, and System Default themes in the App Settings dialog\n• Dynamic Editor Theming: Sora code editor automatically adapts syntax highlighting and gutter colors dynamically to the active theme\n• Quick Settings Access: Dedicated Settings button in the TopAppBar and persistent navigation drawer footer displaying the current theme",
+  "releaseDate": "2026-11-07",
   "forceUpdate": false
 }

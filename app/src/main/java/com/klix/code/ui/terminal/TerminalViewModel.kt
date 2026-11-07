@@ -7,13 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.klix.code.data.sandbox.SandboxExecutionProvider
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.sandbox.SandboxStatus
-import com.klix.code.ui.theme.AccentError
-import com.klix.code.ui.theme.AccentPrimary
-import com.klix.code.ui.theme.AccentSecondary
-import com.klix.code.ui.theme.AccentWarning
-import com.klix.code.ui.theme.TextMuted
-import com.klix.code.ui.theme.TextPrimary
-import com.klix.code.ui.theme.TextSecondary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,10 +15,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+internal object TerminalColors {
+    val Primary = Color(0xFF3B82F6)
+    val Secondary = Color(0xFF10B981)
+    val Warning = Color(0xFFF59E0B)
+    val Error = Color(0xFFEF4444)
+    val TextSecondary = Color(0xFF8B949E)
+    val TextMuted = Color(0xFF6E7681)
+}
+
 data class TerminalLine(
     val id: String = java.util.UUID.randomUUID().toString(),
     val text: String,
-    val color: Color = TextPrimary,
+    val color: Color = Color.Unspecified,
     val isCommand: Boolean = false,
     val isError: Boolean = false,
     val timestamp: Long = System.currentTimeMillis(),
@@ -199,29 +201,29 @@ class TerminalViewModel @JvmOverloads constructor(
     private fun printBanner(session: TerminalSession) {
         val isReady = sandboxManager.isInstalled()
         val banner = mutableListOf(
-            TerminalLine(text = "KlixCode Linux Terminal [Alpine Sandbox v1] - ${session.title}", color = AccentPrimary)
+            TerminalLine(text = "KlixCode Linux Terminal [Alpine Sandbox v1] - ${session.title}", color = TerminalColors.Primary)
         )
         if (!isReady) {
             banner.add(
                 TerminalLine(
                     text = "Sandbox not configured. Tap ⚙ or type 'sandbox-setup' to install Alpine Linux.",
-                    color = AccentWarning
+                    color = TerminalColors.Warning
                 )
             )
         } else {
             banner.add(
                 TerminalLine(
                     text = "Alpine Linux sandbox active. Type 'help' for shortcuts or 'sandbox-setup' to manage tools.",
-                    color = AccentSecondary
+                    color = TerminalColors.Secondary
                 )
             )
         }
         banner.add(
-            TerminalLine(text = "--------------------------------------------------------", color = TextSecondary)
+            TerminalLine(text = "--------------------------------------------------------", color = TerminalColors.TextSecondary)
         )
         val promptLine = TerminalLine(
             text = "klix@mobile:${session.currentCwd}$",
-            color = AccentSecondary,
+            color = TerminalColors.Secondary,
             isCommand = true,
             isPrompt = true
         )
@@ -246,7 +248,7 @@ class TerminalViewModel @JvmOverloads constructor(
             if (session.lines.isNotEmpty() && session.lines.last().isPrompt) {
                 session.lines[session.lines.size - 1] = TerminalLine(
                     text = "klix@mobile:${path}$",
-                    color = AccentSecondary,
+                    color = TerminalColors.Secondary,
                     isCommand = true,
                     isPrompt = true
                 )
@@ -286,7 +288,7 @@ class TerminalViewModel @JvmOverloads constructor(
         // Print command prompt
         val promptLine = TerminalLine(
             text = "klix@mobile:${session.currentCwd}$ $trimmed",
-            color = AccentSecondary,
+            color = TerminalColors.Secondary,
             isCommand = true,
             isPrompt = false
         )
@@ -344,7 +346,7 @@ class TerminalViewModel @JvmOverloads constructor(
                     }
                 }
             } catch (e: Exception) {
-                val errLine = TerminalLine(text = "Execution failed: ${e.message}", color = AccentError, isError = true)
+                val errLine = TerminalLine(text = "Execution failed: ${e.message}", color = TerminalColors.Error, isError = true)
                 appendTerminalLine(session, errLine)
             } finally {
                 setSessionExecuting(session, false)
@@ -439,7 +441,7 @@ class TerminalViewModel @JvmOverloads constructor(
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
         val promptLine = TerminalLine(
             text = "klix@mobile:${session.currentCwd}$",
-            color = AccentSecondary,
+            color = TerminalColors.Secondary,
             isCommand = true,
             isPrompt = true
         )
@@ -456,7 +458,7 @@ class TerminalViewModel @JvmOverloads constructor(
     private fun appendIdlePrompt(session: TerminalSession) {
         val idlePrompt = TerminalLine(
             text = "klix@mobile:${session.currentCwd}$",
-            color = AccentSecondary,
+            color = TerminalColors.Secondary,
             isCommand = true,
             isPrompt = true
         )
@@ -500,13 +502,13 @@ class TerminalViewModel @JvmOverloads constructor(
 
     private fun printHelp(session: TerminalSession) {
         val helpLines = listOf(
-            TerminalLine(text = "Available Klix Terminal Commands:", color = AccentPrimary),
-            TerminalLine(text = "  clear            Clear the terminal screen", color = TextSecondary),
-            TerminalLine(text = "  sandbox-setup    Open Alpine Linux sandbox installer & package manager", color = TextSecondary),
-            TerminalLine(text = "  sandbox-status   View rootfs status and installation state", color = TextSecondary),
-            TerminalLine(text = "  apk add <pkg>    Install tools (e.g. nodejs, npm, python3, git)", color = TextSecondary),
-            TerminalLine(text = "  help             Display this help guide", color = TextSecondary),
-            TerminalLine(text = "All standard Linux commands (ls, cat, grep, find, etc.) execute inside Alpine userland.", color = TextMuted)
+            TerminalLine(text = "Available Klix Terminal Commands:", color = TerminalColors.Primary),
+            TerminalLine(text = "  clear            Clear the terminal screen", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  sandbox-setup    Open Alpine Linux sandbox installer & package manager", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  sandbox-status   View rootfs status and installation state", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  apk add <pkg>    Install tools (e.g. nodejs, npm, python3, git)", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  help             Display this help guide", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "All standard Linux commands (ls, cat, grep, find, etc.) execute inside Alpine userland.", color = TerminalColors.TextMuted)
         )
         synchronized(session) {
             session.lines.addAll(helpLines)
@@ -520,11 +522,11 @@ class TerminalViewModel @JvmOverloads constructor(
         val arch = sandboxManager.detectArch()
         val prootAvailable = session.executionProvider.findProotExecutable() != null
         val lines = listOf(
-            TerminalLine(text = "Alpine Sandbox Status: $status", color = if (installed) AccentSecondary else AccentWarning),
-            TerminalLine(text = "Sandbox Installed: $installed", color = if (installed) AccentSecondary else AccentWarning),
-            TerminalLine(text = "PRoot Engine: ${if (prootAvailable) "Ready (native)" else "Not detected"}", color = if (prootAvailable) AccentSecondary else AccentWarning),
-            TerminalLine(text = "Detected Architecture: $arch", color = TextSecondary),
-            TerminalLine(text = "RootFS Path: ${sandboxManager.getRootfsDir().absolutePath}", color = TextMuted)
+            TerminalLine(text = "Alpine Sandbox Status: $status", color = if (installed) TerminalColors.Secondary else TerminalColors.Warning),
+            TerminalLine(text = "Sandbox Installed: $installed", color = if (installed) TerminalColors.Secondary else TerminalColors.Warning),
+            TerminalLine(text = "PRoot Engine: ${if (prootAvailable) "Ready (native)" else "Not detected"}", color = if (prootAvailable) TerminalColors.Secondary else TerminalColors.Warning),
+            TerminalLine(text = "Detected Architecture: $arch", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "RootFS Path: ${sandboxManager.getRootfsDir().absolutePath}", color = TerminalColors.TextMuted)
         )
         synchronized(session) {
             session.lines.addAll(lines)
@@ -533,16 +535,16 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     private fun parseAnsiLine(rawLine: String, isStdout: Boolean): TerminalLine {
-        var color = if (isStdout) TextPrimary else AccentError
+        var color = if (isStdout) Color.Unspecified else TerminalColors.Error
 
         if (rawLine.contains("\u001B[31m") || rawLine.contains("\u001B[91m")) {
-            color = AccentError
+            color = TerminalColors.Error
         } else if (rawLine.contains("\u001B[32m") || rawLine.contains("\u001B[92m")) {
-            color = AccentSecondary
+            color = TerminalColors.Secondary
         } else if (rawLine.contains("\u001B[33m") || rawLine.contains("\u001B[93m")) {
-            color = AccentWarning
+            color = TerminalColors.Warning
         } else if (rawLine.contains("\u001B[34m") || rawLine.contains("\u001B[36m")) {
-            color = AccentPrimary
+            color = TerminalColors.Primary
         }
 
         val cleanText = rawLine.replace(Regex("\u001B\\[[;\\d]*m"), "")

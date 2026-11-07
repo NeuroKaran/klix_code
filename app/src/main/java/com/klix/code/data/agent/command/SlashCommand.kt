@@ -149,7 +149,7 @@ object BuiltInSlashCommands {
         SlashCommand(
             id = "builtin_settings",
             trigger = "settings",
-            description = "Open AI provider settings and API keys",
+            description = "Open app settings, theme, and AI providers",
             actionType = SlashCommandActionType.SETTINGS,
             isBuiltIn = true,
             iconName = "settings"

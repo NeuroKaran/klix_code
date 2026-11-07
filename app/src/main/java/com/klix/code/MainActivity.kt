@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Difference
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.WrapText
@@ -107,6 +108,7 @@ import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
 import com.klix.code.ui.theme.KlixTheme
+import com.klix.code.ui.theme.ThemeManager
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -177,6 +179,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.Theme_KlixCode)
         super.onCreate(savedInstanceState)
+        ThemeManager.init(applicationContext)
         lifecycleScope.launch(Dispatchers.IO) {
             StreakManager.refresh(applicationContext)
         }
@@ -363,6 +366,10 @@ class MainActivity : ComponentActivity() {
                                 onOpenStreak = {
                                     showDailyStreakDialog = true
                                 },
+                                onOpenSettings = {
+                                    scope.launch { drawerState.close() }
+                                    agentViewModel.toggleSettings()
+                                },
                                 onFileClick = { fileNode ->
                                     viewModel.openFile(fileNode)
                                     scope.launch { drawerState.close() }
@@ -486,6 +493,15 @@ class MainActivity : ComponentActivity() {
                                             imageVector = Icons.Default.Terminal,
                                             contentDescription = "Terminal",
                                             tint = if (isTerminalOpen) AccentSecondary else TextSecondary
+                                        )
+                                    }
+
+                                    // App Settings
+                                    IconButton(onClick = { agentViewModel.toggleSettings() }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Settings,
+                                            contentDescription = "Settings",
+                                            tint = if (isAgentSettingsOpen) AccentPrimary else TextSecondary
                                         )
                                     }
 

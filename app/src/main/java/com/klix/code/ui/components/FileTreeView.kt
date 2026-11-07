@@ -25,21 +25,27 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SecurityUpdateGood
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Warning
 import com.klix.code.data.stats.StreakManager
 import com.klix.code.ui.components.streak.StreakSidebarCard
+import com.klix.code.ui.theme.ThemeManager
+import com.klix.code.ui.theme.ThemeMode
 import androidx.compose.runtime.collectAsState
 import com.klix.code.BuildConfig
 import androidx.compose.material3.AlertDialog
@@ -93,6 +99,7 @@ fun FileTreeView(
     onOpenSandboxWorkspace: (() -> Unit)? = null,
     onCheckForUpdates: (() -> Unit)? = null,
     onOpenStreak: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null,
     onFileClick: (FileNode) -> Unit,
     onCreateFile: (parentUri: Uri, fileName: String) -> Unit,
     onCreateDirectory: (parentUri: Uri, dirName: String) -> Unit,
@@ -514,7 +521,58 @@ fun FileTreeView(
         }
         }
 
-        // Persistent Drawer Footer: App Version & In-App Update Checker
+        // Persistent Drawer Footer: App Settings & Update Checker
+        HorizontalDivider(color = DarkBorder, thickness = 1.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(DarkSurfaceVariant.copy(alpha = 0.35f))
+                .clickable(enabled = onOpenSettings != null) { onOpenSettings?.invoke() }
+                .padding(horizontal = 14.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "Settings",
+                    fontSize = 12.sp,
+                    color = TextPrimary
+                )
+            }
+
+            val currentTheme by ThemeManager.themeMode.collectAsState()
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = when (currentTheme) {
+                        ThemeMode.LIGHT -> Icons.Default.LightMode
+                        ThemeMode.DARK -> Icons.Default.DarkMode
+                        ThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
+                    },
+                    contentDescription = null,
+                    tint = AccentPrimary,
+                    modifier = Modifier.size(13.dp)
+                )
+                Text(
+                    text = currentTheme.displayName,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AccentPrimary
+                )
+            }
+        }
+
         HorizontalDivider(color = DarkBorder, thickness = 1.dp)
         Row(
             modifier = Modifier

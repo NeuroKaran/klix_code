@@ -146,6 +146,7 @@ fun parseMarkdown(raw: String): List<MarkdownBlock> {
 /**
  * Builds an AnnotatedString from markdown text, styling bold, italic, inline code, and @ tagged files.
  */
+@Composable
 fun buildMarkdownAnnotatedString(
     text: String,
     baseColor: Color = TextPrimary
@@ -164,8 +165,8 @@ fun buildMarkdownAnnotatedString(
                         SpanStyle(
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF79C0FF),
-                            background = Color(0x334B5563),
+                            color = AccentPrimary,
+                            background = DarkSurfaceVariant,
                             fontSize = 12.sp
                         )
                     )
@@ -263,7 +264,7 @@ fun MarkdownMessageView(
                         2 -> FontWeight.Bold
                         else -> FontWeight.SemiBold
                     }
-                    val color = if (block.level == 1) TextPrimary else if (block.level == 2) Color(0xFFF0F6FC) else AccentPrimary
+                    val color = if (block.level <= 2) TextPrimary else AccentPrimary
 
                     Text(
                         text = buildMarkdownAnnotatedString(block.text, color),
@@ -405,7 +406,7 @@ fun CodeBlockCard(
                 text = code,
                 fontSize = 12.sp,
                 fontFamily = FontFamily.Monospace,
-                color = Color(0xFFE6EDF3),
+                color = TextPrimary,
                 lineHeight = 18.sp
             )
         }

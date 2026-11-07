@@ -468,7 +468,7 @@ private fun TerminalOutputList(
                     text = line.text,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = line.color,
+                    color = if (line.color != Color.Unspecified) line.color else TextPrimary,
                     lineHeight = 16.sp,
                     modifier = Modifier.padding(vertical = 1.dp)
                 )

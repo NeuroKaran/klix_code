@@ -21,6 +21,9 @@ class KlixApplication : Application() {
 
         // Populate hardware, RAM, and OS metadata into Sentry scope
         KlixTelemetry.initEnvironmentMetadata(this)
+
+        // Initialize theme settings defaulting to LIGHT
+        com.klix.code.ui.theme.ThemeManager.init(this)
     }
 
     companion object {

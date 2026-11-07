@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.KlixCode" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">#0E1118</item>
-        <item name="android:navigationBarColor">#0E1118</item>
+    <style name="Theme.KlixCode" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#F6F8FA</item>
+        <item name="android:navigationBarColor">#F6F8FA</item>
+        <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowBackground">@color/splash_bg</item>
     </style>
 
@@ -11,7 +12,8 @@
         <item name="android:windowBackground">@drawable/splash_window_background</item>
         <item name="android:windowSplashScreenBackground">@color/splash_bg</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo_round</item>
-        <item name="android:statusBarColor">#0E1118</item>
-        <item name="android:navigationBarColor">#0E1118</item>
+        <item name="android:statusBarColor">#F6F8FA</item>
+        <item name="android:navigationBarColor">#F6F8FA</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>
