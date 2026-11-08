@@ -1,7 +1,6 @@
 package com.klix.code.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -23,10 +22,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.klix.code.ui.theme.DarkBg
-import com.klix.code.ui.theme.DarkBorder
-import com.klix.code.ui.theme.DarkSurface
-import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.theme.CyanBrandColor
+import com.klix.code.ui.theme.CyanDimColor
+import com.klix.code.ui.theme.GlassSurfaceColor
+import com.klix.code.ui.theme.GlassSurfaceElevatedColor
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
 
@@ -90,34 +91,38 @@ fun EditorAccessoryBar(
 
     Row(
         modifier = modifier
-            .height(38.dp)
-            .background(DarkSurface)
-            .border(width = 0.5.dp, color = DarkBorder)
+            .height(42.dp)
+            .background(GlassSurfaceColor)
+            .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.18f, midAlpha = 0.06f)
             .horizontalScroll(scrollState)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val keyShape = RoundedCornerShape(8.dp)
+
         quickKeys.forEach { key ->
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .widthIn(min = if (key.label.length > 1) 42.dp else 32.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(if (key.isAction) DarkSurfaceVariant else DarkBg)
-                    .border(
-                        width = 0.8.dp,
-                        color = DarkBorder,
-                        shape = RoundedCornerShape(6.dp)
+                    .widthIn(min = if (key.label.length > 1) 44.dp else 34.dp)
+                    .clip(keyShape)
+                    .background(if (key.isAction) CyanDimColor else GlassSurfaceElevatedColor)
+                    .glassBorder(
+                        shape = keyShape,
+                        strokeWidth = 0.8.dp,
+                        highlightAlpha = if (key.isAction) 0.35f else 0.22f,
+                        midAlpha = 0.08f
                     )
+                    .pressEffect(targetScale = 0.92f)
                     .clickable { key.onClick() }
                     .padding(horizontal = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = key.label,
-                    color = if (key.isAction) TextSecondary else TextPrimary,
-                    fontSize = if (key.label.length > 2) 11.sp else 13.sp,
+                    color = if (key.isAction) CyanBrandColor else TextPrimary,
+                    fontSize = if (key.label.length > 2) 11.5.sp else 13.5.sp,
                     fontWeight = if (key.isAction) FontWeight.Bold else FontWeight.Medium,
                     fontFamily = FontFamily.Monospace
                 )

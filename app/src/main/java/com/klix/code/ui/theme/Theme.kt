@@ -21,8 +21,8 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkBgValue,
     surface = DarkSurfaceValue,
     surfaceVariant = DarkSurfaceVariantValue,
-    onPrimary = DarkTextPrimaryValue,
-    onSecondary = DarkTextPrimaryValue,
+    onPrimary = ObsidianBase,
+    onSecondary = ObsidianBase,
     onBackground = DarkTextPrimaryValue,
     onSurface = DarkTextPrimaryValue,
     onSurfaceVariant = DarkTextSecondaryValue,
@@ -68,8 +68,8 @@ fun KlixTheme(
                 val insetsController = WindowCompat.getInsetsController(window, view)
                 insetsController.isAppearanceLightStatusBars = !isDark
                 insetsController.isAppearanceLightNavigationBars = !isDark
-                window.statusBarColor = klixColors.surface.toArgb()
-                window.navigationBarColor = klixColors.surface.toArgb()
+                window.statusBarColor = klixColors.background.toArgb()
+                window.navigationBarColor = klixColors.background.toArgb()
             }
         }
     }

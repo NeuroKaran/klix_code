@@ -118,12 +118,26 @@ import com.klix.code.ui.viewmodel.UpdateUIState
 import com.klix.code.ui.components.update.UpdateDialog
 import com.klix.code.ui.components.streak.DailyStreakDialog
 import com.klix.code.ui.components.streak.StreakPillButton
+import androidx.compose.material.icons.filled.History
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import androidx.compose.ui.text.style.TextAlign
+import com.klix.code.ui.components.glass.GlassCard
+import com.klix.code.ui.components.glass.GlassButton
+import com.klix.code.ui.components.glass.GlassBadge
+import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.theme.GlassSurfaceColor
+import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.LimeBrandColor
+import com.klix.code.ui.theme.LimeGlowColor
+import com.klix.code.ui.theme.CyanBrandColor
+import com.klix.code.ui.theme.CyanDimColor
+import com.klix.code.ui.theme.OnAccentPrimaryColor
 import io.sentry.Sentry
 import com.klix.code.data.telemetry.KlixTelemetry
 
@@ -336,9 +350,9 @@ class MainActivity : ComponentActivity() {
                     drawerContent = {
                         ModalDrawerSheet(
                             modifier = Modifier
-                                .fillMaxWidth(0.82f)
+                                .fillMaxWidth(0.84f)
                                 .fillMaxHeight(),
-                            drawerContainerColor = DarkSurface
+                            drawerContainerColor = GlassSurfaceColor
                         ) {
                             FileTreeView(
                                 rootNode = fileTree,
@@ -413,13 +427,15 @@ class MainActivity : ComponentActivity() {
                                             painter = painterResource(id = R.drawable.klix_logo),
                                             contentDescription = "Klix Logo",
                                             modifier = Modifier
-                                                .size(24.dp)
+                                                .size(26.dp)
                                                 .clip(CircleShape)
+                                                .glassBorder(CircleShape, strokeWidth = 1.dp)
                                         )
                                         Text(
-                                            text = currentProject?.name ?: "KlixCode",
+                                            text = currentProject?.name ?: "Klix Code",
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold,
+                                            letterSpacing = (-0.2).sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             color = TextPrimary
@@ -427,11 +443,14 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 navigationIcon = {
-                                    IconButton(onClick = {
-                                        scope.launch {
-                                            if (drawerState.isClosed) drawerState.open() else drawerState.close()
-                                        }
-                                    }) {
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                if (drawerState.isClosed) drawerState.open() else drawerState.close()
+                                            }
+                                        },
+                                        modifier = Modifier.pressEffect(0.92f)
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Default.Menu,
                                             contentDescription = "Menu",
@@ -451,64 +470,84 @@ class MainActivity : ComponentActivity() {
                                     val activeTab = openTabs.find { it.uri == activeTabUri }
                                     IconButton(
                                         onClick = { viewModel.saveActiveTab() },
-                                        enabled = activeTab?.isModified == true
+                                        enabled = activeTab?.isModified == true,
+                                        modifier = Modifier.pressEffect(0.92f)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Save,
                                             contentDescription = "Save",
-                                            tint = if (activeTab?.isModified == true) AccentPrimary else TextMuted
+                                            tint = if (activeTab?.isModified == true) LimeBrandColor else TextMuted
                                         )
                                     }
 
                                     // Find & Replace toggle
-                                    IconButton(onClick = { viewModel.toggleSearch() }) {
+                                    IconButton(
+                                        onClick = { viewModel.toggleSearch() },
+                                        modifier = Modifier.pressEffect(0.92f)
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Default.Search,
                                             contentDescription = "Search",
-                                            tint = if (isSearchOpen) AccentPrimary else TextSecondary
+                                            tint = if (isSearchOpen) CyanBrandColor else TextSecondary
                                         )
                                     }
 
                                     // Word Wrap toggle
-                                    IconButton(onClick = { viewModel.toggleWordWrap() }) {
+                                    IconButton(
+                                        onClick = { viewModel.toggleWordWrap() },
+                                        modifier = Modifier.pressEffect(0.92f)
+                                    ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.WrapText,
                                             contentDescription = "Toggle Word Wrap",
-                                            tint = if (isWordWrap) AccentPrimary else TextSecondary
+                                            tint = if (isWordWrap) CyanBrandColor else TextSecondary
                                         )
                                     }
 
                                     // Klix AI Agent
-                                    IconButton(onClick = { isAgentPanelOpen = !isAgentPanelOpen }) {
+                                    IconButton(
+                                        onClick = { isAgentPanelOpen = !isAgentPanelOpen },
+                                        modifier = Modifier.pressEffect(0.92f)
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Default.SmartToy,
                                             contentDescription = "Klix AI Agent",
-                                            tint = if (isAgentPanelOpen) AccentPrimary else TextSecondary
+                                            tint = if (isAgentPanelOpen) LimeBrandColor else TextSecondary
                                         )
                                     }
 
                                     // Terminal
-                                    IconButton(onClick = { isTerminalOpen = !isTerminalOpen }) {
+                                    IconButton(
+                                        onClick = { isTerminalOpen = !isTerminalOpen },
+                                        modifier = Modifier.pressEffect(0.92f)
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Default.Terminal,
                                             contentDescription = "Terminal",
-                                            tint = if (isTerminalOpen) AccentSecondary else TextSecondary
+                                            tint = if (isTerminalOpen) CyanBrandColor else TextSecondary
                                         )
                                     }
 
                                     // App Settings
-                                    IconButton(onClick = { agentViewModel.toggleSettings() }) {
+                                    IconButton(
+                                        onClick = { agentViewModel.toggleSettings() },
+                                        modifier = Modifier.pressEffect(0.92f)
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Default.Settings,
                                             contentDescription = "Settings",
-                                            tint = if (isAgentSettingsOpen) AccentPrimary else TextSecondary
+                                            tint = if (isAgentSettingsOpen) LimeBrandColor else TextSecondary
                                         )
                                     }
-
-
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
-                                    containerColor = DarkSurface
+                                    containerColor = GlassSurfaceColor
+                                ),
+                                modifier = Modifier.glassBorder(
+                                    RoundedCornerShape(0.dp),
+                                    strokeWidth = 0.5.dp,
+                                    highlightAlpha = 0.18f,
+                                    midAlpha = 0.05f
                                 )
                             )
                         },
@@ -525,10 +564,15 @@ class MainActivity : ComponentActivity() {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(28.dp)
-                                        .background(DarkSurfaceVariant)
-                                        .border(width = 0.5.dp, color = DarkBorder)
-                                        .padding(horizontal = 10.dp),
+                                        .height(32.dp)
+                                        .background(GlassSurfaceColor)
+                                        .glassBorder(
+                                            RoundedCornerShape(0.dp),
+                                            strokeWidth = 0.5.dp,
+                                            highlightAlpha = 0.18f,
+                                            midAlpha = 0.05f
+                                        )
+                                        .padding(horizontal = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -540,7 +584,7 @@ class MainActivity : ComponentActivity() {
                                             CircularProgressIndicator(
                                                 modifier = Modifier.size(12.dp),
                                                 strokeWidth = 1.5.dp,
-                                                color = AccentPrimary
+                                                color = LimeBrandColor
                                             )
                                         }
                                         Text(
@@ -558,27 +602,30 @@ class MainActivity : ComponentActivity() {
                                     ) {
                                         val activeTab = openTabs.find { it.uri == activeTabUri }
                                         if (activeTab != null) {
-                                            Text(
+                                            GlassBadge(
                                                 text = activeTab.extension.uppercase().ifEmpty { "TEXT" },
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = AccentPrimary,
-                                                fontFamily = FontFamily.Monospace
+                                                containerColor = CyanDimColor,
+                                                textColor = CyanBrandColor
                                             )
 
                                             Text(
                                                 text = "Ln ${cursorPosition.first}, Col ${cursorPosition.second}",
-                                                fontSize = 10.sp,
+                                                fontSize = 10.5.sp,
                                                 color = TextSecondary,
                                                 fontFamily = FontFamily.Monospace
                                             )
                                         }
 
                                         // Zoom controls
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
                                             IconButton(
                                                 onClick = { viewModel.zoomOut() },
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .pressEffect(0.9f)
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.ZoomOut,
@@ -590,14 +637,16 @@ class MainActivity : ComponentActivity() {
 
                                             Text(
                                                 text = "${fontSizeSp.toInt()}pt",
-                                                fontSize = 10.sp,
+                                                fontSize = 10.5.sp,
                                                 color = TextSecondary,
                                                 fontFamily = FontFamily.Monospace
                                             )
 
                                             IconButton(
                                                 onClick = { viewModel.zoomIn() },
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .pressEffect(0.9f)
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.ZoomIn,
@@ -672,55 +721,109 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             } else {
-                                // Empty state when no tabs are open
+                                // Empty state when no tabs are open - Reference 1 Modular Glass Hero Card
                                 Box(
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(20.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                                        modifier = Modifier.padding(24.dp)
+                                    GlassCard(
+                                        shape = RoundedCornerShape(28.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp)
                                     ) {
-                                        Image(
-                                            painter = painterResource(id = R.drawable.klix_logo),
-                                            contentDescription = "Klix Logo",
-                                            modifier = Modifier
-                                                .size(80.dp)
-                                                .clip(CircleShape)
-                                        )
-
-                                        Text(
-                                            text = if (currentProject != null) "Select a file from the sidebar to start editing" else "No Workspace Open",
-                                            color = TextSecondary,
-                                            fontSize = 14.sp
-                                        )
-
-                                        Button(
-                                            onClick = {
-                                                if (!isSandboxInstalled) {
-                                                    showSandboxWarningDialog = true
-                                                } else {
-                                                    viewModel.openSandboxWorkspace()
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 28.dp)
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Terminal,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Open Sandbox Workspace")
-                                        }
-
-                                        if (recentProjects.isNotEmpty()) {
-                                            Button(
-                                                onClick = { showRecentProjectsDialog = true },
-                                                colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceVariant)
+                                            Box(
+                                                contentAlignment = Alignment.Center,
+                                                modifier = Modifier.size(88.dp)
                                             ) {
-                                                Text("Recent Workspaces (${recentProjects.size})", color = TextPrimary)
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(76.dp)
+                                                        .clip(CircleShape)
+                                                        .background(LimeGlowColor)
+                                                )
+                                                Image(
+                                                    painter = painterResource(id = R.drawable.klix_logo),
+                                                    contentDescription = "Klix Logo",
+                                                    modifier = Modifier
+                                                        .size(72.dp)
+                                                        .clip(CircleShape)
+                                                        .glassBorder(CircleShape, strokeWidth = 1.5.dp, highlightAlpha = 0.4f)
+                                                )
+                                            }
+
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = currentProject?.name ?: "Klix Code",
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    letterSpacing = (-0.3).sp,
+                                                    color = TextPrimary
+                                                )
+                                                Text(
+                                                    text = if (currentProject != null) "Select a file from the sidebar to start editing" else "Ready to build something great?",
+                                                    fontSize = 13.5.sp,
+                                                    color = TextSecondary,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
+
+                                            GlassButton(
+                                                onClick = {
+                                                    if (!isSandboxInstalled) {
+                                                        showSandboxWarningDialog = true
+                                                    } else {
+                                                        viewModel.openSandboxWorkspace()
+                                                    }
+                                                },
+                                                containerColor = LimeBrandColor,
+                                                contentColor = OnAccentPrimaryColor,
+                                                modifier = Modifier.fillMaxWidth(0.88f)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Terminal,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = OnAccentPrimaryColor
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Open Sandbox Workspace",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.5.sp
+                                                )
+                                            }
+
+                                            if (recentProjects.isNotEmpty()) {
+                                                GlassButton(
+                                                    onClick = { showRecentProjectsDialog = true },
+                                                    containerColor = GlassSurfaceElevatedColor,
+                                                    contentColor = TextPrimary,
+                                                    modifier = Modifier.fillMaxWidth(0.88f)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.History,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(18.dp),
+                                                        tint = CyanBrandColor
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = "Recent Workspaces (${recentProjects.size})",
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        fontSize = 13.5.sp
+                                                    )
+                                                }
                                             }
                                         }
                                     }

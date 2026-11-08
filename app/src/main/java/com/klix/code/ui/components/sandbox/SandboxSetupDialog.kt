@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -28,9 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,14 +47,18 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.sandbox.SandboxStatus
+import com.klix.code.ui.components.glass.GlassIconButton
+import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.AccentError
-import com.klix.code.ui.theme.AccentPrimary
-import com.klix.code.ui.theme.AccentSecondary
 import com.klix.code.ui.theme.AccentWarning
-import com.klix.code.ui.theme.DarkBg
-import com.klix.code.ui.theme.DarkBorder
-import com.klix.code.ui.theme.DarkSurface
-import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.theme.CyanBrandColor
+import com.klix.code.ui.theme.CyanDimColor
+import com.klix.code.ui.theme.GlassBorderColor
+import com.klix.code.ui.theme.GlassSurfaceColor
+import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.LimeBrandColor
+import com.klix.code.ui.theme.OnAccentPrimaryColor
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -71,6 +74,7 @@ fun SandboxSetupDialog(
     val statusMsg by sandboxManager.statusMessage.collectAsState()
     val progress by sandboxManager.progress.collectAsState()
     val scope = rememberCoroutineScope()
+    val dialogShape = RoundedCornerShape(26.dp)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -79,16 +83,16 @@ fun SandboxSetupDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
-                .padding(vertical = 24.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = DarkBg,
-            border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
+                .padding(vertical = 24.dp)
+                .glassBorder(dialogShape),
+            shape = dialogShape,
+            color = GlassSurfaceElevatedColor
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
+                    .padding(22.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Header
@@ -99,64 +103,69 @@ fun SandboxSetupDialog(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(AccentSecondary.copy(alpha = 0.15f)),
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(CyanDimColor)
+                                .glassBorder(RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Terminal,
                                 contentDescription = null,
-                                tint = AccentSecondary,
-                                modifier = Modifier.size(20.dp)
+                                tint = CyanBrandColor,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                         Column {
                             Text(
-                                text = "Local Sandbox (Alpine Linux)",
-                                fontSize = 16.sp,
+                                text = "Local Sandbox",
+                                fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
+                                letterSpacing = (-0.3).sp,
                                 color = TextPrimary
                             )
                             Text(
-                                text = "Offline Linux userland execution tier",
-                                fontSize = 11.sp,
+                                text = "Alpine Linux on-device runtime",
+                                fontSize = 12.sp,
                                 color = TextSecondary
                             )
                         }
                     }
 
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                    GlassIconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
                             tint = TextSecondary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                HorizontalDivider(color = DarkBorder)
+                HorizontalDivider(color = GlassBorderColor)
 
                 // Current Status Card
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(DarkSurfaceVariant)
-                        .border(0.5.dp, DarkBorder, RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(GlassSurfaceColor)
+                        .glassBorder(RoundedCornerShape(16.dp))
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Sandbox Status",
-                            fontSize = 11.sp,
+                            text = "STATUS",
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
                             color = TextSecondary
@@ -166,8 +175,8 @@ fun SandboxSetupDialog(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = when (status) {
-                                SandboxStatus.READY -> AccentSecondary
-                                SandboxStatus.DOWNLOADING, SandboxStatus.EXTRACTING -> AccentPrimary
+                                SandboxStatus.READY -> LimeBrandColor
+                                SandboxStatus.DOWNLOADING, SandboxStatus.EXTRACTING -> CyanBrandColor
                                 SandboxStatus.ERROR -> AccentError
                                 SandboxStatus.NOT_INSTALLED -> AccentWarning
                             }
@@ -182,9 +191,9 @@ fun SandboxSetupDialog(
                         },
                         contentDescription = null,
                         tint = when (status) {
-                            SandboxStatus.READY -> AccentSecondary
+                            SandboxStatus.READY -> LimeBrandColor
                             SandboxStatus.ERROR -> AccentError
-                            else -> AccentPrimary
+                            else -> CyanBrandColor
                         },
                         modifier = Modifier.size(24.dp)
                     )
@@ -199,8 +208,8 @@ fun SandboxSetupDialog(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
-                            color = AccentPrimary,
-                            trackColor = DarkSurfaceVariant
+                            color = CyanBrandColor,
+                            trackColor = GlassSurfaceColor
                         )
                         Text(
                             text = "${(progress * 100).toInt()}% completed",
@@ -219,11 +228,14 @@ fun SandboxSetupDialog(
                                 sandboxManager.installSandbox()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressEffect(),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (status == SandboxStatus.READY) DarkSurfaceVariant else AccentPrimary
+                            containerColor = if (status == SandboxStatus.READY) GlassSurfaceColor else LimeBrandColor,
+                            contentColor = if (status == SandboxStatus.READY) TextPrimary else OnAccentPrimaryColor
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = CircleShape
                     ) {
                         Icon(
                             imageVector = if (status == SandboxStatus.READY) Icons.Default.Refresh else Icons.Default.Download,
@@ -234,7 +246,7 @@ fun SandboxSetupDialog(
                         Text(
                             text = if (status == SandboxStatus.READY) "Reinstall Sandbox RootFS" else "Download & Install Alpine RootFS (~5MB)",
                             fontWeight = FontWeight.Bold,
-                            color = if (status == SandboxStatus.READY) TextPrimary else TextPrimary
+                            fontSize = 13.sp
                         )
                     }
                 }
@@ -243,7 +255,7 @@ fun SandboxSetupDialog(
                 if (status == SandboxStatus.READY) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "PRE-CONFIGURED TOOLCHAINS (TAP TO INSTALL)",
+                            text = "PRE-CONFIGURED TOOLCHAINS",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
@@ -268,18 +280,15 @@ fun SandboxSetupDialog(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(DarkSurface)
-                                    .border(
-                                        0.5.dp,
-                                        if (isInstalled) AccentSecondary.copy(alpha = 0.5f) else DarkBorder,
-                                        RoundedCornerShape(8.dp)
-                                    )
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(GlassSurfaceColor)
+                                    .glassBorder(RoundedCornerShape(14.dp))
+                                    .pressEffect()
                                     .clickable {
                                         onRunCommandInTerminal(preset.command)
                                         onDismiss()
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -294,7 +303,7 @@ fun SandboxSetupDialog(
                                         text = preset.command,
                                         fontSize = 11.sp,
                                         fontFamily = FontFamily.Monospace,
-                                        color = AccentPrimary
+                                        color = CyanBrandColor
                                     )
                                 }
 
@@ -308,14 +317,14 @@ fun SandboxSetupDialog(
                                         Icon(
                                             imageVector = Icons.Default.CheckCircle,
                                             contentDescription = null,
-                                            tint = AccentSecondary,
-                                            modifier = Modifier.size(14.dp)
+                                            tint = LimeBrandColor,
+                                            modifier = Modifier.size(15.dp)
                                         )
                                         Text(
                                             text = "Installed",
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = AccentSecondary
+                                            color = LimeBrandColor
                                         )
                                     }
                                 } else {
@@ -323,7 +332,7 @@ fun SandboxSetupDialog(
                                         text = "Install",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = AccentPrimary
+                                        color = LimeBrandColor
                                     )
                                 }
                             }
@@ -331,15 +340,16 @@ fun SandboxSetupDialog(
                     }
                 }
 
-                HorizontalDivider(color = DarkBorder)
+                HorizontalDivider(color = GlassBorderColor)
 
                 // Capabilities & Limitations info per PRD Section 6.5
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(DarkSurface)
-                        .padding(12.dp),
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(GlassSurfaceColor)
+                        .glassBorder(RoundedCornerShape(14.dp))
+                        .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
@@ -350,9 +360,9 @@ fun SandboxSetupDialog(
                     )
                     Text(
                         text = "• Runs unrooted Linux userland directly on-device.\n• Ideal for node, python, git, and lightweight builds.\n• Offline capable — no server required.\n• Constrained to phone CPU/RAM. No GPU acceleration.",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = TextMuted,
-                        lineHeight = 15.sp
+                        lineHeight = 16.sp
                     )
                 }
             }

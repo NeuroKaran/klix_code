@@ -40,23 +40,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.R
+import com.klix.code.ui.components.glass.GlassCard
+import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.components.glass.tintedGlassBorder
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.theme.GlassSurfaceColor
+import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.LimeBrand
+import com.klix.code.ui.theme.LimeGlow
 import com.klix.code.ui.theme.LocalIsDarkTheme
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
 
-private val KlixNeonLime = Color(0xFFD4FF32)
 private val FlameOrange = Color(0xFFFF9800)
 private val FlameRed = Color(0xFFFF5722)
 private val DotInactiveColor: Color
     @Composable
     get() = if (LocalIsDarkTheme.current) Color(0xFF2B313E) else Color(0xFFD0D7DE)
 
+private val StreakActiveColor: Color
+    @Composable
+    get() = if (LocalIsDarkTheme.current) LimeBrand else Color(0xFF15803D)
+
 /**
- * Compact Streak Pill Button for the TopAppBar.
+ * Compact Glass Streak Pill Button for the TopAppBar.
  * Displays the flame and streak count, with a glowing pulse when today's streak is ready to claim.
  */
 @Composable
@@ -69,7 +80,7 @@ fun StreakPillButton(
     val infiniteTransition = rememberInfiniteTransition(label = "streak_pill_pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1.0f,
-        targetValue = if (!isClaimedToday) 1.14f else 1.04f,
+        targetValue = if (!isClaimedToday) 1.15f else 1.04f,
         animationSpec = infiniteRepeatable(
             animation = tween(900, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -87,24 +98,25 @@ fun StreakPillButton(
         label = "border_glow"
     )
 
-    val borderColor = if (!isClaimedToday) {
-        FlameOrange.copy(alpha = borderGlow)
-    } else {
-        DarkBorder
-    }
-
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(DarkSurfaceVariant)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .clip(CircleShape)
+            .background(GlassSurfaceColor)
+            .then(
+                if (!isClaimedToday) {
+                    Modifier.tintedGlassBorder(FlameOrange, CircleShape, strokeWidth = 1.dp, highlightAlpha = borderGlow)
+                } else {
+                    Modifier.glassBorder(CircleShape, strokeWidth = 1.dp, highlightAlpha = 0.28f, midAlpha = 0.10f)
+                }
+            )
+            .pressEffect(targetScale = 0.92f)
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 9.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.widget_flame),
@@ -136,8 +148,7 @@ fun StreakPillButton(
 }
 
 /**
- * Streak Sidebar Card for the FileTreeView drawer navigation,
- * matching the Widget_UI design reference.
+ * Modular Glass Streak Card for the Sidebar / File Tree (Reference 1 style).
  */
 @Composable
 fun StreakSidebarCard(
@@ -150,10 +161,10 @@ fun StreakSidebarCard(
 ) {
     val dayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
 
-    val infiniteTransition = rememberInfiniteTransition(label = "sidebar_card_pulse")
+    val infiniteTransition = rememberInfiniteTransition(label = "sidebar_streak_flame")
     val flamePulse by infiniteTransition.animateFloat(
         initialValue = 1.0f,
-        targetValue = if (!isClaimedToday) 1.1f else 1.03f,
+        targetValue = if (!isClaimedToday) 1.14f else 1.04f,
         animationSpec = infiniteRepeatable(
             animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -161,28 +172,13 @@ fun StreakSidebarCard(
         label = "flame_pulse"
     )
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        DarkSurfaceVariant.copy(alpha = 0.85f),
-                        DarkSurface.copy(alpha = 0.95f)
-                    )
-                )
-            )
-            .border(
-                1.dp,
-                if (!isClaimedToday) FlameOrange.copy(alpha = 0.5f) else DarkBorder,
-                RoundedCornerShape(14.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(14.dp)
+    GlassCard(
+        shape = RoundedCornerShape(20.dp),
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header: Flame + Title + Streak count + Claim action
@@ -199,15 +195,15 @@ fun StreakSidebarCard(
                         painter = painterResource(id = R.drawable.widget_flame),
                         contentDescription = "Streak Flame",
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(34.dp)
                             .scale(flamePulse)
                     )
 
                     Column {
                         Text(
-                            text = "Coding Streak",
+                            text = "Daily Streak",
                             fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.SemiBold,
                             color = TextSecondary
                         )
                         Text(
@@ -222,26 +218,27 @@ fun StreakSidebarCard(
                 // Claim status badge
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(CircleShape)
                         .background(
                             if (!isClaimedToday) {
                                 Brush.horizontalGradient(listOf(FlameOrange, FlameRed))
                             } else {
                                 Brush.horizontalGradient(
                                     listOf(
-                                        DarkSurfaceVariant,
-                                        DarkSurfaceVariant
+                                        GlassSurfaceElevatedColor,
+                                        GlassSurfaceElevatedColor
                                     )
                                 )
                             }
                         )
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                        .glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!isClaimedToday) {
                         Text(
                             text = "CLAIM",
-                            fontSize = 11.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.5.sp,
                             color = Color.White
@@ -254,14 +251,14 @@ fun StreakSidebarCard(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = KlixNeonLime,
+                                tint = StreakActiveColor,
                                 modifier = Modifier.size(12.dp)
                             )
                             Text(
                                 text = "CLAIMED",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = KlixNeonLime
+                                color = StreakActiveColor
                             )
                         }
                     }
@@ -284,12 +281,12 @@ fun StreakSidebarCard(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(14.dp)
+                                .size(16.dp)
                                 .clip(CircleShape)
-                                .background(if (isActive) KlixNeonLime else DotInactiveColor)
+                                .background(if (isActive) StreakActiveColor else DotInactiveColor)
                                 .then(
                                     if (isToday && !isActive) {
-                                        Modifier.border(1.dp, FlameOrange, CircleShape)
+                                        Modifier.border(1.2.dp, FlameOrange, CircleShape)
                                     } else Modifier
                                 )
                         )
@@ -299,7 +296,7 @@ fun StreakSidebarCard(
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isToday) (if (isActive) KlixNeonLime else FlameOrange) else TextMuted
+                            color = if (isToday) (if (isActive) StreakActiveColor else FlameOrange) else TextSecondary
                         )
                     }
                 }
@@ -307,4 +304,3 @@ fun StreakSidebarCard(
         }
     }
 }
-

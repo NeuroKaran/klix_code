@@ -83,6 +83,18 @@ import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
 import com.klix.code.ui.components.sandbox.SandboxWarningDialog
+import com.klix.code.ui.components.glass.GlassCard
+import com.klix.code.ui.components.glass.GlassButton
+import com.klix.code.ui.components.glass.GlassBadge
+import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.theme.GlassSurfaceColor
+import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.LimeBrandColor
+import com.klix.code.ui.theme.LimeDimColor
+import com.klix.code.ui.theme.CyanBrandColor
+import com.klix.code.ui.theme.CyanDimColor
+import com.klix.code.ui.theme.OnAccentPrimaryColor
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -131,14 +143,15 @@ fun FileTreeView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(DarkSurface)
+            .background(GlassSurfaceColor)
     ) {
         // Workspace Tree Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(DarkSurfaceVariant)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .background(GlassSurfaceElevatedColor)
+                .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.18f, midAlpha = 0.05f)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -150,43 +163,23 @@ fun FileTreeView(
                     painter = painterResource(id = R.drawable.klix_logo),
                     contentDescription = "Klix Logo",
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(22.dp)
                         .clip(CircleShape)
+                        .glassBorder(CircleShape, strokeWidth = 1.dp)
                 )
                 Text(
                     text = "KLIX CODE",
-                    fontSize = 11.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
                     color = TextPrimary
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
-                        .background(
-                            if (isUpdateAvailable) AccentSecondary.copy(alpha = 0.2f)
-                            else AccentPrimary.copy(alpha = 0.15f)
-                        )
-                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                ) {
-                    if (isUpdateAvailable) {
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .clip(CircleShape)
-                                .background(AccentSecondary)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                    }
-                    Text(
-                        text = "v${BuildConfig.VERSION_NAME}",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isUpdateAvailable) AccentSecondary else AccentPrimary
-                    )
-                }
+                GlassBadge(
+                    text = "v${BuildConfig.VERSION_NAME}",
+                    containerColor = if (isUpdateAvailable) CyanDimColor else LimeDimColor,
+                    textColor = if (isUpdateAvailable) CyanBrandColor else LimeBrandColor,
+                    modifier = Modifier.clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
+                )
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -200,13 +193,13 @@ fun FileTreeView(
                                 showCreateFileDialog = root.uri
                             }
                         },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(28.dp).pressEffect(0.9f)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.NoteAdd,
                             contentDescription = "New File",
                             tint = TextSecondary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(17.dp)
                         )
                     }
 
@@ -219,26 +212,26 @@ fun FileTreeView(
                                 showCreateDirDialog = root.uri
                             }
                         },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(28.dp).pressEffect(0.9f)
                     ) {
                         Icon(
                             imageVector = Icons.Default.CreateNewFolder,
                             contentDescription = "New Folder",
                             tint = TextSecondary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(17.dp)
                         )
                     }
                 }
 
                 IconButton(
                     onClick = onRefresh,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(28.dp).pressEffect(0.9f)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Refresh",
                         tint = TextSecondary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(17.dp)
                     )
                 }
             }
@@ -251,8 +244,9 @@ fun FileTreeView(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(DarkSurfaceVariant.copy(alpha = 0.45f))
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .background(GlassSurfaceColor)
+                .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.12f, midAlpha = 0.04f)
+                .padding(horizontal = 14.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -264,8 +258,8 @@ fun FileTreeView(
                 Icon(
                     imageVector = if (isSandbox) Icons.Default.Terminal else Icons.Default.Folder,
                     contentDescription = null,
-                    tint = if (isSandbox) AccentPrimary else AccentSecondary,
-                    modifier = Modifier.size(14.dp)
+                    tint = if (isSandbox) LimeBrandColor else CyanBrandColor,
+                    modifier = Modifier.size(15.dp)
                 )
                 Text(
                     text = displayName.uppercase(),
@@ -278,18 +272,14 @@ fun FileTreeView(
             }
 
             if (!isSandbox && onOpenSandboxWorkspace != null) {
-                TextButton(
-                    onClick = onOpenSandboxWorkspace,
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                    modifier = Modifier.height(24.dp)
-                ) {
-                    Text(
-                        text = "Sandbox",
-                        fontSize = 10.sp,
-                        color = AccentPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                GlassBadge(
+                    text = "SANDBOX",
+                    containerColor = LimeDimColor,
+                    textColor = LimeBrandColor,
+                    modifier = Modifier
+                        .pressEffect(0.92f)
+                        .clickable(onClick = onOpenSandboxWorkspace)
+                )
             }
         }
 
@@ -313,53 +303,75 @@ fun FileTreeView(
                 .fillMaxWidth()
         ) {
         if (rootNode == null) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.FolderOpen,
-                    contentDescription = null,
-                    tint = TextMuted,
-                    modifier = Modifier.size(44.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "No folder open",
-                    color = TextPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Open the sandbox workspace or pick a device folder to start coding.",
-                    color = TextMuted,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                if (onOpenSandboxWorkspace != null) {
-                    Button(
-                        onClick = onOpenSandboxWorkspace,
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
-                        shape = RoundedCornerShape(8.dp)
+                GlassCard(
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Terminal,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(GlassSurfaceElevatedColor)
+                                .glassBorder(CircleShape, strokeWidth = 1.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FolderOpen,
+                                contentDescription = null,
+                                tint = CyanBrandColor,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Open Sandbox Workspace",
-                            color = Color.White,
-                            fontSize = 12.sp,
+                            text = "No Folder Open",
+                            color = TextPrimary,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Open the sandbox workspace or pick a device folder to start coding.",
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        if (onOpenSandboxWorkspace != null) {
+                            GlassButton(
+                                onClick = onOpenSandboxWorkspace,
+                                containerColor = LimeBrandColor,
+                                contentColor = OnAccentPrimaryColor,
+                                shape = CircleShape
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Terminal,
+                                    contentDescription = null,
+                                    tint = OnAccentPrimaryColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Open Sandbox Workspace",
+                                    color = OnAccentPrimaryColor,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -767,23 +779,29 @@ private fun FileTreeRow(
     onRename: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var showActionMenu by remember { mutableStateOf(false) }
-
     val indent = (node.level * 16).dp
-    val bg = if (isSelected) DarkSurfaceVariant else Color.Transparent
+    val rowShape = RoundedCornerShape(10.dp)
+    val bg = if (isSelected) CyanDimColor else Color.Transparent
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(start = indent + 4.dp, end = 6.dp, top = 2.dp, bottom = 2.dp)
+            .clip(rowShape)
             .background(bg)
+            .then(
+                if (isSelected) {
+                    Modifier.glassBorder(rowShape, strokeWidth = 0.8.dp, highlightAlpha = 0.35f, midAlpha = 0.12f)
+                } else Modifier
+            )
             .clickable { onClick() }
-            .padding(start = indent + 4.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (node.isDirectory) {
             IconButton(
                 onClick = onToggleExpand,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(22.dp).pressEffect(0.9f)
             ) {
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
@@ -795,16 +813,16 @@ private fun FileTreeRow(
             Icon(
                 imageVector = if (isExpanded) Icons.Default.FolderOpen else Icons.Default.Folder,
                 contentDescription = null,
-                tint = AccentPrimary,
+                tint = LimeBrandColor,
                 modifier = Modifier.size(18.dp)
             )
         } else {
-            Spacer(modifier = Modifier.width(20.dp))
+            Spacer(modifier = Modifier.width(22.dp))
             val extColor = when (node.extension.lowercase()) {
                 "kt", "kts" -> Color(0xFFC084FC)
                 "py" -> Color(0xFFFACC15)
-                "js", "ts", "jsx", "tsx" -> Color(0xFF60A5FA)
-                "json" -> Color(0xFF34D399)
+                "js", "ts", "jsx", "tsx" -> CyanBrandColor
+                "json" -> LimeBrandColor
                 "md" -> Color(0xFF38BDF8)
                 else -> TextSecondary
             }
@@ -820,8 +838,9 @@ private fun FileTreeRow(
 
         Text(
             text = node.name,
-            color = if (isSelected) AccentPrimary else TextPrimary,
+            color = if (isSelected) CyanBrandColor else TextPrimary,
             fontSize = 13.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             fontFamily = FontFamily.Monospace,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -832,7 +851,7 @@ private fun FileTreeRow(
         if (node.isDirectory) {
             IconButton(
                 onClick = onAddFileInDir,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(24.dp).pressEffect(0.9f)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.NoteAdd,
@@ -845,7 +864,7 @@ private fun FileTreeRow(
 
         IconButton(
             onClick = onRename,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(24.dp).pressEffect(0.9f)
         ) {
             Icon(
                 imageVector = Icons.Default.Edit,
@@ -857,7 +876,7 @@ private fun FileTreeRow(
 
         IconButton(
             onClick = onDelete,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(24.dp).pressEffect(0.9f)
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,

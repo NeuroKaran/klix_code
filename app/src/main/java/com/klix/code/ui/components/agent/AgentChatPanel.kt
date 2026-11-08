@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -84,6 +85,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.painterResource
+import com.klix.code.R
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
@@ -116,6 +119,23 @@ import com.klix.code.ui.theme.DiffRemovedText
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
+import com.klix.code.ui.components.glass.GlassCard
+import com.klix.code.ui.components.glass.GlassButton
+import com.klix.code.ui.components.glass.GlassBadge
+import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.theme.GlassSurfaceColor
+import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.GlassSurfacePillColor
+import com.klix.code.ui.theme.LimeBrandColor
+import com.klix.code.ui.theme.LimeGlowColor
+import com.klix.code.ui.theme.LimeDimColor
+import com.klix.code.ui.theme.LimeBorderColor
+import com.klix.code.ui.theme.CyanBrandColor
+import com.klix.code.ui.theme.CyanGlowColor
+import com.klix.code.ui.theme.CyanDimColor
+import com.klix.code.ui.theme.CyanBorderColor
+import com.klix.code.ui.theme.OnAccentPrimaryColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -209,10 +229,10 @@ fun AgentChatPanel(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(DarkSurface)
+                .background(GlassSurfaceColor)
                 .statusBarsPadding()
-                .border(0.5.dp, DarkBorder)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.18f, midAlpha = 0.05f)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -222,37 +242,33 @@ fun AgentChatPanel(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f, fill = false)
             ) {
-                Box(
+                Image(
+                    painter = painterResource(id = R.drawable.klix_logo),
+                    contentDescription = "Klix Mascot",
                     modifier = Modifier
                         .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(AccentPrimary.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SmartToy,
-                        contentDescription = "Agent",
-                        tint = AccentPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                        .clip(CircleShape)
+                        .glassBorder(CircleShape, strokeWidth = 1.dp)
+                )
 
-                // Session Selector Button
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = DarkSurfaceVariant,
-                    border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
-                    modifier = Modifier.clickable { showSessionSheet = true }
+                // Session Selector Capsule Pill
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(GlassSurfaceElevatedColor)
+                        .glassBorder(CircleShape, strokeWidth = 1.dp)
+                        .pressEffect(0.95f)
+                        .clickable { showSessionSheet = true }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ChatBubbleOutline,
                             contentDescription = null,
-                            tint = AccentPrimary,
+                            tint = LimeBrandColor,
                             modifier = Modifier.size(13.dp)
                         )
                         Text(
@@ -282,12 +298,12 @@ fun AgentChatPanel(
                 // New Chat Button
                 IconButton(
                     onClick = onCreateSession,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp).pressEffect(0.9f)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "New Chat",
-                        tint = AccentPrimary,
+                        tint = LimeBrandColor,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -295,7 +311,7 @@ fun AgentChatPanel(
                 // Chat History Drawer Button
                 IconButton(
                     onClick = { showSessionSheet = true },
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp).pressEffect(0.9f)
                 ) {
                     Icon(
                         imageVector = Icons.Default.History,
@@ -305,7 +321,7 @@ fun AgentChatPanel(
                     )
                 }
 
-                IconButton(onClick = onClearChat, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onClearChat, modifier = Modifier.size(32.dp).pressEffect(0.9f)) {
                     Icon(
                         imageVector = Icons.Default.DeleteOutline,
                         contentDescription = "Clear Session",
@@ -314,25 +330,26 @@ fun AgentChatPanel(
                     )
                 }
 
-                IconButton(onClick = onOpenSlashCommandManager, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Terminal,
-                        contentDescription = "Slash Commands",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(18.dp)
+                IconButton(onClick = onOpenSlashCommandManager, modifier = Modifier.size(32.dp).pressEffect(0.9f)) {
+                    Text(
+                        text = "/",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                        fontFamily = FontFamily.Monospace
                     )
                 }
 
-                IconButton(onClick = onOpenSettings, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onOpenSettings, modifier = Modifier.size(32.dp).pressEffect(0.9f)) {
                     Icon(
-                        imageVector = Icons.Default.Tune,
+                        imageVector = Icons.Default.Settings,
                         contentDescription = "Settings",
                         tint = TextSecondary,
                         modifier = Modifier.size(18.dp)
                     )
                 }
 
-                IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onClose, modifier = Modifier.size(32.dp).pressEffect(0.9f)) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close",
@@ -347,38 +364,29 @@ fun AgentChatPanel(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(DarkSurface.copy(alpha = 0.5f))
-                .padding(horizontal = 14.dp, vertical = 4.dp),
+                .background(GlassSurfaceColor)
+                .padding(horizontal = 14.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(DarkSurfaceVariant)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = settings.activeModel.substringAfterLast('/'),
-                        fontSize = 10.5.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = AccentPrimary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                GlassBadge(
+                    text = settings.activeModel.substringAfterLast('/'),
+                    containerColor = CyanDimColor,
+                    textColor = CyanBrandColor
+                )
                 Text(
                     text = settings.activeProvider.displayName,
-                    fontSize = 10.5.sp,
+                    fontSize = 11.sp,
                     color = TextMuted
                 )
             }
 
             Text(
-                text = if (totalTokens > 0) "$totalTokens tokens used" else "Ready",
+                text = if (totalTokens > 0) "$totalTokens tokens" else "Ready",
                 fontSize = 10.5.sp,
                 fontFamily = FontFamily.Monospace,
                 color = TextMuted
@@ -725,128 +733,149 @@ fun AgentChatPanel(
             }
         }
 
-        // Bottom Input Bar
-        HorizontalDivider(color = DarkBorder)
-        Row(
+        // Bottom Floating Glass Composer Dock
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(DarkSurface)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                .background(GlassSurfaceColor)
+                .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.18f, midAlpha = 0.05f)
+                .padding(horizontal = 10.dp, vertical = 8.dp)
         ) {
-            // Quick "/" Slash Command Button
-            IconButton(
-                onClick = {
-                    val currentText = promptInput.text
-                    val sel = promptInput.selection.end
-                    val before = currentText.take(sel)
-                    val after = currentText.drop(sel)
-                    val needSpace = before.isNotEmpty() && !before.endsWith(" ")
-                    val insert = if (needSpace) " /" else "/"
-                    val newText = before + insert + after
-                    val newSel = sel + insert.length
-                    promptInput = TextFieldValue(text = newText, selection = TextRange(newSel))
-                },
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(DarkSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "/",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AccentPrimary
-                )
-            }
-
-            // Quick "@" Tag Button
-            IconButton(
-                onClick = {
-                    val currentText = promptInput.text
-                    val sel = promptInput.selection.end
-                    val before = currentText.take(sel)
-                    val after = currentText.drop(sel)
-                    val needSpace = before.isNotEmpty() && !before.endsWith(" ")
-                    val insert = if (needSpace) " @" else "@"
-                    val newText = before + insert + after
-                    val newSel = sel + insert.length
-                    promptInput = TextFieldValue(text = newText, selection = TextRange(newSel))
-                },
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(DarkSurfaceVariant)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AlternateEmail,
-                    contentDescription = "Mention File/Folder",
-                    tint = AccentPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            OutlinedTextField(
-                value = promptInput,
-                onValueChange = { promptInput = it },
-                placeholder = {
-                    Text(
-                        text = "Ask Klix, type / for commands, or @ for files...",
-                        color = TextMuted,
-                        fontSize = 13.sp
-                    )
-                },
-                modifier = Modifier.weight(1f),
-                maxLines = 5,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = DarkSurfaceVariant,
-                    unfocusedContainerColor = DarkSurfaceVariant,
-                    focusedBorderColor = AccentPrimary,
-                    unfocusedBorderColor = DarkBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                )
-            )
-
-            val isRunning = status == HarnessStatus.THINKING || status == HarnessStatus.EXECUTING_TOOL
-            if (isRunning) {
-                IconButton(
-                    onClick = onCancelTask,
+                // Quick "/" Slash Command Glass Button
+                Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
-                        .background(AccentError)
+                        .background(GlassSurfaceElevatedColor)
+                        .glassBorder(CircleShape, strokeWidth = 1.dp)
+                        .pressEffect(0.92f)
+                        .clickable {
+                            val currentText = promptInput.text
+                            val sel = promptInput.selection.end
+                            val before = currentText.take(sel)
+                            val after = currentText.drop(sel)
+                            val needSpace = before.isNotEmpty() && !before.endsWith(" ")
+                            val insert = if (needSpace) " /" else "/"
+                            val newText = before + insert + after
+                            val newSel = sel + insert.length
+                            promptInput = TextFieldValue(text = newText, selection = TextRange(newSel))
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Stop,
-                        contentDescription = "Stop",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
+                    Text(
+                        text = "/",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LimeBrandColor,
+                        fontFamily = FontFamily.Monospace
                     )
                 }
-            } else {
-                val hasInput = promptInput.text.isNotBlank()
-                IconButton(
-                    onClick = {
-                        if (hasInput) {
-                            onSendPrompt(promptInput.text.trim())
-                            promptInput = TextFieldValue("")
-                        }
-                    },
-                    enabled = hasInput,
+
+                // Quick "@" Tag Glass Button
+                Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
-                        .background(if (hasInput) AccentPrimary else DarkSurfaceVariant)
+                        .background(GlassSurfaceElevatedColor)
+                        .glassBorder(CircleShape, strokeWidth = 1.dp)
+                        .pressEffect(0.92f)
+                        .clickable {
+                            val currentText = promptInput.text
+                            val sel = promptInput.selection.end
+                            val before = currentText.take(sel)
+                            val after = currentText.drop(sel)
+                            val needSpace = before.isNotEmpty() && !before.endsWith(" ")
+                            val insert = if (needSpace) " @" else "@"
+                            val newText = before + insert + after
+                            val newSel = sel + insert.length
+                            promptInput = TextFieldValue(text = newText, selection = TextRange(newSel))
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
-                        tint = if (hasInput) Color.White else TextMuted,
-                        modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.AlternateEmail,
+                        contentDescription = "Mention File/Folder",
+                        tint = CyanBrandColor,
+                        modifier = Modifier.size(17.dp)
                     )
+                }
+
+                OutlinedTextField(
+                    value = promptInput,
+                    onValueChange = { promptInput = it },
+                    placeholder = {
+                        Text(
+                            text = "Ask Klix, type / for commands, @ for files...",
+                            color = TextMuted,
+                            fontSize = 13.sp
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                    maxLines = 5,
+                    shape = RoundedCornerShape(20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = GlassSurfaceElevatedColor,
+                        unfocusedContainerColor = GlassSurfaceElevatedColor,
+                        focusedBorderColor = LimeBrandColor,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    )
+                )
+
+                val isRunning = status == HarnessStatus.THINKING || status == HarnessStatus.EXECUTING_TOOL
+                if (isRunning) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(AccentError)
+                            .pressEffect(0.92f)
+                            .clickable(onClick = onCancelTask),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = "Stop",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                } else {
+                    val hasInput = promptInput.text.isNotBlank()
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(if (hasInput) LimeBrandColor else GlassSurfaceElevatedColor)
+                            .then(
+                                if (hasInput) {
+                                    Modifier.glassBorder(CircleShape, strokeWidth = 1.dp, highlightAlpha = 0.5f)
+                                } else {
+                                    Modifier.glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                                }
+                            )
+                            .pressEffect(0.92f)
+                            .clickable(enabled = hasInput) {
+                                if (hasInput) {
+                                    onSendPrompt(promptInput.text.trim())
+                                    promptInput = TextFieldValue("")
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send",
+                            tint = if (hasInput) OnAccentPrimaryColor else TextMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
@@ -1107,20 +1136,13 @@ private fun EmptyAgentState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.klix_logo),
+            contentDescription = "Klix Mascot",
             modifier = Modifier
                 .size(60.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(AccentPrimary.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.SmartToy,
-                contentDescription = null,
-                tint = AccentPrimary,
-                modifier = Modifier.size(34.dp)
-            )
-        }
+                .clip(CircleShape)
+        )
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -1260,20 +1282,13 @@ private fun ChatMessageItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Box(
+                    Image(
+                        painter = painterResource(id = R.drawable.klix_logo),
+                        contentDescription = "Klix Mascot",
                         modifier = Modifier
                             .size(20.dp)
                             .clip(CircleShape)
-                            .background(AccentPrimary.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SmartToy,
-                            contentDescription = null,
-                            tint = AccentPrimary,
-                            modifier = Modifier.size(13.dp)
-                        )
-                    }
+                    )
 
                     Text(
                         text = "Klix AI",
@@ -1356,22 +1371,17 @@ private fun ChatMessageItem(
                         }
                     }
 
+                    val userBubbleShape = RoundedCornerShape(
+                        topStart = 18.dp,
+                        topEnd = 18.dp,
+                        bottomStart = 18.dp,
+                        bottomEnd = 4.dp
+                    )
                     Box(
                         modifier = Modifier
-                            .clip(
-                                RoundedCornerShape(
-                                    topStart = 14.dp,
-                                    topEnd = 14.dp,
-                                    bottomStart = 14.dp,
-                                    bottomEnd = 3.dp
-                                )
-                            )
-                            .background(AccentPrimary.copy(alpha = 0.15f))
-                            .border(
-                                0.75.dp,
-                                AccentPrimary.copy(alpha = 0.35f),
-                                RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 14.dp, bottomEnd = 3.dp)
-                            )
+                            .clip(userBubbleShape)
+                            .background(CyanDimColor)
+                            .glassBorder(userBubbleShape, strokeWidth = 1.dp, highlightAlpha = 0.35f, midAlpha = 0.12f)
                             .padding(horizontal = 14.dp, vertical = 10.dp)
                     ) {
                         Text(
@@ -1384,16 +1394,18 @@ private fun ChatMessageItem(
                 }
             } else {
                 // Assistant Message with rich typography & syntax highlighted code blocks
+                val assistantShape = RoundedCornerShape(
+                    topStart = 4.dp,
+                    topEnd = 18.dp,
+                    bottomStart = 18.dp,
+                    bottomEnd = 18.dp
+                )
                 Surface(
-                    shape = RoundedCornerShape(
-                        topStart = 4.dp,
-                        topEnd = 12.dp,
-                        bottomStart = 12.dp,
-                        bottomEnd = 12.dp
-                    ),
-                    color = DarkSurface,
-                    border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
-                    modifier = Modifier.fillMaxWidth()
+                    shape = assistantShape,
+                    color = GlassSurfaceElevatedColor,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .glassBorder(assistantShape, strokeWidth = 1.dp, highlightAlpha = 0.25f, midAlpha = 0.08f)
                 ) {
                     MarkdownMessageView(
                         content = message.content,
@@ -1676,14 +1688,16 @@ private fun PendingApprovalCard(
     }
 
     Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = DarkSurfaceVariant,
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isQuestion) AccentPrimary else AccentWarning),
-        modifier = Modifier.fillMaxWidth()
+        shape = RoundedCornerShape(18.dp),
+        color = GlassSurfaceElevatedColor,
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isQuestion) CyanBorderColor else LimeBorderColor),
+        modifier = Modifier
+            .fillMaxWidth()
+            .glassBorder(RoundedCornerShape(18.dp), strokeWidth = 1.dp, highlightAlpha = 0.35f, midAlpha = 0.12f)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -1692,7 +1706,7 @@ private fun PendingApprovalCard(
                 Icon(
                     imageVector = if (isQuestion) Icons.Default.ChatBubbleOutline else Icons.Default.Tune,
                     contentDescription = null,
-                    tint = if (isQuestion) AccentPrimary else AccentWarning,
+                    tint = if (isQuestion) CyanBrandColor else LimeBrandColor,
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
@@ -1700,13 +1714,13 @@ private fun PendingApprovalCard(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
-                    color = if (isQuestion) AccentPrimary else AccentWarning
+                    color = if (isQuestion) CyanBrandColor else LimeBrandColor
                 )
             }
 
             Text(
                 text = pending.promptMessage,
-                fontSize = 13.sp,
+                fontSize = 13.5.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
@@ -1728,12 +1742,12 @@ private fun PendingApprovalCard(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (isSelected) AccentPrimary.copy(alpha = 0.18f) else DarkBg)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) CyanDimColor else DarkBg)
                                 .border(
                                     width = if (isSelected) 1.dp else 0.5.dp,
-                                    color = if (isSelected) AccentPrimary else DarkBorder,
-                                    shape = RoundedCornerShape(6.dp)
+                                    color = if (isSelected) CyanBrandColor else DarkBorder,
+                                    shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable {
                                     if (pending.allowMultiple) {
@@ -1760,16 +1774,16 @@ private fun PendingApprovalCard(
                                     modifier = Modifier
                                         .size(16.dp)
                                         .clip(CircleShape)
-                                        .background(if (isSelected) AccentPrimary else Color.Transparent)
-                                        .border(1.5.dp, if (isSelected) AccentPrimary else TextMuted, CircleShape),
+                                        .background(if (isSelected) CyanBrandColor else Color.Transparent)
+                                        .border(1.5.dp, if (isSelected) CyanBrandColor else TextMuted, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (isSelected) {
                                         Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = DarkBg,
-                                            modifier = Modifier.size(10.dp)
+                                             imageVector = Icons.Default.Check,
+                                             contentDescription = null,
+                                             tint = OnAccentPrimaryColor,
+                                             modifier = Modifier.size(10.dp)
                                         )
                                     }
                                 }
@@ -1791,7 +1805,7 @@ private fun PendingApprovalCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(8.dp))
                         .background(DarkBg)
                         .clickable { onReviewDiff(diff) }
                         .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -1802,7 +1816,7 @@ private fun PendingApprovalCard(
                         Icon(
                             imageVector = Icons.Default.Difference,
                             contentDescription = null,
-                            tint = AccentPrimary,
+                            tint = CyanBrandColor,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -1837,9 +1851,9 @@ private fun PendingApprovalCard(
             ) {
                 OutlinedButton(
                     onClick = onReject,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).pressEffect(0.95f),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentError),
-                    shape = RoundedCornerShape(6.dp)
+                    shape = CircleShape
                 ) {
                     Text(if (isQuestion) "Decline" else "Deny", fontSize = 12.sp)
                 }
@@ -1856,12 +1870,19 @@ private fun PendingApprovalCard(
                             onApprove()
                         }
                     },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (isQuestion) AccentPrimary else AccentSecondary),
-                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.weight(1f).pressEffect(0.95f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isQuestion) CyanBrandColor else LimeBrandColor,
+                        contentColor = OnAccentPrimaryColor
+                    ),
+                    shape = CircleShape,
                     enabled = !isQuestion || selectedOptions.isNotEmpty()
                 ) {
-                    Text(if (isQuestion) "Confirm Option" else "Approve & Run", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isQuestion) "Confirm Option" else "Approve & Run",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

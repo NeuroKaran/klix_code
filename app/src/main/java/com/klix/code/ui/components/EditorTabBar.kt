@@ -1,8 +1,8 @@
 package com.klix.code.ui.components
 
 import android.net.Uri
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,11 +33,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.data.model.EditorTab
-import com.klix.code.ui.theme.AccentPrimary
+import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.DarkBorder
-import com.klix.code.ui.theme.DarkSurface
-import com.klix.code.ui.theme.TabActiveBg
-import com.klix.code.ui.theme.TabInactiveBg
+import com.klix.code.ui.theme.GlassSurfaceColor
+import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.LimeBrandColor
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -54,32 +56,56 @@ fun EditorTabBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(38.dp)
-            .background(DarkSurface)
-            .border(width = 0.5.dp, color = DarkBorder)
-            .horizontalScroll(scrollState),
+            .height(44.dp)
+            .background(GlassSurfaceColor)
+            .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.15f, midAlpha = 0.05f)
+            .horizontalScroll(scrollState)
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         tabs.forEach { tab ->
             val isActive = tab.uri == activeTabUri
-            val bg = if (isActive) TabActiveBg else TabInactiveBg
+            val tabShape = RoundedCornerShape(10.dp)
+
+            val animatedBg by animateColorAsState(
+                targetValue = if (isActive) GlassSurfaceElevatedColor else Color.Transparent,
+                label = "tabBgAnimation"
+            )
 
             Row(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .background(bg)
+                    .clip(tabShape)
+                    .background(animatedBg)
+                    .then(
+                        if (isActive) {
+                            Modifier.glassBorder(tabShape, strokeWidth = 1.dp, highlightAlpha = 0.32f, midAlpha = 0.12f)
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .pressEffect(targetScale = 0.97f)
                     .clickable { onSelectTab(tab.uri) }
-                    .padding(horizontal = 12.dp),
+                    .padding(start = 12.dp, end = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
             ) {
-                // Tab modified indicator or file type indicator
+                // Tab modified indicator or active dot
                 if (tab.isModified) {
                     Box(
                         modifier = Modifier
                             .size(7.dp)
                             .clip(CircleShape)
-                            .background(AccentPrimary)
+                            .background(LimeBrandColor)
+                    )
+                } else if (isActive) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(LimeBrandColor)
+                            .glassBorder(CircleShape, strokeWidth = 1.dp, highlightAlpha = 0.5f)
                     )
                 }
 
@@ -95,7 +121,9 @@ fun EditorTabBar(
 
                 IconButton(
                     onClick = { onCloseTab(tab.uri) },
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -105,13 +133,6 @@ fun EditorTabBar(
                     )
                 }
             }
-
-            // Tab divider
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .border(width = 0.5.dp, color = DarkBorder)
-            )
         }
     }
 }
