@@ -419,28 +419,15 @@ class MainActivity : ComponentActivity() {
                         topBar = {
                             TopAppBar(
                                 title = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Image(
-                                            painter = painterResource(id = R.drawable.klix_logo),
-                                            contentDescription = "Klix Logo",
-                                            modifier = Modifier
-                                                .size(26.dp)
-                                                .clip(CircleShape)
-                                                .glassBorder(CircleShape, strokeWidth = 1.dp)
-                                        )
-                                        Text(
-                                            text = currentProject?.name ?: "Klix Code",
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = (-0.2).sp,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            color = TextPrimary
-                                        )
-                                    }
+                                    Text(
+                                        text = currentProject?.name ?: "Klix Code",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = (-0.2).sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = TextPrimary
+                                    )
                                 },
                                 navigationIcon = {
                                     IconButton(
