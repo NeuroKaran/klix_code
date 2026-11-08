@@ -181,88 +181,27 @@ fun StreakSidebarCard(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header: Flame + Title + Streak count + Claim action
-            Row(
+            // Mockup 8: Hero Streak Card with fiery mascot
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.widget_flame),
-                        contentDescription = "Streak Flame",
-                        modifier = Modifier
-                            .size(34.dp)
-                            .scale(flamePulse)
-                    )
-
-                    Column {
-                        Text(
-                            text = "Daily Streak",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextSecondary
-                        )
-                        Text(
-                            text = "$streakCount ${if (streakCount == 1) "day" else "days"}",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                    }
-                }
-
-                // Claim status badge
-                Box(
+                Image(
+                    painter = painterResource(id = R.drawable.klix_mascot_streak),
+                    contentDescription = "Streak Mascot",
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(
-                            if (!isClaimedToday) {
-                                Brush.horizontalGradient(listOf(FlameOrange, FlameRed))
-                            } else {
-                                Brush.horizontalGradient(
-                                    listOf(
-                                        GlassSurfaceElevatedColor,
-                                        GlassSurfaceElevatedColor
-                                    )
-                                )
-                            }
-                        )
-                        .glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!isClaimedToday) {
-                        Text(
-                            text = "CLAIM",
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.5.sp,
-                            color = Color.White
-                        )
-                    } else {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = StreakActiveColor,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Text(
-                                text = "CLAIMED",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = StreakActiveColor
-                            )
-                        }
-                    }
-                }
+                        .size(68.dp)
+                        .scale(flamePulse)
+                )
+
+                Text(
+                    text = "$streakCount Days Streak",
+                    fontSize = 16.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    letterSpacing = (-0.3).sp
+                )
             }
 
             // 7-Day Activity Dots Row (M T W T F S S)
@@ -281,15 +220,25 @@ fun StreakSidebarCard(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(16.dp)
+                                .size(18.dp)
                                 .clip(CircleShape)
                                 .background(if (isActive) StreakActiveColor else DotInactiveColor)
                                 .then(
                                     if (isToday && !isActive) {
                                         Modifier.border(1.2.dp, FlameOrange, CircleShape)
                                     } else Modifier
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isActive) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(11.dp)
                                 )
-                        )
+                            }
+                        }
 
                         Text(
                             text = dayLabels[i],

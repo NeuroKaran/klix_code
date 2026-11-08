@@ -1,5 +1,13 @@
 package com.klix.code
 
+import com.klix.code.R
+import com.klix.code.ui.theme.LocalIsDarkTheme
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.PlayArrow
+import com.klix.code.ui.components.HomeDashboard
+import com.klix.code.ui.components.NavTab
+import com.klix.code.ui.components.agent.KlixBuddyCompanionCard
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -346,7 +354,7 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     ModalNavigationDrawer(
                     drawerState = drawerState,
-                    gesturesEnabled = drawerState.isOpen,
+                    gesturesEnabled = true,
                     drawerContent = {
                         ModalDrawerSheet(
                             modifier = Modifier
@@ -417,55 +425,115 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Scaffold(
                         topBar = {
-                            TopAppBar(
-                                title = {
-                                    Text(
-                                        text = currentProject?.name ?: "Klix Code",
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = (-0.2).sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        color = TextPrimary
-                                    )
-                                },
-                                navigationIcon = {
-                                    IconButton(
-                                        onClick = {
-                                            scope.launch {
-                                                if (drawerState.isClosed) drawerState.open() else drawerState.close()
-                                            }
-                                        },
-                                        modifier = Modifier.pressEffect(0.92f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Menu,
-                                            contentDescription = "Menu",
-                                            tint = TextPrimary
-                                        )
-                                    }
-                                },
-                                actions = {
-                                    // Daily Login Streak Button
-                                    StreakPillButton(
-                                        streakCount = streakState.streakCount,
-                                        isClaimedToday = streakState.isClaimedToday,
-                                        onClick = { showDailyStreakDialog = true }
-                                    )
+                            if (openTabs.isNotEmpty()) {
+                                val activeTab = openTabs.find { it.uri == activeTabUri }
+                                val fileIcon = when (activeTab?.extension?.lowercase()) {
+                                    "py" -> "🐍"
+                                    "kt", "kts", "java" -> "☕"
+                                    "js", "ts", "html", "css" -> "🌐"
+                                    else -> "📄"
+                                }
 
-                                    // Save Button
-                                    val activeTab = openTabs.find { it.uri == activeTabUri }
-                                    IconButton(
-                                        onClick = { viewModel.saveActiveTab() },
-                                        enabled = activeTab?.isModified == true,
-                                        modifier = Modifier.pressEffect(0.92f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Save,
-                                            contentDescription = "Save",
-                                            tint = if (activeTab?.isModified == true) LimeBrandColor else TextMuted
+                                TopAppBar(
+                                    title = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier
+                                                .clip(CircleShape)
+                                                .background(if (LocalIsDarkTheme.current) Color(0x2BFFFFFF) else Color(0xFFEBE6F8))
+                                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                                        ) {
+                                            Text(text = fileIcon, fontSize = 13.sp)
+                                            Text(
+                                                text = activeTab?.name ?: currentProject?.name ?: "Klix Code",
+                                                fontSize = 13.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = (-0.2).sp,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                color = TextPrimary
+                                            )
+                                        }
+                                    },
+                                    navigationIcon = {
+                                        IconButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    if (drawerState.isClosed) drawerState.open() else drawerState.close()
+                                                }
+                                            },
+                                            modifier = Modifier.pressEffect(0.92f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Menu,
+                                                contentDescription = "Menu",
+                                                tint = TextPrimary
+                                            )
+                                        }
+                                    },
+                                    actions = {
+                                        // Daily Login Streak Button
+                                        StreakPillButton(
+                                            streakCount = streakState.streakCount,
+                                            isClaimedToday = streakState.isClaimedToday,
+                                            onClick = { showDailyStreakDialog = true }
                                         )
-                                    }
+
+                                        // Mockup 7: Primary Run Button (runs active file in terminal)
+                                        Button(
+                                            onClick = {
+                                                if (activeTab?.isModified == true) {
+                                                    viewModel.saveActiveTab()
+                                                }
+                                                activeTab?.let { tab ->
+                                                    val cmd = when (tab.extension.lowercase()) {
+                                                        "py" -> "python3 ${tab.name}"
+                                                        "js" -> "node ${tab.name}"
+                                                        "sh" -> "sh ${tab.name}"
+                                                        else -> "./${tab.name}"
+                                                    }
+                                                    terminalViewModel.executeCommand(cmd)
+                                                    isTerminalOpen = true
+                                                }
+                                            },
+                                            shape = CircleShape,
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = LimeBrandColor,
+                                                contentColor = Color.Black
+                                            ),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                            modifier = Modifier
+                                                .height(32.dp)
+                                                .pressEffect(0.92f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.PlayArrow,
+                                                contentDescription = "Run",
+                                                modifier = Modifier.size(15.dp),
+                                                tint = Color.Black
+                                            )
+                                            Spacer(modifier = Modifier.width(3.dp))
+                                            Text(
+                                                text = "Run",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.Black
+                                            )
+                                        }
+
+                                        // Save Button
+                                        IconButton(
+                                            onClick = { viewModel.saveActiveTab() },
+                                            enabled = activeTab?.isModified == true,
+                                            modifier = Modifier.pressEffect(0.92f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Save,
+                                                contentDescription = "Save",
+                                                tint = if (activeTab?.isModified == true) LimeBrandColor else TextMuted
+                                            )
+                                        }
 
                                     // Find & Replace toggle
                                     IconButton(
@@ -537,9 +605,11 @@ class MainActivity : ComponentActivity() {
                                     midAlpha = 0.05f
                                 )
                             )
+                            }
                         },
                         bottomBar = {
-                            Column(modifier = Modifier.fillMaxWidth()) {
+                            if (openTabs.isNotEmpty()) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
                                 if (openTabs.isNotEmpty() && activeTabUri != null) {
                                     EditorAccessoryBar(
                                         controller = editorController,
@@ -646,12 +716,13 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                            }
                         }
                     ) { innerPadding ->
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(innerPadding)
+                                .padding(if (openTabs.isNotEmpty()) innerPadding else PaddingValues(0.dp))
                                 .background(DarkBg)
                         ) {
                             if (openTabs.isNotEmpty()) {
@@ -690,131 +761,66 @@ class MainActivity : ComponentActivity() {
 
                                 val activeTab = openTabs.find { it.uri == activeTabUri }
                                 if (activeTab != null) {
-                                    androidx.compose.runtime.key(activeTab.uri) {
-                                        SoraEditorView(
-                                            content = activeTab.content,
-                                            extension = activeTab.extension,
-                                            isWordWrap = isWordWrap,
-                                            fontSizeSp = fontSizeSp,
-                                            onContentChange = { newContent ->
-                                                viewModel.updateActiveTabContent(newContent)
-                                            },
-                                            onCursorChange = { line, col ->
-                                                viewModel.updateCursor(line, col)
-                                            },
-                                            controller = editorController,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                }
-                            } else {
-                                // Empty state when no tabs are open - Reference 1 Modular Glass Hero Card
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(20.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    GlassCard(
-                                        shape = RoundedCornerShape(28.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 8.dp)
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 28.dp)
-                                        ) {
-                                            Box(
-                                                contentAlignment = Alignment.Center,
-                                                modifier = Modifier.size(88.dp)
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(76.dp)
-                                                        .clip(CircleShape)
-                                                        .background(LimeGlowColor)
-                                                )
-                                                Image(
-                                                    painter = painterResource(id = R.drawable.klix_logo),
-                                                    contentDescription = "Klix Logo",
-                                                    modifier = Modifier
-                                                        .size(72.dp)
-                                                        .clip(CircleShape)
-                                                        .glassBorder(CircleShape, strokeWidth = 1.5.dp, highlightAlpha = 0.4f)
-                                                )
-                                            }
-
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                                            ) {
-                                                Text(
-                                                    text = currentProject?.name ?: "Klix Code",
-                                                    fontSize = 20.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    letterSpacing = (-0.3).sp,
-                                                    color = TextPrimary
-                                                )
-                                                Text(
-                                                    text = if (currentProject != null) "Select a file from the sidebar to start editing" else "Ready to build something great?",
-                                                    fontSize = 13.5.sp,
-                                                    color = TextSecondary,
-                                                    textAlign = TextAlign.Center
-                                                )
-                                            }
-
-                                            GlassButton(
-                                                onClick = {
-                                                    if (!isSandboxInstalled) {
-                                                        showSandboxWarningDialog = true
-                                                    } else {
-                                                        viewModel.openSandboxWorkspace()
-                                                    }
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        androidx.compose.runtime.key(activeTab.uri) {
+                                            SoraEditorView(
+                                                content = activeTab.content,
+                                                extension = activeTab.extension,
+                                                isWordWrap = isWordWrap,
+                                                fontSizeSp = fontSizeSp,
+                                                onContentChange = { newContent ->
+                                                    viewModel.updateActiveTabContent(newContent)
                                                 },
-                                                containerColor = LimeBrandColor,
-                                                contentColor = OnAccentPrimaryColor,
-                                                modifier = Modifier.fillMaxWidth(0.88f)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Terminal,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp),
-                                                    tint = OnAccentPrimaryColor
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = "Open Sandbox Workspace",
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.5.sp
-                                                )
-                                            }
-
-                                            if (recentProjects.isNotEmpty()) {
-                                                GlassButton(
-                                                    onClick = { showRecentProjectsDialog = true },
-                                                    containerColor = GlassSurfaceElevatedColor,
-                                                    contentColor = TextPrimary,
-                                                    modifier = Modifier.fillMaxWidth(0.88f)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.History,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(18.dp),
-                                                        tint = CyanBrandColor
-                                                    )
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text(
-                                                        text = "Recent Workspaces (${recentProjects.size})",
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        fontSize = 13.5.sp
-                                                    )
-                                                }
-                                            }
+                                                onCursorChange = { line, col ->
+                                                    viewModel.updateCursor(line, col)
+                                                },
+                                                controller = editorController,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
                                         }
                                     }
+
+                                    // Mockup 7: Klix Buddy Companion Card
+                                    KlixBuddyCompanionCard(
+                                        activeFileName = activeTab.name,
+                                        onTriggerCommand = { cmd ->
+                                            isAgentPanelOpen = true
+                                            agentPromptText = "$cmd ${activeTab.name}"
+                                        },
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                                    )
                                 }
+                            } else {
+                                // Modern Home Dashboard when no tabs are open (Gemini Mockup 0)
+                                HomeDashboard(
+                                    userName = "Developer",
+                                    currentWorkspaceName = currentProject?.name ?: "Sandbox Workspace",
+                                    streakCount = streakState.streakCount,
+                                    isStreakClaimedToday = streakState.isClaimedToday,
+                                    onOpenStreak = { showDailyStreakDialog = true },
+                                    onOpenDrawer = { scope.launch { drawerState.open() } },
+                                    isSandboxInstalled = isSandboxInstalled,
+                                    activeModelName = agentSettings.activeModel.ifEmpty { "Thinking: 4K" },
+                                    onOpenSandboxWorkspace = {
+                                        if (!isSandboxInstalled) {
+                                            showSandboxWarningDialog = true
+                                        } else {
+                                            viewModel.openSandboxWorkspace()
+                                        }
+                                    },
+                                    recentProjects = recentProjects,
+                                    onSelectProject = { uri, name -> viewModel.openProject(uri, name) },
+                                    onOpenFolder = { showRecentProjectsDialog = true },
+                                    selectedTab = NavTab.HOME,
+                                    onSelectTab = { tab ->
+                                        when (tab) {
+                                            NavTab.HOME -> { /* already on home */ }
+                                            NavTab.AGENT -> isAgentPanelOpen = true
+                                            NavTab.TERMINAL -> isTerminalOpen = true
+                                            NavTab.SETTINGS -> agentViewModel.toggleSettings()
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
@@ -1046,4 +1052,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 }
-

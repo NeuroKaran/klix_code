@@ -63,10 +63,10 @@ val GlassSurfacePill = Color(0xE6131A26)      // 90% opacity floating dock pill
 val GlassBorder = Color(0x1FFFFFFF)           // 12% specular rim border
 val GlassBorderHighlight = Color(0x40FFFFFF)  // 25% specular top highlight
 
-val LightBase = Color(0xFFF7F9FC)
+val LightBase = Color(0xFFF7F5EC)
 val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFEEF2F6)
-val LightBorder = Color(0xFFD0D7DE)
+val LightSurfaceVariant = Color(0xFFF1EFE6)
+val LightBorder = Color(0xFFE2DEC9)
 val LightGlassSurface = Color(0xCCFFFFFF)
 val LightGlassElevated = Color(0xF0FFFFFF)
 val LightGlassPill = Color(0xF2F1F5F9)
@@ -123,6 +123,9 @@ val LightTabInactiveBgValue = Color(0xFFEAEEF2)
 // Theme Color Container & Composition Locals
 // ==========================================
 class KlixColors(
+    val heroCardBg: Color,
+    val lilacCardBg: Color,
+    val softCardBg: Color,
     val background: Color,
     val surface: Color,
     val surfaceVariant: Color,
@@ -154,6 +157,9 @@ class KlixColors(
 )
 
 val DarkKlixColors = KlixColors(
+    heroCardBg = Color(0xFF1B241A),
+    lilacCardBg = Color(0xFF222030),
+    softCardBg = Color(0xFF1A1C24),
     background = DarkBgValue,
     surface = DarkSurfaceValue,
     surfaceVariant = DarkSurfaceVariantValue,
@@ -185,6 +191,9 @@ val DarkKlixColors = KlixColors(
 )
 
 val LightKlixColors = KlixColors(
+    heroCardBg = Color(0xFFDDF7BD),
+    lilacCardBg = Color(0xFFEBE6F8),
+    softCardBg = Color(0xFFF1EFE6),
     background = LightBgValue,
     surface = LightSurfaceValue,
     surfaceVariant = LightSurfaceVariantValue,
@@ -376,3 +385,18 @@ val CyanBorderColor: Color
     @Composable
     @ReadOnlyComposable
     get() = if (LocalKlixColors.current.isDark) CyanBorder else Color(0x4D0284C7)
+
+val HeroCardBgColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalKlixColors.current.heroCardBg
+
+val LilacCardBgColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalKlixColors.current.lilacCardBg
+
+val SoftCardBgColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalKlixColors.current.softCardBg

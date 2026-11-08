@@ -48,6 +48,9 @@ import com.klix.code.ui.theme.ThemeManager
 import com.klix.code.ui.theme.ThemeMode
 import androidx.compose.runtime.collectAsState
 import com.klix.code.BuildConfig
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.platform.LocalContext
+import com.klix.code.ui.theme.LocalIsDarkTheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -157,29 +160,30 @@ fun FileTreeView(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.klix_logo),
-                    contentDescription = "Klix Logo",
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clip(CircleShape)
-                        .glassBorder(CircleShape, strokeWidth = 1.dp)
-                )
                 Text(
-                    text = "KLIX CODE",
-                    fontSize = 11.5.sp,
+                    text = "Klix Code",
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
+                    letterSpacing = (-0.4).sp,
                     color = TextPrimary
                 )
-                GlassBadge(
-                    text = "v${BuildConfig.VERSION_NAME}",
-                    containerColor = if (isUpdateAvailable) CyanDimColor else LimeDimColor,
-                    textColor = if (isUpdateAvailable) CyanBrandColor else LimeBrandColor,
-                    modifier = Modifier.clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(LimeBrandColor)
+                        .clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "v${BuildConfig.VERSION_NAME}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -294,7 +298,21 @@ fun FileTreeView(
                 onClick = onOpenStreak,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
-            HorizontalDivider(color = DarkBorder, thickness = 1.dp)
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Workspace Files",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
         }
 
         Box(
@@ -533,92 +551,72 @@ fun FileTreeView(
         }
         }
 
-        // Persistent Drawer Footer: App Settings & Update Checker
-        HorizontalDivider(color = DarkBorder, thickness = 1.dp)
-        Row(
+        // Mockup 8: Floating Pill Footer with Theme Switcher & Settings
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(DarkSurfaceVariant.copy(alpha = 0.35f))
-                .clickable(enabled = onOpenSettings != null) { onOpenSettings?.invoke() }
-                .padding(horizontal = 14.dp, vertical = 9.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .navigationBarsPadding()
+                .padding(bottom = 14.dp)
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center
         ) {
+            val context = LocalContext.current
+            val isDark = LocalIsDarkTheme.current
+
             Row(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color(0xE614151B))
+                    .glassBorder(CircleShape, strokeWidth = 1.dp)
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = "Settings",
-                    fontSize = 12.sp,
-                    color = TextPrimary
-                )
-            }
+                // Theme Toggle: Light / Dark
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(if (isDark) Color(0x33FFFFFF) else LimeBrandColor)
+                        .clickable {
+                            val nextMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
+                            ThemeManager.setThemeMode(context, nextMode)
+                        }
+                        .pressEffect(0.94f)
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (isDark) "🌙 Dark" else "☀️ Light",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color.White else Color.Black
+                    )
+                }
 
-            val currentTheme by ThemeManager.themeMode.collectAsState()
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = when (currentTheme) {
-                        ThemeMode.LIGHT -> Icons.Default.LightMode
-                        ThemeMode.DARK -> Icons.Default.DarkMode
-                        ThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
-                    },
-                    contentDescription = null,
-                    tint = AccentPrimary,
-                    modifier = Modifier.size(13.dp)
-                )
-                Text(
-                    text = currentTheme.displayName,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AccentPrimary
-                )
+                // Settings Button
+                Row(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable(enabled = onOpenSettings != null) { onOpenSettings?.invoke() }
+                        .pressEffect(0.94f)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = Color.White,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Text(
+                        text = "Settings",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
             }
-        }
-
-        HorizontalDivider(color = DarkBorder, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(DarkSurfaceVariant.copy(alpha = 0.5f))
-                .clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = if (isUpdateAvailable) Icons.Default.SecurityUpdateGood else Icons.Default.SystemUpdate,
-                    contentDescription = null,
-                    tint = if (isUpdateAvailable) AccentSecondary else TextMuted,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = if (isUpdateAvailable) "Update Available" else "Klix Code v${BuildConfig.VERSION_NAME}",
-                    fontSize = 12.sp,
-                    fontWeight = if (isUpdateAvailable) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isUpdateAvailable) AccentSecondary else TextSecondary
-                )
-            }
-
-            Text(
-                text = if (isUpdateAvailable) "Update" else "Check",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isUpdateAvailable) AccentSecondary else AccentPrimary
-            )
         }
     }
 

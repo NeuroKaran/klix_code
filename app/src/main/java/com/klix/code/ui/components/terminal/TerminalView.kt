@@ -1,6 +1,13 @@
 package com.klix.code.ui.components.terminal
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.painterResource
+import com.klix.code.R
+import com.klix.code.ui.theme.LimeBrandColor
+import com.klix.code.ui.theme.LocalIsDarkTheme
+import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.glass.pressEffect
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -258,10 +265,22 @@ private fun TerminalHeaderBar(
             .background(DarkSurface)
             .statusBarsPadding()
             .border(0.5.dp, DarkBorder)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Linux Terminal",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.3).sp,
+                color = TextPrimary
+            )
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -544,24 +563,22 @@ private fun TerminalQuickKeysBar(
         )
 
         quickKeys.forEach { (label, action) ->
+            val isTerm = label == "+ TERM"
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(if (label == "+ TERM") AccentPrimary.copy(alpha = 0.15f) else DarkSurface)
-                    .border(
-                        0.5.dp,
-                        if (label == "+ TERM") AccentPrimary.copy(alpha = 0.5f) else DarkBorder,
-                        RoundedCornerShape(4.dp)
-                    )
+                    .clip(CircleShape)
+                    .background(if (isTerm) LimeBrandColor else DarkSurfaceVariant)
                     .clickable { action() }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .pressEffect(0.92f)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = label,
-                    fontSize = 11.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
-                    color = if (label == "+ TERM") AccentPrimary else TextPrimary
+                    color = if (isTerm) Color.Black else TextPrimary
                 )
             }
         }
@@ -598,7 +615,7 @@ private fun TerminalInputBar(
             onValueChange = onInputChange,
             placeholder = {
                 Text(
-                    text = if (isExecuting) "Send input to process (e.g. 25)..." else "npm test, python app.py, ls...",
+                    text = if (isExecuting) "Send input to process..." else "Run a command...",
                     color = TextMuted,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace

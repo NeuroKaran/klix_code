@@ -1,6 +1,9 @@
 package com.klix.code.ui.components.agent
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.klix.code.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -102,6 +105,20 @@ fun CustomSlashCommandsDialog(
                     .fillMaxWidth()
                     .padding(18.dp)
             ) {
+                // Mockup 6: Peeking Mascot on top of Slash Commands card
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.klix_mascot_peeking),
+                        contentDescription = "Klix Robot Peeking",
+                        modifier = Modifier
+                            .size(width = 110.dp, height = 52.dp)
+                            .padding(bottom = 6.dp)
+                    )
+                }
+
                 // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -1,6 +1,9 @@
 package com.klix.code.ui.components.agent
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.painterResource
+import com.klix.code.R
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -128,11 +131,25 @@ fun AgentSettingsDialog(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // Mockup 2: Peeking Mascot on top of Settings card
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.klix_mascot_peeking),
+                        contentDescription = "Klix Robot Peeking",
+                        modifier = Modifier
+                            .size(width = 110.dp, height = 52.dp)
+                            .padding(top = 4.dp)
+                    )
+                }
+
                 // Pinned Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {

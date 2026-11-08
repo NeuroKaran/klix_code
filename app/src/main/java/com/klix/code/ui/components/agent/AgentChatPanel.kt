@@ -6,6 +6,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.offset
+import com.klix.code.ui.theme.LocalIsDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -87,6 +91,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
 import com.klix.code.R
+import com.klix.code.ui.theme.HeroCardBgColor
+import com.klix.code.ui.theme.LilacCardBgColor
+import com.klix.code.ui.theme.SoftCardBgColor
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
@@ -896,55 +903,79 @@ fun AgentChatPanel(
                     .fillMaxHeight(0.75f)
                     .padding(16.dp)
             ) {
-                // Header
+                // Mockup 1: Top Banner with mascot and stats
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.klix_mascot_peeking),
+                        contentDescription = "Klix Robot",
+                        modifier = Modifier.size(width = 80.dp, height = 44.dp)
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(
+                            text = "Klix AI Sessions",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(DarkSurfaceVariant)
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "💬 ${sessions.size} Chats",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextSecondary
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(DarkSurfaceVariant)
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "⚡ Ready",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = LimeBrandColor
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Text(
+                        text = "Chat History",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(LimeBrandColor)
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = null,
-                            tint = AccentPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
                         Text(
-                            text = "Chat History",
-                            fontSize = 16.sp,
+                            text = "ACTIVE",
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = Color.Black
                         )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(DarkSurfaceVariant)
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "${sessions.size}",
-                                fontSize = 11.sp,
-                                color = TextSecondary,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = {
-                            onCreateSession()
-                            showSessionSheet = false
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("New Chat", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -1129,122 +1160,128 @@ private fun EmptyAgentState(
     availableFiles: List<TaggedFileItem>,
     onSelectSuggestion: (String) -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Mockup 3: Peeking Mascot on top of card
         Image(
-            painter = painterResource(id = R.drawable.klix_logo),
-            contentDescription = "Klix Mascot",
+            painter = painterResource(id = R.drawable.klix_mascot_peeking),
+            contentDescription = "Klix Robot Peeking",
             modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
+                .size(width = 110.dp, height = 52.dp)
+                .offset(y = 4.dp)
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Text(
-            text = "Klix Agentic Assistant",
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
-        )
-
-        Text(
-            text = "Plan features, inspect files, or tag project resources using @ for instant surgical edits.",
-            fontSize = 12.5.sp,
-            color = TextSecondary,
-            lineHeight = 17.sp,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Quick Tag Suggestions from project files if available
-        if (availableFiles.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AlternateEmail,
-                    contentDescription = null,
-                    tint = AccentPrimary,
-                    modifier = Modifier.size(13.dp)
-                )
+        // Card 1: Quick Mentions & Model
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(HeroCardBgColor)
+                .glassBorder(RoundedCornerShape(22.dp), strokeWidth = 1.dp)
+                .padding(16.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "Quick Mentions:",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextSecondary
+                    text = "Quick Mentions & Model",
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
                 )
-            }
 
-            Spacer(modifier = Modifier.height(6.dp))
+                // Model pill
+                Row(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(if (isDark) Color(0x4D000000) else Color.White)
+                        .glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(text = "✨", fontSize = 12.sp)
+                    Text(
+                        text = "gemini-2.5-flash",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) LimeBrandColor else Color(0xFF65A30D)
+                    )
+                }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                availableFiles.filter { !it.isDirectory }.take(3).forEach { item ->
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = DarkSurfaceVariant,
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
-                        modifier = Modifier.clickable { onSelectSuggestion("Inspect @${item.path} and summarize logic") }
+                // File chips
+                if (availableFiles.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = "@${item.fileName}",
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = AccentPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
-                        )
+                        availableFiles.filter { !it.isDirectory }.take(2).forEach { item ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(if (isDark) Color(0x33FFFFFF) else Color(0xFFEBE6F8))
+                                    .glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                                    .clickable { onSelectSuggestion("Inspect @${item.fileName} and summarize architecture") }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "@${item.fileName}",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextPrimary
+                                )
+                            }
+                        }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
         }
 
-        val suggestions = listOf(
-            "Inspect workspace files and summarize architecture",
-            "Find all TODOs and unfinished items",
-            "Write comprehensive unit tests",
-            "Check for potential crashes or race conditions"
-        )
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        // Card 2: What shall we do?
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(LilacCardBgColor)
+                .glassBorder(RoundedCornerShape(22.dp), strokeWidth = 1.dp)
+                .padding(16.dp)
         ) {
-            suggestions.forEach { suggestion ->
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = DarkSurfaceVariant,
-                    border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSelectSuggestion(suggestion) }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "What shall we do?",
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+
+                val suggestions = listOf(
+                    "💡 Summarize workspace architecture",
+                    "🔍 Find all TODOs & unfinished items",
+                    "✏️ Write unit tests for active file",
+                    "🛡️ Check for crashes or edge cases"
+                )
+
+                suggestions.forEach { suggestion ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(CircleShape)
+                            .background(if (isDark) Color(0x4D000000) else Color.White)
+                            .glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                            .clickable { onSelectSuggestion(suggestion.substring(3)) }
+                            .pressEffect(0.96f)
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Lightbulb,
-                            contentDescription = null,
-                            tint = AccentWarning,
-                            modifier = Modifier.size(14.dp)
-                        )
                         Text(
                             text = suggestion,
                             fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Medium,
                             color = TextPrimary
                         )
                     }
