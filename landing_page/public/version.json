@@ -1,9 +1,9 @@
 {
-  "versionCode": 12,
-  "versionName": "0.4.0",
+  "versionCode": 13,
+  "versionName": "0.4.1",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.0.apk",
-  "releaseNotes": "• Liquid Frosted Glass Design System: Complete visual overhaul featuring specular rim borders, frosted glass surfaces, and natural spring physics\n• Redesigned Core Dialogs: Translucent modals for Agent Settings, Sandbox Setup & Warning, and Daily Streak tracker\n• Modern Navigation & Panels: Floating frosted action bars, liquid keyboard accessory bar, and glass file explorer\n• Dynamic Dark & Light Contrast: Inverted specular highlights for optimal contrast and readability across all themes",
-  "releaseDate": "2026-11-08",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.1.apk",
+  "releaseNotes": "• Complete Modern UI Overhaul: New Home Dashboard with hero greeting, coding mascot, recent workspaces, and floating action dock\n• High-Contrast Opaque Visuals: Removed translucent alpha channels across all dialogs and surfaces for crisp readability\n• Mascot & Header Alignment: Seamless mascot card peeking, rounded laptop lid geometry, and clean terminal header controls\n• Streak & Navigation Polish: Replaced cartoon flame with unified vector flame icon, and resolved all toolbar overlaps",
+  "releaseDate": "2026-11-09",
   "forceUpdate": false
 }
