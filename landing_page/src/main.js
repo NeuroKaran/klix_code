@@ -155,10 +155,10 @@ function showToast(message) {
 
 function initDownloadButtons() {
   initDownloadTracking({
-    version: 'v0.3.11',
-    fileName: 'klix-code-v0.3.11.apk',
+    version: 'v0.4.0',
+    fileName: 'klix-code-v0.4.0.apk',
     onDownload: () => {
-      showToast('Klix Code v0.3.11 APK download started! (17.6 MB)');
+      showToast('Klix Code v0.4.0 APK download started! (17.7 MB)');
     },
   });
 

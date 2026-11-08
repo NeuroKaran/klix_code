@@ -1,9 +1,9 @@
 {
-  "versionCode": 11,
-  "versionName": "0.3.11",
+  "versionCode": 12,
+  "versionName": "0.4.0",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.3.11.apk",
-  "releaseNotes": "• Default Light Theme: High-contrast light theme enabled by default across all app screens\n• User Theme Switcher: Switch between Light, Dark, and System Default themes in Settings\n• Enhanced Sora Light Highlighting: Integrated SchemeGitHub syntax scheme with high-contrast token coloring\n• Refined Terminal & Contrast: Dynamic terminal color mapping and optimal button contrast across all themes",
-  "releaseDate": "2026-11-07",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.0.apk",
+  "releaseNotes": "• Liquid Frosted Glass Design System: Complete visual overhaul featuring specular rim borders, frosted glass surfaces, and natural spring physics\n• Redesigned Core Dialogs: Translucent modals for Agent Settings, Sandbox Setup & Warning, and Daily Streak tracker\n• Modern Navigation & Panels: Floating frosted action bars, liquid keyboard accessory bar, and glass file explorer\n• Dynamic Dark & Light Contrast: Inverted specular highlights for optimal contrast and readability across all themes",
+  "releaseDate": "2026-11-08",
   "forceUpdate": false
 }
