@@ -517,9 +517,10 @@ fun DailyStreakDialog(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.widget_flame),
+                                Icon(
+                                    imageVector = Icons.Default.LocalFireDepartment,
                                     contentDescription = "Flame",
+                                    tint = FlameOrange,
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }
@@ -622,7 +623,7 @@ fun DailyStreakDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(DarkSurfaceVariant.copy(alpha = 0.75f))
+                            .background(DarkSurfaceVariant)
                             .border(1.dp, DarkBorder, RoundedCornerShape(16.dp))
                             .padding(vertical = 14.dp, horizontal = 12.dp)
                     ) {

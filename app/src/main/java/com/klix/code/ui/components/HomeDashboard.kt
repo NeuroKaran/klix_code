@@ -87,6 +87,7 @@ fun HomeDashboard(
     onOpenFolder: () -> Unit = {},
     selectedTab: NavTab = NavTab.HOME,
     onSelectTab: (NavTab) -> Unit = {},
+    isNavDockVisible: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalIsDarkTheme.current
@@ -122,7 +123,7 @@ fun HomeDashboard(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(if (isDark) Color(0x22FFFFFF) else Color(0x18000000))
+                                .background(if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0))
                                 .pressEffect(0.92f)
                         ) {
                             Icon(
@@ -218,54 +219,6 @@ fun HomeDashboard(
                             }
                         }
 
-                        // Status badges row
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            // Thinking Badge
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(CircleShape)
-                                    .background(if (isDark) Color(0x33000000) else Color.White.copy(alpha = 0.85f))
-                                    .glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(text = "🧠", fontSize = 13.sp)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = activeModelName,
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isDark) Color.White else Color(0xFF18191D)
-                                )
-                            }
-
-                            // Alpine Badge
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(CircleShape)
-                                    .background(if (isDark) Color(0x33000000) else Color.White.copy(alpha = 0.85f))
-                                    .glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(text = "🐧", fontSize = 13.sp)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (isSandboxInstalled) "Alpine: Ready" else "Alpine: Setup",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isDark) Color.White else Color(0xFF18191D)
-                                )
-                            }
-                        }
-
                         // Big CTA: + Open Sandbox Workspace
                         Button(
                             onClick = onOpenSandboxWorkspace,
@@ -352,12 +305,14 @@ fun HomeDashboard(
             }
         }
 
-        // Floating Bottom Navigation Dock
-        FloatingNavDock(
-            selectedTab = selectedTab,
-            onTabSelect = onSelectTab,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        // Floating Bottom Navigation Dock (only visible when on Home and no overlay/dialog is active)
+        if (isNavDockVisible) {
+            FloatingNavDock(
+                selectedTab = selectedTab,
+                onTabSelect = onSelectTab,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 

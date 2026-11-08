@@ -452,7 +452,7 @@ fun AgentChatPanel(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(DarkSurfaceVariant.copy(alpha = 0.6f))
+                                    .background(DarkSurfaceVariant)
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -696,7 +696,7 @@ fun AgentChatPanel(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(if (cmd.isBuiltIn) DarkSurfaceVariant else Color(0xFF8B5CF6).copy(alpha = 0.2f))
+                                        .background(if (cmd.isBuiltIn) DarkSurfaceVariant else Color(0xFF2A2040))
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
                                     Text(
@@ -722,7 +722,7 @@ fun AgentChatPanel(
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(3.dp))
-                                            .background(Color(0xFF8B5CF6).copy(alpha = 0.2f))
+                                            .background(Color(0xFF2A2040))
                                             .padding(horizontal = 4.dp, vertical = 1.dp)
                                     ) {
                                         Text(
@@ -1027,7 +1027,7 @@ fun AgentChatPanel(
                                             Box(
                                                 modifier = Modifier
                                                     .clip(RoundedCornerShape(3.dp))
-                                                    .background(AccentPrimary.copy(alpha = 0.2f))
+                                                    .background(LimeDimColor)
                                                     .padding(horizontal = 5.dp, vertical = 1.dp)
                                             ) {
                                                 Text(
@@ -1170,77 +1170,83 @@ private fun EmptyAgentState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Mockup 3: Peeking Mascot on top of card
-        Image(
-            painter = painterResource(id = R.drawable.klix_mascot_peeking),
-            contentDescription = "Klix Robot Peeking",
-            modifier = Modifier
-                .size(width = 110.dp, height = 52.dp)
-                .offset(y = 4.dp)
-        )
-
-        // Card 1: Quick Mentions & Model
+        // Card 1: Quick Mentions & Model with Peeking Mascot sitting flush on top
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(HeroCardBgColor)
-                .glassBorder(RoundedCornerShape(22.dp), strokeWidth = 1.dp)
-                .padding(16.dp)
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = "Quick Mentions & Model",
-                    fontSize = 14.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-
-                // Model pill
-                Row(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (isDark) Color(0x4D000000) else Color.White)
-                        .glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(text = "✨", fontSize = 12.sp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 46.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(HeroCardBgColor)
+                    .glassBorder(RoundedCornerShape(22.dp), strokeWidth = 1.dp)
+                    .padding(16.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "gemini-2.5-flash",
-                        fontSize = 12.sp,
+                        text = "Quick Mentions & Model",
+                        fontSize = 14.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) LimeBrandColor else Color(0xFF65A30D)
+                        color = TextPrimary
                     )
-                }
 
-                // File chips
-                if (availableFiles.isNotEmpty()) {
+                    // Model pill
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(if (isDark) Color(0xFF1E2536) else Color.White)
+                            .glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        availableFiles.filter { !it.isDirectory }.take(2).forEach { item ->
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(if (isDark) Color(0x33FFFFFF) else Color(0xFFEBE6F8))
-                                    .glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                                    .clickable { onSelectSuggestion("Inspect @${item.fileName} and summarize architecture") }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = "@${item.fileName}",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextPrimary
-                                )
+                        Text(text = "✨", fontSize = 12.sp)
+                        Text(
+                            text = "gemini-2.5-flash",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) LimeBrandColor else Color(0xFF65A30D)
+                        )
+                    }
+
+                    // File chips
+                    if (availableFiles.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            availableFiles.filter { !it.isDirectory }.take(2).forEach { item ->
+                                Box(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .background(if (isDark) Color(0xFF222634) else Color(0xFFEBE6F8))
+                                        .glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                                        .clickable { onSelectSuggestion("Inspect @${item.fileName} and summarize architecture") }
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "@${item.fileName}",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = TextPrimary
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+
+            // Peeking Mascot sitting flush directly on the box edge
+            Image(
+                painter = painterResource(id = R.drawable.klix_mascot_peeking),
+                contentDescription = "Klix Robot Peeking",
+                modifier = Modifier
+                    .size(width = 110.dp, height = 52.dp)
+                    .align(Alignment.TopCenter)
+            )
         }
 
         // Card 2: What shall we do?
@@ -1272,7 +1278,7 @@ private fun EmptyAgentState(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(CircleShape)
-                            .background(if (isDark) Color(0x4D000000) else Color.White)
+                            .background(if (isDark) Color(0xFF1E2536) else Color.White)
                             .glassBorder(CircleShape, strokeWidth = 0.8.dp)
                             .clickable { onSelectSuggestion(suggestion.substring(3)) }
                             .pressEffect(0.96f)
@@ -1393,8 +1399,8 @@ private fun ChatMessageItem(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(AccentPrimary.copy(alpha = 0.2f))
-                                    .border(0.5.dp, AccentPrimary.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                                    .background(LimeDimColor)
+                                    .border(0.5.dp, LimeBorderColor, RoundedCornerShape(4.dp))
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
@@ -1472,7 +1478,7 @@ private fun ReasoningCard(thought: String) {
 
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = DarkSurface.copy(alpha = 0.85f),
+        color = DarkSurface,
         border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -1614,6 +1620,7 @@ private fun ToolResultCard(
     result: ToolCallResult,
     onReviewDiff: (FileDiff) -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
     var isExpanded by remember { mutableStateOf(false) }
 
     Surface(
@@ -1621,7 +1628,7 @@ private fun ToolResultCard(
         color = DarkSurface,
         border = androidx.compose.foundation.BorderStroke(
             0.5.dp,
-            if (result.isSuccess) AccentSecondary.copy(alpha = 0.5f) else AccentError.copy(alpha = 0.5f)
+            if (result.isSuccess) CyanBorderColor else (if (isDark) Color(0xFF7F1D1D) else Color(0xFFFCA5A5))
         ),
         modifier = Modifier.fillMaxWidth()
     ) {

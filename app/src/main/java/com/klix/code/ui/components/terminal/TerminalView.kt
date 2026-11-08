@@ -85,6 +85,7 @@ import com.klix.code.ui.terminal.TerminalViewModel
 import com.klix.code.ui.theme.AccentError
 import com.klix.code.ui.theme.AccentPrimary
 import com.klix.code.ui.theme.AccentSecondary
+import com.klix.code.ui.theme.CyanDimColor
 import com.klix.code.ui.theme.AccentWarning
 import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
@@ -265,31 +266,20 @@ private fun TerminalHeaderBar(
             .background(DarkSurface)
             .statusBarsPadding()
             .border(0.5.dp, DarkBorder)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                text = "Linux Terminal",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.3).sp,
-                color = TextPrimary
-            )
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f, fill = false)
         ) {
             Box(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(AccentSecondary.copy(alpha = 0.2f)),
+                    .background(CyanDimColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -300,36 +290,32 @@ private fun TerminalHeaderBar(
                 )
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Text(
+                text = "Linux Terminal",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.3).sp,
+                color = TextPrimary
+            )
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(DarkSurfaceVariant)
+                    .clickable { onOpenSetupDialog() }
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = "Terminal",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    text = when (sandboxStatus) {
+                        SandboxStatus.READY -> "Alpine Linux"
+                        SandboxStatus.DOWNLOADING -> "Downloading..."
+                        SandboxStatus.EXTRACTING -> "Extracting..."
+                        else -> "Setup"
+                    },
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (sandboxStatus == SandboxStatus.READY) AccentSecondary else AccentWarning
                 )
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(DarkSurfaceVariant)
-                        .clickable { onOpenSetupDialog() }
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = when (sandboxStatus) {
-                            SandboxStatus.READY -> "Alpine Linux"
-                            SandboxStatus.DOWNLOADING -> "Downloading..."
-                            SandboxStatus.EXTRACTING -> "Extracting..."
-                            else -> "Setup Sandbox"
-                        },
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = if (sandboxStatus == SandboxStatus.READY) AccentSecondary else AccentWarning
-                    )
-                }
             }
         }
 
@@ -339,49 +325,49 @@ private fun TerminalHeaderBar(
         ) {
             IconButton(
                 onClick = onAddNewTerminal,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(36.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "New Terminal",
                     tint = AccentPrimary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
 
             IconButton(
                 onClick = onClearTerminal,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(36.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Clear Terminal",
                     tint = TextSecondary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
             IconButton(
                 onClick = onOpenSetupDialog,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(36.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Sandbox Settings",
                     tint = TextSecondary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
 
             IconButton(
                 onClick = onClose,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(36.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Close",
                     tint = TextSecondary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }

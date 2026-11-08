@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.res.painterResource
 import com.klix.code.R
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -91,6 +92,8 @@ import com.klix.code.ui.theme.LimeDimColor
 import com.klix.code.ui.theme.CyanBrandColor
 import com.klix.code.ui.theme.CyanDimColor
 import com.klix.code.ui.theme.OnAccentPrimaryColor
+import com.klix.code.ui.theme.LocalIsDarkTheme
+import com.klix.code.ui.theme.ObsidianBorder
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -103,6 +106,8 @@ fun AgentSettingsDialog(
     onSaveSettings: (ProviderSettings) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val dividerColor = if (isDark) Color(0xFF2A374E) else Color(0xFF94A3B8)
     var selectedProvider by remember { mutableStateOf(currentSettings.activeProvider) }
     var activeModel by remember { mutableStateOf(currentSettings.activeModel) }
     var customEndpoint by remember { mutableStateOf(currentSettings.customEndpointUrl) }
@@ -124,7 +129,8 @@ fun AgentSettingsDialog(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .heightIn(max = 680.dp)
-                .padding(vertical = 24.dp),
+                .padding(vertical = 24.dp)
+                .shadow(elevation = 16.dp, shape = RoundedCornerShape(26.dp)),
             shape = RoundedCornerShape(26.dp),
             backgroundColor = GlassSurfaceElevatedColor
         ) {
@@ -197,7 +203,7 @@ fun AgentSettingsDialog(
                     }
                 }
 
-                HorizontalDivider(color = DarkBorder)
+                HorizontalDivider(color = dividerColor, thickness = 1.dp)
 
                 // Scrollable Content Area (User scrolls for information)
                 Column(
@@ -231,7 +237,7 @@ fun AgentSettingsDialog(
                         itemLabel = { it.displayName }
                     )
 
-                    HorizontalDivider(color = DarkBorder)
+                    HorizontalDivider(color = dividerColor, thickness = 1.dp)
 
                     // Provider Selector Tabs
                     Text(
@@ -252,12 +258,12 @@ fun AgentSettingsDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(cardShape)
-                                    .background(if (isSelected) GlassSurfaceColor else Color.Transparent)
+                                    .background(if (isSelected) (if (isDark) Color(0xFF192415) else Color(0xFFF4FCE3)) else (if (isDark) Color(0xFF111622) else Color(0xFFF8FAFC)))
                                     .then(
                                         if (isSelected) {
-                                            Modifier.glassBorder(cardShape, strokeWidth = 1.dp, highlightAlpha = 0.35f, midAlpha = 0.12f)
+                                            Modifier.border(1.5.dp, if (isDark) LimeBrandColor else Color(0xFF65A30D), cardShape)
                                         } else {
-                                            Modifier.border(0.8.dp, DarkBorder.copy(alpha = 0.6f), cardShape)
+                                            Modifier.border(1.dp, if (isDark) ObsidianBorder else Color(0xFFCBD5E1), cardShape)
                                         }
                                     )
                                     .pressEffect(0.96f)
@@ -426,7 +432,7 @@ fun AgentSettingsDialog(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))
-                                        .background(if (isCurrent) AccentPrimary.copy(alpha = 0.2f) else DarkSurface)
+                                        .background(if (isCurrent) LimeDimColor else DarkSurface)
                                         .border(0.5.dp, if (isCurrent) AccentPrimary else DarkBorder, RoundedCornerShape(6.dp))
                                         .clickable { activeModel = modelName }
                                         .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -444,7 +450,7 @@ fun AgentSettingsDialog(
                         }
                     }
 
-                    HorizontalDivider(color = DarkBorder)
+                    HorizontalDivider(color = dividerColor, thickness = 1.dp)
 
                     // Tool Execution Policies
                     Text(
@@ -506,7 +512,7 @@ fun AgentSettingsDialog(
                             onCheckedChange = { autoApproveWrite = it },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = AccentWarning,
-                                checkedTrackColor = AccentWarning.copy(alpha = 0.4f)
+                                checkedTrackColor = if (isDark) Color(0xFF452C06) else Color(0xFFFDE68A)
                             )
                         )
                     }
@@ -542,7 +548,7 @@ fun AgentSettingsDialog(
                 }
 
                 // Pinned Footer: The button is ALWAYS in front of the user (pinned at bottom)
-                HorizontalDivider(color = DarkBorder)
+                HorizontalDivider(color = dividerColor, thickness = 1.dp)
                 Surface(
                     color = GlassSurfaceColor,
                     modifier = Modifier.fillMaxWidth()

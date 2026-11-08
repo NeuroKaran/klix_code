@@ -21,10 +21,10 @@ val Lime700 = Color(0xFF628000)
 val Lime800 = Color(0xFF3E5200)
 val Lime900 = Color(0xFF222D00)
 
-val LimeGlow = Color(0x59D4FF32)    // 35% alpha glow
-val LimeDim = Color(0x1FD4FF32)     // 12% alpha container
-val LimeSubtle = Color(0x0DD4FF32)  // 5% alpha ambient tint
-val LimeBorder = Color(0x40D4FF32)  // 25% alpha glass border
+val LimeGlow = Color(0xFF384E12)    // Solid brand container glow
+val LimeDim = Color(0xFF1F3314)     // Solid brand container
+val LimeSubtle = Color(0xFF16250D)  // Solid ambient tint
+val LimeBorder = Color(0xFF4A6818)  // Solid brand border
 
 // ==========================================
 // 2. Klix Electric Cyan Scale (Secondary Accent)
@@ -41,10 +41,10 @@ val Cyan700 = Color(0xFF0369A1)
 val Cyan800 = Color(0xFF075985)
 val Cyan900 = Color(0xFF0C4A6E)
 
-val CyanGlow = Color(0x4D38BDF8)    // 30% alpha glow
-val CyanDim = Color(0x1A38BDF8)     // 10% alpha container
-val CyanSubtle = Color(0x0A38BDF8)  // 4% alpha ambient tint
-val CyanBorder = Color(0x3338BDF8)  // 20% alpha glass border
+val CyanGlow = Color(0xFF0F3A56)    // Solid tech tint
+val CyanDim = Color(0xFF11293B)     // Solid tech container
+val CyanSubtle = Color(0xFF0C1F2E)  // Solid ambient tint
+val CyanBorder = Color(0xFF1E4668)  // Solid tech border
 
 // ==========================================
 // 3. Deep Obsidian Neutrals (Modern Dark Base)
@@ -52,26 +52,26 @@ val CyanBorder = Color(0x3338BDF8)  // 20% alpha glass border
 val ObsidianBase = Color(0xFF07080C)       // Deep space obsidian black
 val ObsidianSurface = Color(0xFF0E121A)    // Deep modular card surface
 val ObsidianElevated = Color(0xFF151C28)   // Elevated sheets & modals
-val ObsidianBorder = Color(0xFF1F293D)     // Crisp card edge
+val ObsidianBorder = Color(0xFF2A374E)     // Crisp high-contrast card edge
 
 // ==========================================
-// 4. Glass UI Tokens
+// 4. Solid UI Surface & Border Tokens (100% Opaque)
 // ==========================================
-val GlassSurface = Color(0xB30E131E)          // 70% opacity frosted glass surface
-val GlassSurfaceElevated = Color(0xCC161E2D)  // 80% opacity elevated glass sheet
-val GlassSurfacePill = Color(0xE6131A26)      // 90% opacity floating dock pill
-val GlassBorder = Color(0x1FFFFFFF)           // 12% specular rim border
-val GlassBorderHighlight = Color(0x40FFFFFF)  // 25% specular top highlight
+val GlassSurface = Color(0xFF131722)          // 100% solid surface
+val GlassSurfaceElevated = Color(0xFF181F2C)  // 100% solid elevated sheet & modal
+val GlassSurfacePill = Color(0xFF1E2638)      // 100% solid dock pill
+val GlassBorder = Color(0xFF2E3B52)           // Crisp solid border
+val GlassBorderHighlight = Color(0xFF3E4F6E)  // Solid top rim border
 
 val LightBase = Color(0xFFF7F5EC)
 val LightSurface = Color(0xFFFFFFFF)
 val LightSurfaceVariant = Color(0xFFF1EFE6)
-val LightBorder = Color(0xFFE2DEC9)
-val LightGlassSurface = Color(0xCCFFFFFF)
-val LightGlassElevated = Color(0xF0FFFFFF)
-val LightGlassPill = Color(0xF2F1F5F9)
-val LightGlassBorder = Color(0x40D0D7DE)
-val LightGlassBorderHighlight = Color(0x80FFFFFF)
+val LightBorder = Color(0xFF94A3B8)           // High-contrast, easily visible border
+val LightGlassSurface = Color(0xFFFFFFFF)     // 100% solid surface
+val LightGlassElevated = Color(0xFFFFFFFF)    // 100% solid elevated modal
+val LightGlassPill = Color(0xFFF1F5F9)        // 100% solid pill
+val LightGlassBorder = Color(0xFF94A3B8)      // High-contrast visible border
+val LightGlassBorderHighlight = Color(0xFF64748B) // High-contrast rim border
 
 // Static Theme Color Definitions - Dark Palette
 val DarkBgValue = ObsidianBase
@@ -88,13 +88,13 @@ val DarkTextPrimaryValue = Color(0xFFE6EDF3)
 val DarkTextSecondaryValue = Color(0xFF8B949E)
 val DarkTextMutedValue = Color(0xFF6E7681)
 
-val DarkDiffAddedBgValue = Color(0x2E10B981)
+val DarkDiffAddedBgValue = Color(0xFF143828)
 val DarkDiffAddedTextValue = Color(0xFF34D399)
-val DarkDiffRemovedBgValue = Color(0x2EEF4444)
+val DarkDiffRemovedBgValue = Color(0xFF3B181E)
 val DarkDiffRemovedTextValue = Color(0xFFF87171)
 
-val DarkTabActiveBgValue = Color(0x331E293B)
-val DarkTabInactiveBgValue = Color(0x140E131E)
+val DarkTabActiveBgValue = Color(0xFF253046)
+val DarkTabInactiveBgValue = Color(0xFF111520)
 
 // Static Theme Color Definitions - Light Palette
 val LightBgValue = LightBase
@@ -111,9 +111,9 @@ val LightTextPrimaryValue = Color(0xFF1F2328)
 val LightTextSecondaryValue = Color(0xFF57606A)
 val LightTextMutedValue = Color(0xFF8C959F)
 
-val LightDiffAddedBgValue = Color(0x262EA043)
+val LightDiffAddedBgValue = Color(0xFFDCFCE7)
 val LightDiffAddedTextValue = Color(0xFF1A7F37)
-val LightDiffRemovedBgValue = Color(0x26CF222E)
+val LightDiffRemovedBgValue = Color(0xFFFEE2E2)
 val LightDiffRemovedTextValue = Color(0xFFCF222E)
 
 val LightTabActiveBgValue = Color(0xFFFFFFFF)
@@ -219,8 +219,8 @@ val LightKlixColors = KlixColors(
     limePrimary = LightAccentPrimaryValue,
     cyanAccent = LightAccentSecondaryValue,
     onAccentPrimary = Color.White,
-    limeGlow = Color(0x3365A30D),
-    cyanGlow = Color(0x330284C7),
+    limeGlow = Color(0xFFE2F7B0),
+    cyanGlow = Color(0xFFBAE6FD),
     isDark = false
 )
 
@@ -369,22 +369,22 @@ val CyanGlowColor: Color
 val LimeDimColor: Color
     @Composable
     @ReadOnlyComposable
-    get() = if (LocalKlixColors.current.isDark) LimeDim else Color(0x2465A30D)
+    get() = if (LocalKlixColors.current.isDark) LimeDim else Color(0xFFEAF8D3)
 
 val CyanDimColor: Color
     @Composable
     @ReadOnlyComposable
-    get() = if (LocalKlixColors.current.isDark) CyanDim else Color(0x1F0284C7)
+    get() = if (LocalKlixColors.current.isDark) CyanDim else Color(0xFFE0F2FE)
 
 val LimeBorderColor: Color
     @Composable
     @ReadOnlyComposable
-    get() = if (LocalKlixColors.current.isDark) LimeBorder else Color(0x4D65A30D)
+    get() = if (LocalKlixColors.current.isDark) LimeBorder else Color(0xFF84CC16)
 
 val CyanBorderColor: Color
     @Composable
     @ReadOnlyComposable
-    get() = if (LocalKlixColors.current.isDark) CyanBorder else Color(0x4D0284C7)
+    get() = if (LocalKlixColors.current.isDark) CyanBorder else Color(0xFF38BDF8)
 
 val HeroCardBgColor: Color
     @Composable

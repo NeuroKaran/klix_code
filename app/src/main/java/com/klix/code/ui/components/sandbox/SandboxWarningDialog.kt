@@ -33,6 +33,8 @@ import com.klix.code.ui.theme.LimeBrandColor
 import com.klix.code.ui.theme.OnAccentPrimaryColor
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
+import androidx.compose.ui.graphics.Color
+import com.klix.code.ui.theme.LocalIsDarkTheme
 
 @Composable
 fun SandboxWarningDialog(
@@ -40,6 +42,7 @@ fun SandboxWarningDialog(
     onInstallSandbox: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = LocalIsDarkTheme.current
     val dialogShape = RoundedCornerShape(26.dp)
 
     AlertDialog(
@@ -52,8 +55,8 @@ fun SandboxWarningDialog(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(CircleShape)
-                    .background(AccentWarning.copy(alpha = 0.15f))
-                    .border(1.dp, AccentWarning.copy(alpha = 0.35f), CircleShape),
+                    .background(if (isDark) Color(0xFF382504) else Color(0xFFFEF3C7))
+                    .border(1.dp, if (isDark) Color(0xFF784909) else Color(0xFFF59E0B), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

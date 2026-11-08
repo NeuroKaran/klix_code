@@ -42,7 +42,8 @@ import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.LimeBrandColor
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
-import com.klix.code.ui.theme.TextSecondary
+import com.klix.code.ui.theme.GlassSurfacePillColor
+import com.klix.code.ui.theme.LocalIsDarkTheme
 
 enum class NavTab(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Default.Home),
@@ -62,6 +63,7 @@ fun FloatingNavDock(
     onTabSelect: (NavTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = LocalIsDarkTheme.current
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -72,9 +74,9 @@ fun FloatingNavDock(
     ) {
         Row(
             modifier = Modifier
-                .shadow(elevation = 16.dp, shape = CircleShape, spotColor = Color.Black.copy(alpha = 0.5f))
+                .shadow(elevation = 16.dp, shape = CircleShape)
                 .clip(CircleShape)
-                .background(Color(0xE614151B))
+                .background(GlassSurfacePillColor)
                 .glassBorder(
                     shape = CircleShape,
                     strokeWidth = 1.dp,
@@ -103,6 +105,7 @@ private fun NavDockItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
     val interactionSource = remember { MutableInteractionSource() }
 
     val containerColor by animateColorAsState(
@@ -112,7 +115,7 @@ private fun NavDockItem(
     )
 
     val contentColor by animateColorAsState(
-        targetValue = if (isSelected) Color.Black else Color(0xFF9EABB8),
+        targetValue = if (isSelected) Color.Black else if (isDark) Color(0xFF9EABB8) else Color(0xFF475569),
         animationSpec = tween(durationMillis = 200),
         label = "nav_item_color"
     )

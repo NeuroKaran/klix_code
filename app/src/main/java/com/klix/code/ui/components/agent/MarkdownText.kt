@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.ui.theme.AccentPrimary
+import com.klix.code.ui.theme.LimeDimColor
 import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurfaceVariant
@@ -215,7 +216,7 @@ fun buildMarkdownAnnotatedString(
                         SpanStyle(
                             fontWeight = FontWeight.SemiBold,
                             color = AccentPrimary,
-                            background = AccentPrimary.copy(alpha = 0.15f),
+                            background = LimeDimColor,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.5.sp
                         )

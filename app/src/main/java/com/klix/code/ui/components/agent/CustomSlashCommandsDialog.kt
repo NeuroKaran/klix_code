@@ -6,6 +6,7 @@ import androidx.compose.ui.res.painterResource
 import com.klix.code.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,6 +71,8 @@ import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.theme.LimeDimColor
+import com.klix.code.ui.theme.LimeBorderColor
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -95,9 +98,10 @@ fun CustomSlashCommandsDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .heightIn(max = 680.dp),
+                .heightIn(max = 680.dp)
+                .shadow(elevation = 16.dp, shape = RoundedCornerShape(16.dp)),
             shape = RoundedCornerShape(16.dp),
-            color = DarkBg,
+            color = DarkSurfaceVariant,
             border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
         ) {
             Column(
@@ -133,7 +137,7 @@ fun CustomSlashCommandsDialog(
                             modifier = Modifier
                                 .size(34.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(AccentPrimary.copy(alpha = 0.2f)),
+                                .background(LimeDimColor),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -371,8 +375,8 @@ private fun CommandCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(AccentPrimary.copy(alpha = 0.2f))
-                            .border(0.5.dp, AccentPrimary.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                            .background(LimeDimColor)
+                            .border(0.5.dp, LimeBorderColor, RoundedCornerShape(6.dp))
                             .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
@@ -387,7 +391,7 @@ private fun CommandCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFF8B5CF6).copy(alpha = 0.2f))
+                            .background(Color(0xFF2A2040))
                             .padding(horizontal = 5.dp, vertical = 2.dp)
                     ) {
                         Text(
@@ -420,7 +424,7 @@ private fun CommandCard(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete",
-                            tint = AccentError.copy(alpha = 0.8f),
+                            tint = AccentError,
                             modifier = Modifier.size(15.dp)
                         )
                     }

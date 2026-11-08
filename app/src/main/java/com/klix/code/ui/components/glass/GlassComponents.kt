@@ -67,14 +67,6 @@ fun GlassSurface(
         modifier = modifier
             .clip(shape)
             .background(backgroundColor)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = if (isDark) 0.05f else 0.45f),
-                        Color.Transparent
-                    )
-                )
-            )
             .glassBorder(shape = shape, strokeWidth = strokeWidth)
             .then(clickModifier),
         content = content
@@ -122,7 +114,7 @@ fun GlassButton(
         onClick = onClick,
         enabled = enabled,
         shape = shape,
-        color = if (enabled) containerColor else containerColor.copy(alpha = 0.4f),
+        color = if (enabled) containerColor else (if (LocalKlixColors.current.isDark) Color(0xFF263044) else Color(0xFFCBD5E1)),
         contentColor = contentColor,
         interactionSource = interactionSource,
         modifier = modifier
@@ -243,19 +235,9 @@ fun <T> GlassSegmentedControl(
                 .clip(CircleShape)
                 .background(
                     if (isDark) {
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.18f),
-                                Color.White.copy(alpha = 0.05f)
-                            )
-                        )
+                        Color(0xFF2C384E)
                     } else {
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White,
-                                Color(0xFFF1F5F9)
-                            )
-                        )
+                        Color.White
                     }
                 )
                 .glassBorder(

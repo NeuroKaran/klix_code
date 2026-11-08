@@ -441,7 +441,7 @@ class MainActivity : ComponentActivity() {
                                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                                             modifier = Modifier
                                                 .clip(CircleShape)
-                                                .background(if (LocalIsDarkTheme.current) Color(0x2BFFFFFF) else Color(0xFFEBE6F8))
+                                                .background(if (LocalIsDarkTheme.current) Color(0xFF222938) else Color(0xFFEBE6F8))
                                                 .padding(horizontal = 10.dp, vertical = 5.dp)
                                         ) {
                                             Text(text = fileIcon, fontSize = 13.sp)
@@ -473,13 +473,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     actions = {
-                                        // Daily Login Streak Button
-                                        StreakPillButton(
-                                            streakCount = streakState.streakCount,
-                                            isClaimedToday = streakState.isClaimedToday,
-                                            onClick = { showDailyStreakDialog = true }
-                                        )
-
                                         // Mockup 7: Primary Run Button (runs active file in terminal)
                                         Button(
                                             onClick = {
@@ -502,21 +495,21 @@ class MainActivity : ComponentActivity() {
                                                 containerColor = LimeBrandColor,
                                                 contentColor = Color.Black
                                             ),
-                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                                             modifier = Modifier
-                                                .height(32.dp)
+                                                .height(30.dp)
                                                 .pressEffect(0.92f)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.PlayArrow,
                                                 contentDescription = "Run",
-                                                modifier = Modifier.size(15.dp),
+                                                modifier = Modifier.size(14.dp),
                                                 tint = Color.Black
                                             )
                                             Spacer(modifier = Modifier.width(3.dp))
                                             Text(
                                                 text = "Run",
-                                                fontSize = 12.sp,
+                                                fontSize = 11.5.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.Black
                                             )
@@ -526,75 +519,81 @@ class MainActivity : ComponentActivity() {
                                         IconButton(
                                             onClick = { viewModel.saveActiveTab() },
                                             enabled = activeTab?.isModified == true,
-                                            modifier = Modifier.pressEffect(0.92f)
+                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Save,
                                                 contentDescription = "Save",
-                                                tint = if (activeTab?.isModified == true) LimeBrandColor else TextMuted
+                                                tint = if (activeTab?.isModified == true) LimeBrandColor else TextMuted,
+                                                modifier = Modifier.size(19.dp)
                                             )
                                         }
 
-                                    // Find & Replace toggle
-                                    IconButton(
-                                        onClick = { viewModel.toggleSearch() },
-                                        modifier = Modifier.pressEffect(0.92f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Search,
-                                            contentDescription = "Search",
-                                            tint = if (isSearchOpen) CyanBrandColor else TextSecondary
-                                        )
-                                    }
+                                        // Find & Replace toggle
+                                        IconButton(
+                                            onClick = { viewModel.toggleSearch() },
+                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Search,
+                                                contentDescription = "Search",
+                                                tint = if (isSearchOpen) CyanBrandColor else TextSecondary,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
 
-                                    // Word Wrap toggle
-                                    IconButton(
-                                        onClick = { viewModel.toggleWordWrap() },
-                                        modifier = Modifier.pressEffect(0.92f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.WrapText,
-                                            contentDescription = "Toggle Word Wrap",
-                                            tint = if (isWordWrap) CyanBrandColor else TextSecondary
-                                        )
-                                    }
+                                        // Word Wrap toggle
+                                        IconButton(
+                                            onClick = { viewModel.toggleWordWrap() },
+                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.WrapText,
+                                                contentDescription = "Toggle Word Wrap",
+                                                tint = if (isWordWrap) CyanBrandColor else TextSecondary,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
 
-                                    // Klix AI Agent
-                                    IconButton(
-                                        onClick = { isAgentPanelOpen = !isAgentPanelOpen },
-                                        modifier = Modifier.pressEffect(0.92f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.SmartToy,
-                                            contentDescription = "Klix AI Agent",
-                                            tint = if (isAgentPanelOpen) LimeBrandColor else TextSecondary
-                                        )
-                                    }
+                                        // Klix AI Agent
+                                        IconButton(
+                                            onClick = { isAgentPanelOpen = !isAgentPanelOpen },
+                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.SmartToy,
+                                                contentDescription = "Klix AI Agent",
+                                                tint = if (isAgentPanelOpen) LimeBrandColor else TextSecondary,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
 
-                                    // Terminal
-                                    IconButton(
-                                        onClick = { isTerminalOpen = !isTerminalOpen },
-                                        modifier = Modifier.pressEffect(0.92f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Terminal,
-                                            contentDescription = "Terminal",
-                                            tint = if (isTerminalOpen) CyanBrandColor else TextSecondary
-                                        )
-                                    }
+                                        // Terminal
+                                        IconButton(
+                                            onClick = { isTerminalOpen = !isTerminalOpen },
+                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Terminal,
+                                                contentDescription = "Terminal",
+                                                tint = if (isTerminalOpen) CyanBrandColor else TextSecondary,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
 
-                                    // App Settings
-                                    IconButton(
-                                        onClick = { agentViewModel.toggleSettings() },
-                                        modifier = Modifier.pressEffect(0.92f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Settings,
-                                            contentDescription = "Settings",
-                                            tint = if (isAgentSettingsOpen) LimeBrandColor else TextSecondary
-                                        )
-                                    }
-                                },
+                                        // App Settings
+                                        IconButton(
+                                            onClick = { agentViewModel.toggleSettings() },
+                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Settings,
+                                                contentDescription = "Settings",
+                                                tint = if (isAgentSettingsOpen) LimeBrandColor else TextSecondary,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
+                                    },
                                 colors = TopAppBarDefaults.topAppBarColors(
                                     containerColor = GlassSurfaceColor
                                 ),
@@ -819,7 +818,8 @@ class MainActivity : ComponentActivity() {
                                             NavTab.TERMINAL -> isTerminalOpen = true
                                             NavTab.SETTINGS -> agentViewModel.toggleSettings()
                                         }
-                                    }
+                                    },
+                                    isNavDockVisible = !isAgentPanelOpen && !isTerminalOpen && !isAgentSettingsOpen && !showSandboxSetup && !showRecentProjectsDialog && !showDailyStreakDialog && !isSlashCommandManagerOpen && !showAgentPromptDialog && !showSandboxWarningDialog && activeDiff == null && agentDiffToReview == null && !isUpdateDialogVisible
                                 )
                             }
                         }
@@ -916,7 +916,7 @@ class MainActivity : ComponentActivity() {
                         sheetState = agentSheetState,
                         containerColor = DarkBg,
                         dragHandle = null,
-                        modifier = Modifier.fillMaxHeight(0.92f)
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         AgentChatPanel(
                             messages = agentMessages,
@@ -999,7 +999,7 @@ class MainActivity : ComponentActivity() {
                         sheetState = terminalSheetState,
                         containerColor = DarkBg,
                         dragHandle = null,
-                        modifier = Modifier.fillMaxHeight(0.92f)
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         TerminalView(
                             viewModel = terminalViewModel,

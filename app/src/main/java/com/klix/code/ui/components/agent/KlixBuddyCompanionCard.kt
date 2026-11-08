@@ -114,7 +114,7 @@ private fun BuddyActionChip(
     Box(
         modifier = Modifier
             .clip(CircleShape)
-            .background(if (isDark) Color(0x4D000000) else Color.White.copy(alpha = 0.9f))
+            .background(if (isDark) Color(0xFF131722) else Color.White)
             .glassBorder(CircleShape, strokeWidth = 0.8.dp)
             .clickable(onClick = onClick)
             .pressEffect(0.92f)

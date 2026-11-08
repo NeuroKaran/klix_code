@@ -85,6 +85,7 @@ import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.theme.GlassSurfacePillColor
 import com.klix.code.ui.components.sandbox.SandboxWarningDialog
 import com.klix.code.ui.components.glass.GlassCard
 import com.klix.code.ui.components.glass.GlassButton
@@ -566,7 +567,7 @@ fun FileTreeView(
             Row(
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(Color(0xE614151B))
+                    .background(GlassSurfacePillColor)
                     .glassBorder(CircleShape, strokeWidth = 1.dp)
                     .padding(horizontal = 6.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -576,7 +577,7 @@ fun FileTreeView(
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(if (isDark) Color(0x33FFFFFF) else LimeBrandColor)
+                        .background(if (isDark) Color(0xFF253046) else LimeBrandColor)
                         .clickable {
                             val nextMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
                             ThemeManager.setThemeMode(context, nextMode)

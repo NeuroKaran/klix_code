@@ -42,27 +42,19 @@ val NaturalSpringOffset = spring<IntOffset>(
 fun Modifier.glassBorder(
     shape: Shape,
     strokeWidth: Dp = 1.dp,
-    highlightAlpha: Float = 0.28f,
-    midAlpha: Float = 0.10f,
-    shadowAlpha: Float = 0.03f
+    highlightAlpha: Float = 1.0f,
+    midAlpha: Float = 1.0f,
+    shadowAlpha: Float = 1.0f
 ): Modifier {
     val isDark = LocalKlixColors.current.isDark
-    val brush = if (isDark) {
-        Brush.linearGradient(
-            0.0f to Color.White.copy(alpha = highlightAlpha),
-            0.4f to Color.White.copy(alpha = midAlpha),
-            1.0f to Color.White.copy(alpha = shadowAlpha)
-        )
+    val borderColor = if (isDark) {
+        Color(0xFF2E3B52)
     } else {
-        Brush.linearGradient(
-            0.0f to Color.White.copy(alpha = 0.85f),
-            0.4f to Color(0x3564748B),
-            1.0f to Color(0x1F0F172A)
-        )
+        Color(0xFF94A3B8)
     }
     return this.border(
         width = strokeWidth,
-        brush = brush,
+        color = borderColor,
         shape = shape
     )
 }
@@ -74,15 +66,11 @@ fun Modifier.tintedGlassBorder(
     tintColor: Color,
     shape: Shape,
     strokeWidth: Dp = 1.dp,
-    highlightAlpha: Float = 0.45f,
-    baseAlpha: Float = 0.18f
+    highlightAlpha: Float = 1.0f,
+    baseAlpha: Float = 1.0f
 ): Modifier = this.border(
     width = strokeWidth,
-    brush = Brush.linearGradient(
-        0.0f to tintColor.copy(alpha = highlightAlpha),
-        0.5f to tintColor.copy(alpha = baseAlpha),
-        1.0f to Color.Transparent
-    ),
+    color = tintColor,
     shape = shape
 )
 

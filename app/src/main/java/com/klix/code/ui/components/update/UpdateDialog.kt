@@ -45,6 +45,8 @@ import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.theme.LimeDimColor
+import com.klix.code.ui.theme.LocalIsDarkTheme
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -84,8 +86,8 @@ fun UpdateDialog(
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(
-                            if (isError) AccentError.copy(alpha = 0.15f)
-                            else AccentPrimary.copy(alpha = 0.15f)
+                            if (isError) (if (LocalIsDarkTheme.current) Color(0xFF381418) else Color(0xFFFEE2E2))
+                            else LimeDimColor
                         ),
                     contentAlignment = Alignment.Center
                 ) {

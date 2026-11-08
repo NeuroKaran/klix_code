@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -118,9 +119,10 @@ fun StreakPillButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.widget_flame),
+            Icon(
+                imageVector = Icons.Default.LocalFireDepartment,
                 contentDescription = "Streak Flame",
+                tint = FlameOrange,
                 modifier = Modifier
                     .size(16.dp)
                     .scale(if (!isClaimedToday) pulseScale else 1.0f)

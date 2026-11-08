@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -86,9 +87,10 @@ fun SandboxSetupDialog(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .padding(vertical = 24.dp)
+                .shadow(elevation = 16.dp, shape = dialogShape)
                 .glassBorder(dialogShape),
             shape = dialogShape,
-            color = if (isDark) Color(0xFF14151B) else Color(0xFFF7F5EC)
+            color = if (isDark) Color(0xFF14151B) else Color(0xFFFFFFFF)
         ) {
             Column(
                 modifier = Modifier
@@ -127,7 +129,7 @@ fun SandboxSetupDialog(
                         Box(
                             modifier = Modifier
                                 .clip(CircleShape)
-                                .background(if (isDark) Color(0x33000000) else Color.White)
+                                .background(if (isDark) Color(0xFF1E2638) else Color.White)
                                 .glassBorder(CircleShape, strokeWidth = 0.8.dp)
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
                         ) {
@@ -195,7 +197,7 @@ fun SandboxSetupDialog(
                             Box(
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .background(if (isDark) Color(0x33000000) else Color.White)
+                                    .background(if (isDark) Color(0xFF1E2638) else Color.White)
                                     .glassBorder(CircleShape, strokeWidth = 0.8.dp)
                                     .clickable {
                                         scope.launch { sandboxManager.installSandbox() }
@@ -236,7 +238,7 @@ fun SandboxSetupDialog(
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
                             color = LimeBrandColor,
-                            trackColor = Color(0x33000000)
+                            trackColor = if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0)
                         )
                         Text(
                             text = "$statusMsg (${(progress * 100).toInt()}%)",
