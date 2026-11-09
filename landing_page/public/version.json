@@ -1,9 +1,9 @@
 {
-  "versionCode": 13,
-  "versionName": "0.4.1",
+  "versionCode": 14,
+  "versionName": "0.4.2",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.1.apk",
-  "releaseNotes": "• Complete Modern UI Overhaul: New Home Dashboard with hero greeting, coding mascot, recent workspaces, and floating action dock\n• High-Contrast Opaque Visuals: Removed translucent alpha channels across all dialogs and surfaces for crisp readability\n• Mascot & Header Alignment: Seamless mascot card peeking, rounded laptop lid geometry, and clean terminal header controls\n• Streak & Navigation Polish: Replaced cartoon flame with unified vector flame icon, and resolved all toolbar overlaps",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.2.apk",
+  "releaseNotes": "• Consolidated Review Report Action Items: Full interactive UI refactor\n• Factual Sandbox Readiness: Factual READY vs SETUP REQUIRED badge and active model pill\n• Scoped Navigation Dock: Floating nav dock scoped strictly to Home Dashboard\n• 48dp Touch Targets: Standardized interactive touch targets and 20dp inner icons\n• Dual-Branch Workspaces: Distinct empty state card and populated recent workspaces list\n• Overflow Top Bar: Consolidated editor actions into state-aware DropdownMenu with active tinting",
   "releaseDate": "2026-11-09",
   "forceUpdate": false
 }
