@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,12 +32,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,6 +50,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +59,7 @@ import com.klix.code.data.model.ProjectItem
 import com.klix.code.ui.components.glass.glassBorder
 import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.components.streak.StreakPillButton
+import com.klix.code.ui.theme.AccentWarning
 import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.HeroCardBgColor
 import com.klix.code.ui.theme.LimeBrandColor
@@ -82,6 +88,7 @@ fun HomeDashboard(
     isSandboxInstalled: Boolean = true,
     activeModelName: String = "Thinking: 4K",
     onOpenSandboxWorkspace: () -> Unit = {},
+    onConfigureSandbox: () -> Unit = {},
     recentProjects: List<ProjectItem> = emptyList(),
     onSelectProject: (Uri, String) -> Unit = { _, _ -> },
     onOpenFolder: () -> Unit = {},
@@ -121,17 +128,23 @@ fun HomeDashboard(
                         IconButton(
                             onClick = onOpenDrawer,
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0))
+                                .minimumInteractiveComponentSize()
                                 .pressEffect(0.92f)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Open Workspace Files",
-                                tint = TextPrimary,
-                                modifier = Modifier.size(22.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Open Workspace Files",
+                                    tint = TextPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
 
                         Column {
@@ -180,52 +193,120 @@ fun HomeDashboard(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Mascot + Speech bubble row
+                        // Mascot + Dynamic Status Column row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.klix_mascot_laptop),
                                 contentDescription = "Klix Mascot Coding",
                                 modifier = Modifier
                                     .size(110.dp)
-                                    .padding(end = 8.dp)
+                                    .padding(end = 4.dp)
                             )
 
-                            // Speech Bubble
-                            Box(
+                            // Factual Dynamic Status Column (replacing speculative telemetry & speech bubble)
+                            Column(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .background(if (isDark) Color(0xFF1E2129) else Color.White)
-                                    .glassBorder(
-                                        RoundedCornerShape(18.dp),
-                                        strokeWidth = 0.8.dp,
-                                        highlightAlpha = 0.3f,
-                                        midAlpha = 0.1f
-                                    )
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                                contentAlignment = Alignment.Center
+                                    .padding(start = 2.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = "What shall we\nbuild today?",
-                                    fontSize = 14.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isDark) Color.White else Color(0xFF18191D),
-                                    lineHeight = 20.sp
+                                    text = "SANDBOX STATUS",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextMuted,
+                                    letterSpacing = 0.8.sp
                                 )
+
+                                // Readiness Badge: READY vs SETUP REQUIRED
+                                val isReady = isSandboxInstalled
+                                val badgeColor = if (isReady) LimeBrandColor else AccentWarning
+                                val badgeTextColor = if (isReady) {
+                                    if (isDark) LimeBrandColor else Color(0xFF3F6212)
+                                } else {
+                                    AccentWarning
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(badgeColor.copy(alpha = if (isDark) 0.16f else 0.12f))
+                                        .border(
+                                            width = 1.dp,
+                                            color = badgeColor.copy(alpha = 0.45f),
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(badgeColor)
+                                    )
+                                    Text(
+                                        text = if (isReady) "READY" else "SETUP REQUIRED",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp,
+                                        color = badgeTextColor
+                                    )
+                                }
+
+                                // Active Model Pill
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SmartToy,
+                                        contentDescription = null,
+                                        tint = TextSecondary,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Text(
+                                        text = activeModelName.ifEmpty { "Thinking: 4K" },
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = TextSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
 
-                        // Big CTA: + Open Sandbox Workspace
+                        // Dynamic CTA: Launch Sandbox Workspace vs Configure Sandbox
                         Button(
-                            onClick = onOpenSandboxWorkspace,
+                            onClick = {
+                                if (isSandboxInstalled) {
+                                    onOpenSandboxWorkspace()
+                                } else {
+                                    onConfigureSandbox()
+                                }
+                            },
                             shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isDark) LimeBrandColor else Color(0xFF18191D),
-                                contentColor = if (isDark) Color.Black else Color.White
+                                containerColor = if (isSandboxInstalled) {
+                                    if (isDark) LimeBrandColor else Color(0xFF18191D)
+                                } else {
+                                    AccentWarning
+                                },
+                                contentColor = if (isSandboxInstalled) {
+                                    if (isDark) Color.Black else Color.White
+                                } else {
+                                    Color.Black
+                                }
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -233,13 +314,13 @@ fun HomeDashboard(
                                 .pressEffect(0.96f)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Add,
+                                imageVector = if (isSandboxInstalled) Icons.Default.Add else Icons.Default.Settings,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Open Sandbox Workspace",
+                                text = if (isSandboxInstalled) "Launch Sandbox Workspace" else "Configure Sandbox",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.2).sp
@@ -276,25 +357,19 @@ fun HomeDashboard(
                 }
             }
 
-            // 4. Recent Workspaces List
+            // 4. Dual-Branch Workspaces Section
             if (recentProjects.isNotEmpty()) {
-                items(recentProjects.take(6)) { project ->
-                    WorkspaceCard(
-                        name = project.name,
-                        onClick = { onSelectProject(project.uri, project.name) }
+                item {
+                    RecentWorkspacesList(
+                        projects = recentProjects,
+                        onSelectProject = onSelectProject
                     )
                 }
             } else {
                 item {
-                    WorkspaceCard(
-                        name = "orbit-ui",
-                        onClick = onOpenSandboxWorkspace
-                    )
-                }
-                item {
-                    WorkspaceCard(
-                        name = "palindrome.py",
-                        onClick = onOpenSandboxWorkspace
+                    EmptyWorkspacesCard(
+                        onOpenFolder = onOpenFolder,
+                        onOpenSandboxWorkspace = onOpenSandboxWorkspace
                     )
                 }
             }
@@ -316,8 +391,150 @@ fun HomeDashboard(
     }
 }
 
+/**
+ * Actionable Empty State Card rendered when no recent workspaces exist.
+ * Eliminates dummy hardcoded project items.
+ */
 @Composable
-private fun WorkspaceCard(
+fun EmptyWorkspacesCard(
+    onOpenFolder: () -> Unit,
+    onOpenSandboxWorkspace: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isDark = LocalIsDarkTheme.current
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(SoftCardBgColor)
+            .glassBorder(
+                RoundedCornerShape(20.dp),
+                strokeWidth = 0.8.dp,
+                highlightAlpha = if (isDark) 0.14f else 0.3f,
+                midAlpha = 0.05f
+            )
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(if (isDark) Color(0xFF222938) else Color(0xFFE2E8F0)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Folder,
+                contentDescription = null,
+                tint = LimeBrandColor,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "No Recent Workspaces",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            Text(
+                text = "Open a local project folder or launch the Linux sandbox workspace to start coding.",
+                fontSize = 12.5.sp,
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Button 1: Open Folder
+            Button(
+                onClick = onOpenFolder,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .pressEffect(0.96f),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) Color(0xFF222938) else Color(0xFFE2E8F0),
+                    contentColor = TextPrimary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Folder,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = TextPrimary
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Open Folder",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            // Button 2: Launch Sandbox Workspace
+            Button(
+                onClick = onOpenSandboxWorkspace,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .pressEffect(0.96f),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) LimeBrandColor else Color(0xFF18191D),
+                    contentColor = if (isDark) Color.Black else Color.White
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Terminal,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Launch Sandbox",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Renders the list of recent workspaces bound to onSelectProject.
+ */
+@Composable
+fun RecentWorkspacesList(
+    projects: List<ProjectItem>,
+    onSelectProject: (Uri, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        projects.take(6).forEach { project ->
+            WorkspaceCard(
+                name = project.name,
+                onClick = { onSelectProject(project.uri, project.name) }
+            )
+        }
+    }
+}
+
+@Composable
+fun WorkspaceCard(
     name: String,
     onClick: () -> Unit
 ) {

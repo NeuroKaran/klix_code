@@ -39,6 +39,7 @@ import androidx.compose.material.icons.automirrored.filled.WrapText
 import androidx.compose.material.icons.filled.Difference
 
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -52,9 +53,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -235,6 +239,7 @@ class MainActivity : ComponentActivity() {
                 var showRecentProjectsDialog by remember { mutableStateOf(false) }
                 var isAgentPanelOpen by remember { mutableStateOf(false) }
                 var isTerminalOpen by remember { mutableStateOf(false) }
+                var isOverflowMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
                 val agentMessages by agentViewModel.messages.collectAsState()
                 val agentStatus by agentViewModel.status.collectAsState()
@@ -463,17 +468,20 @@ class MainActivity : ComponentActivity() {
                                                     if (drawerState.isClosed) drawerState.open() else drawerState.close()
                                                 }
                                             },
-                                            modifier = Modifier.pressEffect(0.92f)
+                                            modifier = Modifier
+                                                .minimumInteractiveComponentSize()
+                                                .pressEffect(0.92f)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Menu,
                                                 contentDescription = "Menu",
-                                                tint = TextPrimary
+                                                tint = TextPrimary,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     },
                                     actions = {
-                                        // Mockup 7: Primary Run Button (runs active file in terminal)
+                                        // Primary Run Button (runs active file in terminal)
                                         Button(
                                             onClick = {
                                                 if (activeTab?.isModified == true) {
@@ -515,83 +523,128 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
 
-                                        // Save Button
+                                        // Primary Save Button
                                         IconButton(
                                             onClick = { viewModel.saveActiveTab() },
                                             enabled = activeTab?.isModified == true,
-                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
+                                            modifier = Modifier
+                                                .minimumInteractiveComponentSize()
+                                                .pressEffect(0.92f)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Save,
                                                 contentDescription = "Save",
                                                 tint = if (activeTab?.isModified == true) LimeBrandColor else TextMuted,
-                                                modifier = Modifier.size(19.dp)
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
 
-                                        // Find & Replace toggle
-                                        IconButton(
-                                            onClick = { viewModel.toggleSearch() },
-                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Search,
-                                                contentDescription = "Search",
-                                                tint = if (isSearchOpen) CyanBrandColor else TextSecondary,
-                                                modifier = Modifier.size(19.dp)
-                                            )
-                                        }
+                                        // State-Aware Overflow Menu
+                                        Box {
+                                            IconButton(
+                                                onClick = { isOverflowMenuExpanded = true },
+                                                modifier = Modifier
+                                                    .minimumInteractiveComponentSize()
+                                                    .pressEffect(0.92f)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.MoreVert,
+                                                    contentDescription = "More options",
+                                                    tint = TextPrimary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
 
-                                        // Word Wrap toggle
-                                        IconButton(
-                                            onClick = { viewModel.toggleWordWrap() },
-                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.WrapText,
-                                                contentDescription = "Toggle Word Wrap",
-                                                tint = if (isWordWrap) CyanBrandColor else TextSecondary,
-                                                modifier = Modifier.size(19.dp)
-                                            )
-                                        }
+                                            DropdownMenu(
+                                                expanded = isOverflowMenuExpanded,
+                                                onDismissRequest = { isOverflowMenuExpanded = false },
+                                                modifier = Modifier.background(GlassSurfaceColor)
+                                            ) {
+                                                // AI Assistant
+                                                DropdownMenuItem(
+                                                    text = { Text("AI Assistant") },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            imageVector = Icons.Default.SmartToy,
+                                                            contentDescription = null,
+                                                            tint = if (isAgentPanelOpen) LimeBrandColor else TextSecondary,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        isOverflowMenuExpanded = false
+                                                        isAgentPanelOpen = !isAgentPanelOpen
+                                                    }
+                                                )
 
-                                        // Klix AI Agent
-                                        IconButton(
-                                            onClick = { isAgentPanelOpen = !isAgentPanelOpen },
-                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.SmartToy,
-                                                contentDescription = "Klix AI Agent",
-                                                tint = if (isAgentPanelOpen) LimeBrandColor else TextSecondary,
-                                                modifier = Modifier.size(19.dp)
-                                            )
-                                        }
+                                                // Terminal
+                                                DropdownMenuItem(
+                                                    text = { Text("Terminal") },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Terminal,
+                                                            contentDescription = null,
+                                                            tint = if (isTerminalOpen) CyanBrandColor else TextSecondary,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        isOverflowMenuExpanded = false
+                                                        isTerminalOpen = !isTerminalOpen
+                                                    }
+                                                )
 
-                                        // Terminal
-                                        IconButton(
-                                            onClick = { isTerminalOpen = !isTerminalOpen },
-                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Terminal,
-                                                contentDescription = "Terminal",
-                                                tint = if (isTerminalOpen) CyanBrandColor else TextSecondary,
-                                                modifier = Modifier.size(19.dp)
-                                            )
-                                        }
+                                                // Find & Replace
+                                                DropdownMenuItem(
+                                                    text = { Text("Find & Replace") },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Search,
+                                                            contentDescription = null,
+                                                            tint = if (isSearchOpen) CyanBrandColor else TextSecondary,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        isOverflowMenuExpanded = false
+                                                        viewModel.toggleSearch()
+                                                    }
+                                                )
 
-                                        // App Settings
-                                        IconButton(
-                                            onClick = { agentViewModel.toggleSettings() },
-                                            modifier = Modifier.size(34.dp).pressEffect(0.92f)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Settings,
-                                                contentDescription = "Settings",
-                                                tint = if (isAgentSettingsOpen) LimeBrandColor else TextSecondary,
-                                                modifier = Modifier.size(19.dp)
-                                            )
+                                                // Word Wrap
+                                                DropdownMenuItem(
+                                                    text = { Text("Word Wrap") },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            imageVector = Icons.AutoMirrored.Filled.WrapText,
+                                                            contentDescription = null,
+                                                            tint = if (isWordWrap) CyanBrandColor else TextSecondary,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        isOverflowMenuExpanded = false
+                                                        viewModel.toggleWordWrap()
+                                                    }
+                                                )
+
+                                                // Settings
+                                                DropdownMenuItem(
+                                                    text = { Text("Settings") },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Settings,
+                                                            contentDescription = null,
+                                                            tint = if (isAgentSettingsOpen) LimeBrandColor else TextSecondary,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        isOverflowMenuExpanded = false
+                                                        agentViewModel.toggleSettings()
+                                                    }
+                                                )
+                                            }
                                         }
                                     },
                                 colors = TopAppBarDefaults.topAppBarColors(
@@ -802,10 +855,13 @@ class MainActivity : ComponentActivity() {
                                     activeModelName = agentSettings.activeModel.ifEmpty { "Thinking: 4K" },
                                     onOpenSandboxWorkspace = {
                                         if (!isSandboxInstalled) {
-                                            showSandboxWarningDialog = true
+                                            terminalViewModel.openSetupDialog()
                                         } else {
                                             viewModel.openSandboxWorkspace()
                                         }
+                                    },
+                                    onConfigureSandbox = {
+                                        terminalViewModel.openSetupDialog()
                                     },
                                     recentProjects = recentProjects,
                                     onSelectProject = { uri, name -> viewModel.openProject(uri, name) },
