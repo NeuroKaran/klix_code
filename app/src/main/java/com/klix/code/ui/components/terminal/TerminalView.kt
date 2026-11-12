@@ -89,7 +89,7 @@ import com.klix.code.ui.theme.LocalIsDarkTheme
  * - Top Header: "Linux Terminal" (screenTitle).
  * - Tab Strip: Horizontal scrollable row of pill tabs (height = 38.dp, RoundedCornerShape(19.dp)):
  *   - [Official Alpine Linux Logo] Alpine v1 (active)
- *   - + node-server / [Official Python Logo] palindrome.py
+ *   - + Terminal / [Official Python Logo] palindrome.py
  *   - [Official Node.js Logo]
  * - Terminal Viewport Card (RoundedCornerShape(24.dp), height = 290.dp):
  *   - Monospace output (JetBrains Mono 13.sp):
@@ -277,12 +277,12 @@ fun TerminalView(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "New Terminal",
+                        contentDescription = null,
                         tint = KlixInkPrimary,
                         modifier = Modifier.size(15.dp)
                     )
                     Text(
-                        text = "node-server",
+                        text = TerminalTabUiHelper.NEW_TERMINAL_BUTTON_LABEL,
                         style = KlixTypography.codePill,
                         color = KlixInkSecondary
                     )
@@ -668,6 +668,8 @@ private fun TerminalRenameDialog(
 }
 
 internal object TerminalTabUiHelper {
+    const val NEW_TERMINAL_BUTTON_LABEL = "Terminal"
+
     fun isCloseable(tabIndex: Int, totalTabs: Int): Boolean =
-        totalTabs > 1 && tabIndex > 0
+        totalTabs > 1 && tabIndex in 1 until totalTabs
 }

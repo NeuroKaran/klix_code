@@ -1139,30 +1139,24 @@ private fun EmptyAgentState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Hero Peeking Mascot + Card 1
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            // Mascot peeking gracefully from behind Card 1
-            Image(
-                painter = painterResource(id = R.drawable.mascot_peeking),
-                contentDescription = "Klix Bot Mascot Peeking",
-                modifier = Modifier
-                    .size(width = 118.dp, height = 58.dp)
-                    .align(Alignment.TopCenter)
-            )
+        // Hero Mascot Logo seated nicely above Card 1
+        Image(
+            painter = painterResource(id = R.drawable.mascot_peeking),
+            contentDescription = "Klix Bot Mascot Peeking",
+            modifier = Modifier
+                .size(width = 118.dp, height = 58.dp)
+                .padding(top = 8.dp)
+        )
 
-            // Card 1: Quick Mentions & Model (overlapping bottom of mascot so it peeks cleanly behind border)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 46.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(KlixSurfaceBentoGroup)
-                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(22.dp))
-                    .padding(16.dp)
-            ) {
+        // Card 1: Quick Mentions & Model
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(KlixSurfaceBentoGroup)
+                .border(1.dp, KlixBorderHairline, RoundedCornerShape(22.dp))
+                .padding(16.dp)
+        ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Quick Mentions & Model",
@@ -1269,7 +1263,6 @@ private fun EmptyAgentState(
                     }
                 }
             }
-        }
 
         // Card 2: What shall we do?
         Box(

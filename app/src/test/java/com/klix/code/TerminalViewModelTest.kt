@@ -171,6 +171,16 @@ class TerminalViewModelTest {
         assertFalse(TerminalTabUiHelper.isCloseable(tabIndex = 0, totalTabs = 3))
         assertTrue(TerminalTabUiHelper.isCloseable(tabIndex = 1, totalTabs = 3))
         assertTrue(TerminalTabUiHelper.isCloseable(tabIndex = 2, totalTabs = 3))
+
+        // Boundary and invalid index handling
+        assertFalse(TerminalTabUiHelper.isCloseable(tabIndex = -1, totalTabs = 3))
+        assertFalse(TerminalTabUiHelper.isCloseable(tabIndex = 3, totalTabs = 3))
+        assertFalse(TerminalTabUiHelper.isCloseable(tabIndex = 1, totalTabs = 0))
+    }
+
+    @Test
+    fun testTerminalTabUiHelperNewTerminalButtonLabel() {
+        assertEquals("Terminal", TerminalTabUiHelper.NEW_TERMINAL_BUTTON_LABEL)
     }
 
     @Test

@@ -130,7 +130,7 @@ Bundle **Plus Jakarta Sans** (`res/font/plus_jakarta_sans_*.ttf`) for UI/Display
 - **Top Header**: `"Linux Terminal"` (`screenTitle`).
 - **Tab Strip**: Horizontal scrollable row of pill tabs (`height = 38.dp`, `RoundedCornerShape(19.dp)`):
   - `[Official Alpine Linux Logo] Alpine v1` (active)
-  - `+ node-server` / `[Official Python Logo] palindrome.py`
+  - `+ Terminal` / `[Official Python Logo] palindrome.py`
   - `[Official Node.js Logo]`
 - **Terminal Viewport Card (`RoundedCornerShape(24.dp)`, `height = 290.dp`)**:
   - Monospace output (`JetBrains Mono 13.sp`):
