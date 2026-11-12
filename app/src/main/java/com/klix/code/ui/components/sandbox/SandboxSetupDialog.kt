@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -66,7 +68,7 @@ import kotlinx.coroutines.launch
  * - Hero Status Card (RoundedCornerShape(24.dp)):
  *   - Sky-to-mint gradient (Light) / Deep navy-to-purple gradient with 1.dp border (Dark).
  *   - Left: R.drawable.mascot_running_terminal (2D Klix Bot running with >_ prompt).
- *   - Right column: "Alpine Linux Active" (sheetHeader), "On-device unrooted runtime" (bodySecondary), and pill button "↻ Reinstall RootFS".
+ *   - Right column: "Alpine Linux Active" (sheetHeader), "On-device unrooted runtime" (bodySecondary), and pill button "⤓ Install RootFS" / "↻ Reinstall RootFS".
  * - Pre-Configured Toolchains (2x2 Bento Grid):
  *   - Section title "Pre-Configured Toolchains".
  *   - 2x2 grid of RoundedCornerShape(18.dp) cards:
@@ -216,16 +218,20 @@ fun SandboxSetupDialog(
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            // Pill button: ↻ Reinstall RootFS
+                            // Pill button: ⤓ Install RootFS / ↻ Reinstall RootFS
+                            val isReinstall = SandboxSetupUiHelper.isReinstall(status)
+                            val actionLabel = SandboxSetupUiHelper.getActionLabel(status)
+                            val actionIcon = SandboxSetupUiHelper.getActionIcon(status)
+                            val isInstalling = status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(KlixSurfaceCardItem)
                                     .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
-                                    .clickable {
+                                    .clickable(enabled = !isInstalling) {
                                         scope.launch { sandboxManager.installSandbox() }
                                     }
-                                    .pressEffect(0.92f)
+                                    .pressEffect(if (isInstalling) 1f else 0.92f)
                                     .padding(horizontal = 12.dp, vertical = 6.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -234,16 +240,16 @@ fun SandboxSetupDialog(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = null,
-                                        tint = KlixInkPrimary,
+                                        imageVector = actionIcon,
+                                        contentDescription = actionLabel,
+                                        tint = if (isInstalling) KlixInkSecondary else KlixInkPrimary,
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Text(
-                                        text = if (status == SandboxStatus.READY) "Reinstall RootFS" else "Install RootFS",
+                                        text = actionLabel,
                                         style = KlixTypography.codePill,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = KlixInkPrimary
+                                        color = if (isInstalling) KlixInkSecondary else KlixInkPrimary
                                     )
                                 }
                             }
@@ -406,4 +412,15 @@ private fun ToolchainCard(
             )
         }
     }
+}
+
+internal object SandboxSetupUiHelper {
+    fun isReinstall(status: SandboxStatus): Boolean =
+        status == SandboxStatus.READY
+
+    fun getActionLabel(status: SandboxStatus): String =
+        if (isReinstall(status)) "Reinstall RootFS" else "Install RootFS"
+
+    fun getActionIcon(status: SandboxStatus): ImageVector =
+        if (isReinstall(status)) Icons.Default.Refresh else Icons.Default.Download
 }

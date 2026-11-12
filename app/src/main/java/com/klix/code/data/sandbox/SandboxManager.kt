@@ -143,6 +143,9 @@ class SandboxManager(private val context: Context) {
     }
 
     suspend fun installSandbox(): Result<Unit> = withContext(Dispatchers.IO) {
+        if (_status.value == SandboxStatus.DOWNLOADING || _status.value == SandboxStatus.EXTRACTING) {
+            return@withContext Result.failure(IllegalStateException("RootFS installation is already in progress"))
+        }
         try {
             _status.value = SandboxStatus.DOWNLOADING
             _progress.value = 0.05f

@@ -116,7 +116,7 @@ Bundle **Plus Jakarta Sans** (`res/font/plus_jakarta_sans_*.ttf`) for UI/Display
 - **Hero Status Card (`RoundedCornerShape(24.dp)`)**:
   - Sky-to-mint gradient (Light) / Deep navy-to-purple gradient with `1.dp` border (Dark).
   - Left: `R.drawable.mascot_running_terminal` (2D Klix Bot running with `>_` prompt).
-  - Right column: `"Alpine Linux Active"` (`sheetHeader`), `"On-device unrooted runtime"` (`bodySecondary`), and pill button `"↻ Reinstall RootFS"`.
+  - Right column: `"Alpine Linux Active"` (`sheetHeader`), `"On-device unrooted runtime"` (`bodySecondary`), and pill button `"⤓ Install RootFS"` / `"↻ Reinstall RootFS"`.
 - **Pre-Configured Toolchains (2x2 Bento Grid)**:
   - Section title `"Pre-Configured Toolchains"`.
   - 2x2 grid (`Arrangement.spacedBy(12.dp)`) of `RoundedCornerShape(18.dp)` cards:

@@ -1,9 +1,15 @@
 package com.klix.code
 
 import android.content.Context
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Refresh
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.sandbox.SandboxStatus
+import com.klix.code.ui.components.sandbox.SandboxSetupUiHelper
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -58,5 +64,42 @@ class SandboxManagerTest {
         val resetSuccess = sandboxManager.resetSandbox()
         assertTrue(resetSuccess)
         assertEquals(SandboxStatus.NOT_INSTALLED, sandboxManager.status.value)
+    }
+
+    @Test
+    fun testSandboxSetupUiHelperActionMapping() {
+        // When READY: should trigger reinstall with reload icon
+        assertTrue(SandboxSetupUiHelper.isReinstall(SandboxStatus.READY))
+        assertEquals("Reinstall RootFS", SandboxSetupUiHelper.getActionLabel(SandboxStatus.READY))
+        assertEquals(Icons.Default.Refresh, SandboxSetupUiHelper.getActionIcon(SandboxStatus.READY))
+
+        // When NOT_INSTALLED, DOWNLOADING, EXTRACTING, ERROR: should trigger install with download icon
+        val installStatuses = listOf(
+            SandboxStatus.NOT_INSTALLED,
+            SandboxStatus.DOWNLOADING,
+            SandboxStatus.EXTRACTING,
+            SandboxStatus.ERROR
+        )
+
+        for (status in installStatuses) {
+            assertFalse("Expected status $status to not be reinstall", SandboxSetupUiHelper.isReinstall(status))
+            assertEquals("Expected status $status to show 'Install RootFS'", "Install RootFS", SandboxSetupUiHelper.getActionLabel(status))
+            assertEquals("Expected status $status to show download icon", Icons.Default.Download, SandboxSetupUiHelper.getActionIcon(status))
+        }
+    }
+
+    @Test
+    fun testInstallSandboxRejectsConcurrentExecution() = runBlocking {
+        // Mock status to DOWNLOADING
+        val statusField = SandboxManager::class.java.getDeclaredField("_status")
+        statusField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val statusFlow = statusField.get(sandboxManager) as kotlinx.coroutines.flow.MutableStateFlow<SandboxStatus>
+        statusFlow.value = SandboxStatus.DOWNLOADING
+
+        val result = sandboxManager.installSandbox()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+        assertEquals("RootFS installation is already in progress", result.exceptionOrNull()?.message)
     }
 }
