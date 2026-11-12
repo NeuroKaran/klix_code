@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- OpenAI 6-arm spiral blossom vector in clean 1.5dp stroke -->
+    <path
+        android:strokeColor="#10A37F"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M19.5,9.6 C19.1,7.2 17.1,5.5 14.8,5.6 C14.3,5.6 13.9,5.7 13.5,5.9 C12.8,4.7 11.4,4 10,4 C7.8,4 6,5.8 6,8 C6,8.4 6.1,8.8 6.2,9.1 C5,9.7 4.1,11 4.1,12.5 C4.1,14.4 5.4,16 7.2,16.5 C7.2,16.9 7.3,17.3 7.5,17.7 C8.4,19.3 10.1,20.2 12,20 C12.5,20 13,19.8 13.4,19.6 C14.2,20.7 15.6,21.3 17,21.1 C19.2,20.8 20.7,18.8 20.4,16.6 C20.4,16.2 20.3,15.8 20.1,15.5 C21.1,14.7 21.7,13.4 21.5,12 C21.2,10.7 20.5,9.9 19.5,9.6 Z" />
+    <path
+        android:strokeColor="#10A37F"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M12,8.5 L12,15.5 M8.5,10.2 L14.5,13.8 M8.5,13.8 L14.5,10.2" />
+</vector>

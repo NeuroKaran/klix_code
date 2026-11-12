@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- OpenRouter / Groq node graph icon in 1.5dp stroke -->
+    <path
+        android:strokeColor="#6366F1"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M7,12 L17,6 M7,12 L17,18 M17,6 L17,18" />
+    <path
+        android:fillColor="#6366F1"
+        android:pathData="M7,12 A3,3 0 1,1 6.99,12 Z" />
+    <path
+        android:fillColor="#6366F1"
+        android:pathData="M17,6 A2.5,2.5 0 1,1 16.99,6 Z" />
+    <path
+        android:fillColor="#6366F1"
+        android:pathData="M17,18 A2.5,2.5 0 1,1 16.99,18 Z" />
+</vector>

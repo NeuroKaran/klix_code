@@ -86,8 +86,8 @@ fun RecentProjectsDialog(
                 val context = LocalContext.current
                 GlassButton(
                     onClick = {
-                        val sandboxWorkspace = java.io.File(context.filesDir, "sandbox/rootfs/workspace").apply { mkdirs() }
-                        onSelectProject(Uri.fromFile(sandboxWorkspace), "Sandbox Workspace")
+                        val sandboxWorkspace = java.io.File(context.filesDir, "sandbox/rootfs/workspaces/default").apply { mkdirs() }
+                        onSelectProject(Uri.fromFile(sandboxWorkspace), "Default Workspace")
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -103,7 +103,7 @@ fun RecentProjectsDialog(
                         tint = OnAccentPrimaryColor
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Sandbox Workspace (/workspace)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("Default Workspace (/workspaces/default)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

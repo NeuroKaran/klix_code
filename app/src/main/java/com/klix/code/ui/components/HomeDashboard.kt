@@ -1,12 +1,6 @@
 package com.klix.code.ui.components
 
 import android.net.Uri
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,69 +13,84 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.R
 import com.klix.code.data.model.ProjectItem
-import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.data.workspace.SandboxWorkspace
 import com.klix.code.ui.components.glass.pressEffect
-import com.klix.code.ui.components.streak.StreakPillButton
-import com.klix.code.ui.theme.AccentWarning
-import com.klix.code.ui.theme.DarkBg
-import com.klix.code.ui.theme.HeroCardBgColor
-import com.klix.code.ui.theme.LimeBrandColor
+import com.klix.code.ui.components.workspace.CreateWorkspaceDialog
+import com.klix.code.ui.components.workspace.WorkspaceDropdownSelector
+import com.klix.code.ui.theme.KlixBgRootGradient
+import com.klix.code.ui.theme.KlixBorderActiveLime
+import com.klix.code.ui.theme.KlixBorderHairline
+import com.klix.code.ui.theme.KlixInkPrimary
+import com.klix.code.ui.theme.KlixInkSecondary
+import com.klix.code.ui.theme.KlixSurfaceBentoGroup
+import com.klix.code.ui.theme.KlixSurfaceCardItem
+import com.klix.code.ui.theme.KlixTypography
 import com.klix.code.ui.theme.LocalIsDarkTheme
-import com.klix.code.ui.theme.SoftCardBgColor
-import com.klix.code.ui.theme.TextMuted
-import com.klix.code.ui.theme.TextPrimary
-import com.klix.code.ui.theme.TextSecondary
 
 /**
- * Modern Home Dashboard Screen as defined in Gemini Mockup 0.
- * Features:
- * - Header with User Greeting, Workspace Subtitle & Streak Counter
- * - Hero Card with coding mascot, speech bubble, status badges and prominent CTA
- * - Recent Workspaces listing
- * - Floating Navigation Dock anchored at the bottom
+ * Screen 1: Sandbox Workspace Home
+ * Matches design specification:
+ * - Top Header: Left column with "Hey, Prasanjit" (screenTitle) and "Sandbox Workspace" (bodySecondary).
+ *   Right pill badge with flame icon + streakCount (RoundedCornerShape(20.dp)).
+ * - Mascot Hero Bento Card (RoundedCornerShape(24.dp)):
+ *   - Soft sky-to-mint gradient fill (Light) / dark indigo-to-olive glow fill with 1.dp neon-lime border (Dark).
+ *   - Left side: R.drawable.mascot_coding_laptop (2D Klix Bot typing on laptop).
+ *   - Top-right speech bubble: "What shall we build today?".
+ *   - Bottom row inside card: Two side-by-side pill chips:
+ *     1. [Vector CPU Icon] Thinking: 4K
+ *     2. [Official Alpine Linux Hexagon Logo] Alpine: Ready
+ * - Primary CTA: KlixPrimaryPillButton(text = "+ Open Sandbox Workspace").
+ * - Recent Workspaces Section:
+ *   - Section title "Recent Workspaces"
+ *   - 3 stacked 56.dp height rounded cards (RoundedCornerShape(16.dp)):
+ *     1. [Official Kotlin Logo] orbit-ui
+ *     2. [Official Python Logo] palindrome.py
+ *     3. [Official Node.js Hexagon Logo] study-buddy
+ * - Bottom Bar: KlixFloatingBottomDock(selected = Home).
  */
 @Composable
 fun HomeDashboard(
-    userName: String = "Developer",
+    userName: String = "Prasanjit",
     currentWorkspaceName: String = "Sandbox Workspace",
-    streakCount: Int = 1,
+    activeWorkspace: SandboxWorkspace? = null,
+    workspaces: List<SandboxWorkspace> = emptyList(),
+    onSelectWorkspace: (String) -> Unit = {},
+    onCreateWorkspace: (String) -> Unit = {},
+    onDeleteWorkspace: (String) -> Unit = {},
+    streakCount: Int = 7,
     isStreakClaimedToday: Boolean = true,
     onOpenStreak: () -> Unit = {},
     onOpenDrawer: () -> Unit = {},
@@ -98,11 +107,12 @@ fun HomeDashboard(
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalIsDarkTheme.current
+    var showCreateWorkspaceDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DarkBg)
+            .background(KlixBgRootGradient)
     ) {
         LazyColumn(
             modifier = Modifier
@@ -113,7 +123,7 @@ fun HomeDashboard(
         ) {
             item { Spacer(modifier = Modifier.height(6.dp)) }
 
-            // 1. Header Row
+            // 1. Top Header Row
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -133,204 +143,208 @@ fun HomeDashboard(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(40.dp)
+                                    .size(42.dp)
                                     .clip(CircleShape)
-                                    .background(if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0)),
+                                    .background(if (isDark) Color(0xFF1E2638) else Color(0xFFE2EDF7))
+                                    .border(1.dp, KlixBorderHairline, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Menu,
                                     contentDescription = "Open Workspace Files",
-                                    tint = TextPrimary,
+                                    tint = KlixInkPrimary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
 
-                        Column {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
                             Text(
-                                text = "Hey, $userName",
-                                fontSize = 23.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary,
-                                letterSpacing = (-0.5).sp
+                                text = "Hey, ${if (userName.isBlank()) "Prasanjit" else userName}",
+                                style = KlixTypography.screenTitle,
+                                color = KlixInkPrimary
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = currentWorkspaceName,
-                                fontSize = 12.5.sp,
-                                color = TextSecondary,
-                                fontWeight = FontWeight.Normal
-                            )
+                            if (workspaces.isNotEmpty()) {
+                                WorkspaceDropdownSelector(
+                                    activeWorkspace = activeWorkspace,
+                                    workspaces = workspaces,
+                                    onSelectWorkspace = onSelectWorkspace,
+                                    onCreateWorkspace = onCreateWorkspace,
+                                    onDeleteWorkspace = onDeleteWorkspace
+                                )
+                            } else {
+                                Text(
+                                    text = currentWorkspaceName,
+                                    style = KlixTypography.bodySecondary,
+                                    color = KlixInkSecondary
+                                )
+                            }
                         }
                     }
 
-                    // Streak Pill
-                    StreakPillButton(
-                        streakCount = streakCount,
-                        isClaimedToday = isStreakClaimedToday,
-                        onClick = onOpenStreak
-                    )
+                    // Streak Pill Badge (🔥 7)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isDark) Color(0xFF1F2536) else Color(0xFFFFFFFF))
+                            .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
+                            .clickable(onClick = onOpenStreak)
+                            .pressEffect(0.92f)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocalFireDepartment,
+                                contentDescription = "Streak flame",
+                                tint = Color(0xFFFF9800),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "$streakCount",
+                                style = KlixTypography.cardTitle,
+                                color = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A)
+                            )
+                        }
+                    }
                 }
             }
 
-            // 2. Hero Card
+            // 2. Mascot Hero Bento Card (RoundedCornerShape(24.dp))
             item {
+                val heroGradient = if (isDark) {
+                    Brush.linearGradient(listOf(Color(0xFF151932), Color(0xFF1B2E28)))
+                } else {
+                    Brush.linearGradient(listOf(Color(0xFFD8EEFE), Color(0xFFE2F9EE)))
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(26.dp))
-                        .background(HeroCardBgColor)
-                        .glassBorder(
-                            RoundedCornerShape(26.dp),
-                            strokeWidth = 1.dp,
-                            highlightAlpha = if (isDark) 0.18f else 0.4f,
-                            midAlpha = if (isDark) 0.06f else 0.15f
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(heroGradient)
+                        .border(
+                            width = if (isDark) 1.dp else 1.dp,
+                            color = if (isDark) Color(0xFFD5FB66).copy(alpha = 0.8f) else KlixBorderHairline,
+                            shape = RoundedCornerShape(24.dp)
                         )
-                        .padding(20.dp)
+                        .padding(18.dp)
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        // Mascot + Dynamic Status Column row
+                        // Top row: Mascot on left, speech bubble on right
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.klix_mascot_laptop),
-                                contentDescription = "Klix Mascot Coding",
-                                modifier = Modifier
-                                    .size(110.dp)
-                                    .padding(end = 4.dp)
+                                painter = painterResource(id = R.drawable.mascot_coding_laptop),
+                                contentDescription = "Klix Bot Coding",
+                                modifier = Modifier.size(width = 110.dp, height = 98.dp)
                             )
 
-                            // Factual Dynamic Status Column (replacing speculative telemetry & speech bubble)
-                            Column(
+                            // Speech Bubble
+                            Box(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 2.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (isDark) Color(0xFF23293D) else Color(0xFFFFFFFF))
+                                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(16.dp))
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
                                 Text(
-                                    text = "SANDBOX STATUS",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextMuted,
-                                    letterSpacing = 0.8.sp
+                                    text = "What shall we build today?",
+                                    style = KlixTypography.bodyPrimary,
+                                    color = KlixInkPrimary
                                 )
+                            }
+                        }
 
-                                // Readiness Badge: READY vs SETUP REQUIRED
-                                val isReady = isSandboxInstalled
-                                val badgeColor = if (isReady) LimeBrandColor else AccentWarning
-                                val badgeTextColor = if (isReady) {
-                                    if (isDark) LimeBrandColor else Color(0xFF3F6212)
-                                } else {
-                                    AccentWarning
-                                }
-
+                        // Bottom row inside card: Two side-by-side pill chips
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            // Chip 1: [Vector CPU Icon] Thinking: 4K
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (isDark) Color(0xFF1F2639) else Color(0xFFFFFFFF))
+                                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(badgeColor.copy(alpha = if (isDark) 0.16f else 0.12f))
-                                        .border(
-                                            width = 1.dp,
-                                            color = badgeColor.copy(alpha = 0.45f),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .clip(CircleShape)
-                                            .background(badgeColor)
-                                    )
-                                    Text(
-                                        text = if (isReady) "READY" else "SETUP REQUIRED",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 0.5.sp,
-                                        color = badgeTextColor
-                                    )
-                                }
-
-                                // Active Model Pill
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0))
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.SmartToy,
-                                        contentDescription = null,
-                                        tint = TextSecondary,
-                                        modifier = Modifier.size(13.dp)
+                                        painter = painterResource(id = R.drawable.ic_icon_cpu),
+                                        contentDescription = "CPU Icon",
+                                        tint = if (isDark) Color(0xFFD5FB66) else Color(0xFF3B82F6),
+                                        modifier = Modifier.size(16.dp)
                                     )
                                     Text(
                                         text = activeModelName.ifEmpty { "Thinking: 4K" },
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = TextSecondary,
+                                        style = KlixTypography.bodySecondary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = KlixInkPrimary,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
-                        }
 
-                        // Dynamic CTA: Launch Sandbox Workspace vs Configure Sandbox
-                        Button(
-                            onClick = {
-                                if (isSandboxInstalled) {
-                                    onOpenSandboxWorkspace()
-                                } else {
-                                    onConfigureSandbox()
+                            // Chip 2: [Official Alpine Linux Hexagon Logo] Alpine: Ready
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (isDark) Color(0xFF1F2639) else Color(0xFFFFFFFF))
+                                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
+                                    .clickable(onClick = onConfigureSandbox)
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_logo_alpine),
+                                        contentDescription = "Alpine Logo",
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = if (isSandboxInstalled) "Alpine: Ready" else "Alpine: Setup",
+                                        style = KlixTypography.bodySecondary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = KlixInkPrimary
+                                    )
                                 }
-                            },
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isSandboxInstalled) {
-                                    if (isDark) LimeBrandColor else Color(0xFF18191D)
-                                } else {
-                                    AccentWarning
-                                },
-                                contentColor = if (isSandboxInstalled) {
-                                    if (isDark) Color.Black else Color.White
-                                } else {
-                                    Color.Black
-                                }
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .pressEffect(0.96f)
-                        ) {
-                            Icon(
-                                imageVector = if (isSandboxInstalled) Icons.Default.Add else Icons.Default.Settings,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isSandboxInstalled) "Launch Sandbox Workspace" else "Configure Sandbox",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = (-0.2).sp
-                            )
+                            }
                         }
                     }
                 }
             }
 
-            // 3. Recent Workspaces Title
+            // 3. Primary CTA: "+ Open Sandbox Workspace"
+            item {
+                KlixPrimaryPillButton(
+                    text = "+ Open Sandbox Workspace",
+                    onClick = onOpenSandboxWorkspace
+                )
+            }
+
+            // 4. Recent Workspaces Section
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
@@ -340,49 +354,85 @@ fun HomeDashboard(
                 ) {
                     Text(
                         text = "Recent Workspaces",
-                        fontSize = 16.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        style = KlixTypography.sectionHeader,
+                        color = KlixInkPrimary
                     )
 
                     Text(
-                        text = "+ Open Folder",
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = LimeBrandColor,
+                        text = "+ New",
+                        style = KlixTypography.bodySecondary,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F),
                         modifier = Modifier
-                            .clickable(onClick = onOpenFolder)
+                            .clickable(onClick = { showCreateWorkspaceDialog = true })
                             .padding(4.dp)
                     )
                 }
             }
 
-            // 4. Dual-Branch Workspaces Section
-            if (recentProjects.isNotEmpty()) {
-                item {
-                    RecentWorkspacesList(
-                        projects = recentProjects,
-                        onSelectProject = onSelectProject
+            // 3 stacked 56.dp height rounded cards
+            item {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Item 1: [Official Kotlin Logo] orbit-ui
+                    RecentWorkspaceRow(
+                        name = if (recentProjects.isNotEmpty()) recentProjects[0].name else "orbit-ui",
+                        logoRes = R.drawable.ic_logo_kotlin,
+                        onClick = {
+                            if (recentProjects.isNotEmpty()) {
+                                onSelectProject(recentProjects[0].uri, recentProjects[0].name)
+                            } else {
+                                onOpenSandboxWorkspace()
+                            }
+                        }
                     )
-                }
-            } else {
-                item {
-                    EmptyWorkspacesCard(
-                        onOpenFolder = onOpenFolder,
-                        onOpenSandboxWorkspace = onOpenSandboxWorkspace
+
+                    // Item 2: [Official Python Logo] palindrome.py
+                    RecentWorkspaceRow(
+                        name = if (recentProjects.size > 1) recentProjects[1].name else "palindrome.py",
+                        logoRes = R.drawable.ic_logo_python,
+                        onClick = {
+                            if (recentProjects.size > 1) {
+                                onSelectProject(recentProjects[1].uri, recentProjects[1].name)
+                            } else {
+                                onOpenSandboxWorkspace()
+                            }
+                        }
+                    )
+
+                    // Item 3: [Official Node.js Hexagon Logo] study-buddy
+                    RecentWorkspaceRow(
+                        name = if (recentProjects.size > 2) recentProjects[2].name else "study-buddy",
+                        logoRes = R.drawable.ic_logo_nodejs,
+                        onClick = {
+                            if (recentProjects.size > 2) {
+                                onSelectProject(recentProjects[2].uri, recentProjects[2].name)
+                            } else {
+                                onOpenSandboxWorkspace()
+                            }
+                        }
                     )
                 }
             }
 
-            // Bottom space for floating nav dock
-            item {
-                Spacer(modifier = Modifier.height(84.dp))
-            }
+            item { Spacer(modifier = Modifier.height(90.dp)) }
         }
 
-        // Floating Bottom Navigation Dock (only visible when on Home and no overlay/dialog is active)
+        // Dialog for creating workspace
+        if (showCreateWorkspaceDialog) {
+            CreateWorkspaceDialog(
+                onCreate = { name ->
+                    onCreateWorkspace(name)
+                    showCreateWorkspaceDialog = false
+                },
+                onDismiss = { showCreateWorkspaceDialog = false }
+            )
+        }
+
+        // Floating Bottom Navigation Dock
         if (isNavDockVisible) {
-            FloatingNavDock(
+            KlixFloatingBottomDock(
                 selectedTab = selectedTab,
                 onTabSelect = onSelectTab,
                 modifier = Modifier.align(Alignment.BottomCenter)
@@ -391,186 +441,37 @@ fun HomeDashboard(
     }
 }
 
-/**
- * Actionable Empty State Card rendered when no recent workspaces exist.
- * Eliminates dummy hardcoded project items.
- */
 @Composable
-fun EmptyWorkspacesCard(
-    onOpenFolder: () -> Unit,
-    onOpenSandboxWorkspace: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val isDark = LocalIsDarkTheme.current
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(SoftCardBgColor)
-            .glassBorder(
-                RoundedCornerShape(20.dp),
-                strokeWidth = 0.8.dp,
-                highlightAlpha = if (isDark) 0.14f else 0.3f,
-                midAlpha = 0.05f
-            )
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(if (isDark) Color(0xFF222938) else Color(0xFFE2E8F0)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Folder,
-                contentDescription = null,
-                tint = LimeBrandColor,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = "No Recent Workspaces",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-            Text(
-                text = "Open a local project folder or launch the Linux sandbox workspace to start coding.",
-                fontSize = 12.5.sp,
-                color = TextSecondary,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Button 1: Open Folder
-            Button(
-                onClick = onOpenFolder,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp)
-                    .pressEffect(0.96f),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) Color(0xFF222938) else Color(0xFFE2E8F0),
-                    contentColor = TextPrimary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Folder,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = TextPrimary
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Open Folder",
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            // Button 2: Launch Sandbox Workspace
-            Button(
-                onClick = onOpenSandboxWorkspace,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp)
-                    .pressEffect(0.96f),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) LimeBrandColor else Color(0xFF18191D),
-                    contentColor = if (isDark) Color.Black else Color.White
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Terminal,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Launch Sandbox",
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-/**
- * Renders the list of recent workspaces bound to onSelectProject.
- */
-@Composable
-fun RecentWorkspacesList(
-    projects: List<ProjectItem>,
-    onSelectProject: (Uri, String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        projects.take(6).forEach { project ->
-            WorkspaceCard(
-                name = project.name,
-                onClick = { onSelectProject(project.uri, project.name) }
-            )
-        }
-    }
-}
-
-@Composable
-fun WorkspaceCard(
+private fun RecentWorkspaceRow(
     name: String,
+    logoRes: Int,
     onClick: () -> Unit
 ) {
-    val isDark = LocalIsDarkTheme.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(56.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(SoftCardBgColor)
-            .glassBorder(
-                RoundedCornerShape(16.dp),
-                strokeWidth = 0.8.dp,
-                highlightAlpha = if (isDark) 0.14f else 0.3f,
-                midAlpha = 0.05f
-            )
+            .background(KlixSurfaceCardItem)
+            .border(1.dp, KlixBorderHairline, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .pressEffect(0.97f)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.Folder,
+        Image(
+            painter = painterResource(id = logoRes),
             contentDescription = null,
-            tint = if (isDark) TextSecondary else Color(0xFF6B7280),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(24.dp)
         )
 
         Text(
             text = name,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = TextPrimary,
+            style = KlixTypography.cardTitle,
+            color = KlixInkPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }
 }
-

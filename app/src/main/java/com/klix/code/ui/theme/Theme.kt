@@ -74,8 +74,11 @@ fun KlixTheme(
         }
     }
 
+    val klixPalette = if (isDark) DarkKlixPalette else LightKlixPalette
+
     CompositionLocalProvider(
         LocalKlixColors provides klixColors,
+        LocalKlixPalette provides klixPalette,
         LocalIsDarkTheme provides isDark
     ) {
         MaterialTheme(

@@ -3,10 +3,9 @@ package com.klix.code.ui.terminal
 import android.app.Application
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
 import com.klix.code.data.sandbox.SandboxExecutionProvider
 import com.klix.code.data.sandbox.SandboxManager
-import com.klix.code.data.sandbox.SandboxStatus
+import com.klix.code.data.workspace.SandboxWorkspace
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -38,14 +37,14 @@ data class TerminalTab(
     val id: String,
     val title: String,
     val isExecuting: Boolean = false,
-    val currentCwd: String = "/workspace"
+    val currentCwd: String = "/workspaces/default"
 )
 
 internal class TerminalSession(
     val id: String = java.util.UUID.randomUUID().toString(),
     var title: String,
     val executionProvider: SandboxExecutionProvider,
-    initialCwd: String = "/workspace"
+    initialCwd: String = "/workspaces/default"
 ) {
     val lines: MutableList<TerminalLine> = mutableListOf()
     val commandHistory: MutableList<String> = mutableListOf()
@@ -65,7 +64,9 @@ class TerminalViewModel @JvmOverloads constructor(
 
     val sandboxManager: SandboxManager = sandboxExecutionProvider.sandboxManager
 
-    private val sessions = mutableListOf<TerminalSession>()
+    private val workspaceSessionsMap = mutableMapOf<String, MutableList<TerminalSession>>()
+    private val workspaceActiveTabIdMap = mutableMapOf<String, String>()
+    private var currentWorkspace: SandboxWorkspace? = null
 
     private val _tabs = MutableStateFlow<List<TerminalTab>>(emptyList())
     val tabs: StateFlow<List<TerminalTab>> = _tabs.asStateFlow()
@@ -82,7 +83,7 @@ class TerminalViewModel @JvmOverloads constructor(
     private val _isExecuting = MutableStateFlow(false)
     val isExecuting: StateFlow<Boolean> = _isExecuting.asStateFlow()
 
-    private val _currentCwd = MutableStateFlow("/workspace")
+    private val _currentCwd = MutableStateFlow("/workspaces/default")
     val currentCwd: StateFlow<String> = _currentCwd.asStateFlow()
 
     private val _showSetupDialog = MutableStateFlow(false)
@@ -92,16 +93,32 @@ class TerminalViewModel @JvmOverloads constructor(
         val initialSession = TerminalSession(
             title = "Terminal 1",
             executionProvider = sandboxExecutionProvider,
-            initialCwd = "/workspace"
+            initialCwd = "/workspaces/default"
         )
-        sessions.add(initialSession)
+        workspaceSessionsMap["default_workspace"] = mutableListOf(initialSession)
+        workspaceActiveTabIdMap["default_workspace"] = initialSession.id
         _activeTerminalId.value = initialSession.id
-        printBanner(initialSession)
+        printBanner(initialSession, "Default Workspace")
         syncActiveState(initialSession)
         updateTabsState()
     }
 
+    private fun getCurrentSessions(): MutableList<TerminalSession> {
+        val wsId = currentWorkspace?.id ?: "default_workspace"
+        return workspaceSessionsMap.getOrPut(wsId) {
+            val defaultCwd = currentWorkspace?.relativePath ?: "/workspaces/default"
+            val initialSession = TerminalSession(
+                title = "Terminal 1",
+                executionProvider = SandboxExecutionProvider(getApplication(), sandboxManager),
+                initialCwd = defaultCwd
+            )
+            printBanner(initialSession, currentWorkspace?.name)
+            mutableListOf(initialSession)
+        }
+    }
+
     private fun getActiveSession(): TerminalSession? {
+        val sessions = getCurrentSessions()
         val currentId = _activeTerminalId.value
         return sessions.find { it.id == currentId } ?: sessions.firstOrNull()
     }
@@ -116,6 +133,7 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     private fun updateTabsState() {
+        val sessions = getCurrentSessions()
         _tabs.value = sessions.map { session ->
             TerminalTab(
                 id = session.id,
@@ -126,7 +144,66 @@ class TerminalViewModel @JvmOverloads constructor(
         }
     }
 
+    fun onActiveWorkspaceChanged(workspace: SandboxWorkspace) {
+        if (workspace.id == currentWorkspace?.id) return
+
+        val prevWorkspace = currentWorkspace
+        if (prevWorkspace != null) {
+            val activeId = _activeTerminalId.value
+            if (activeId.isNotEmpty()) {
+                workspaceActiveTabIdMap[prevWorkspace.id] = activeId
+            }
+        }
+
+        currentWorkspace = workspace
+        val wsId = workspace.id
+        val sessions = workspaceSessionsMap.getOrPut(wsId) {
+            val initialSession = TerminalSession(
+                title = "Terminal 1",
+                executionProvider = SandboxExecutionProvider(getApplication(), sandboxManager),
+                initialCwd = workspace.relativePath
+            )
+            printBanner(initialSession, workspace.name)
+            mutableListOf(initialSession)
+        }
+
+        val lastActiveId = workspaceActiveTabIdMap[wsId]
+        val activeSession = sessions.find { it.id == lastActiveId } ?: sessions.first()
+        _activeTerminalId.value = activeSession.id
+        workspaceActiveTabIdMap[wsId] = activeSession.id
+
+        syncActiveState(activeSession)
+        updateTabsState()
+    }
+
+    fun onWorkspaceDeleted(workspaceId: String) {
+        val removedSessions = workspaceSessionsMap.remove(workspaceId)
+        removedSessions?.forEach { session ->
+            session.executionProvider.cancelActiveProcess()
+            session.activeJob?.cancel()
+        }
+        workspaceActiveTabIdMap.remove(workspaceId)
+        if (currentWorkspace?.id == workspaceId) {
+            currentWorkspace = null
+            val remainingWsId = workspaceSessionsMap.keys.firstOrNull()
+            if (remainingWsId != null) {
+                val sessions = workspaceSessionsMap[remainingWsId]
+                val activeSession = sessions?.find { it.id == workspaceActiveTabIdMap[remainingWsId] } ?: sessions?.firstOrNull()
+                if (activeSession != null) {
+                    _activeTerminalId.value = activeSession.id
+                    syncActiveState(activeSession)
+                }
+            } else {
+                _tabs.value = emptyList()
+                _activeTerminalId.value = ""
+                _terminalLines.value = emptyList()
+            }
+            updateTabsState()
+        }
+    }
+
     fun addNewTerminal(title: String? = null, workingDir: String? = null): String {
+        val sessions = getCurrentSessions()
         val sessionTitle = title ?: run {
             var count = 1
             while (sessions.any { it.title == "Terminal $count" }) {
@@ -134,20 +211,21 @@ class TerminalViewModel @JvmOverloads constructor(
             }
             "Terminal $count"
         }
-        val defaultCwd = workingDir ?: getActiveSession()?.currentCwd ?: "/workspace"
+        val defaultCwd = workingDir ?: currentWorkspace?.relativePath ?: getActiveSession()?.currentCwd ?: "/workspaces/default"
         val newProvider = SandboxExecutionProvider(getApplication(), sandboxManager)
         val session = TerminalSession(
             title = sessionTitle,
             executionProvider = newProvider,
             initialCwd = defaultCwd
         )
-        printBanner(session)
+        printBanner(session, currentWorkspace?.name)
         sessions.add(session)
         selectTerminal(session.id)
         return session.id
     }
 
     fun closeTerminal(id: String) {
+        val sessions = getCurrentSessions()
         val sessionToClose = sessions.find { it.id == id } ?: return
         sessionToClose.executionProvider.cancelActiveProcess()
         sessionToClose.activeJob?.cancel()
@@ -156,13 +234,14 @@ class TerminalViewModel @JvmOverloads constructor(
         val index = sessions.indexOf(sessionToClose)
         sessions.remove(sessionToClose)
 
+        val defaultCwd = currentWorkspace?.relativePath ?: "/workspaces/default"
         if (sessions.isEmpty()) {
             val fresh = TerminalSession(
                 title = "Terminal 1",
                 executionProvider = SandboxExecutionProvider(getApplication(), sandboxManager),
-                initialCwd = "/workspace"
+                initialCwd = defaultCwd
             )
-            printBanner(fresh)
+            printBanner(fresh, currentWorkspace?.name)
             sessions.add(fresh)
             selectTerminal(fresh.id)
         } else if (wasActive) {
@@ -174,8 +253,11 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     fun selectTerminal(id: String) {
+        val sessions = getCurrentSessions()
         val session = sessions.find { it.id == id } ?: return
         _activeTerminalId.value = session.id
+        val wsId = currentWorkspace?.id ?: "default_workspace"
+        workspaceActiveTabIdMap[wsId] = session.id
         syncActiveState(session)
         updateTabsState()
     }
@@ -183,25 +265,30 @@ class TerminalViewModel @JvmOverloads constructor(
     fun renameTerminal(id: String, newTitle: String) {
         val trimmed = newTitle.trim()
         if (trimmed.isEmpty()) return
+        val sessions = getCurrentSessions()
         val session = sessions.find { it.id == id } ?: return
         session.title = trimmed
         updateTabsState()
     }
 
     fun getInputDraft(terminalId: String? = null): String {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return ""
         return session.inputDraft
     }
 
     fun setInputDraft(draft: String, terminalId: String? = null) {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
         session.inputDraft = draft
     }
 
-    private fun printBanner(session: TerminalSession) {
+    private fun printBanner(session: TerminalSession, workspaceName: String? = null) {
         val isReady = sandboxManager.isInstalled()
+        val wsName = workspaceName ?: currentWorkspace?.name
+        val titleSuffix = if (!wsName.isNullOrBlank()) " - $wsName" else ""
         val banner = mutableListOf(
-            TerminalLine(text = "KlixCode Linux Terminal [Alpine Sandbox v1] - ${session.title}", color = TerminalColors.Primary)
+            TerminalLine(text = "KlixCode Linux Terminal [Alpine Sandbox]$titleSuffix (${session.title})", color = TerminalColors.Primary)
         )
         if (!isReady) {
             banner.add(
@@ -239,6 +326,7 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     fun setWorkingDirectory(path: String, terminalId: String? = null) {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
         session.currentCwd = path
         if (session.id == _activeTerminalId.value) {
@@ -272,6 +360,7 @@ class TerminalViewModel @JvmOverloads constructor(
         val trimmed = command.trim()
         if (trimmed.isEmpty()) return
 
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
 
         // Add to history
@@ -373,6 +462,7 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     fun appendOutput(text: String, isStdout: Boolean, terminalId: String? = null) {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
         appendSessionOutput(session, text, isStdout)
     }
@@ -413,6 +503,7 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     fun sendInput(input: String, terminalId: String? = null) {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
         if (!session.isExecuting) {
             executeCommand(input, session.id)
@@ -429,6 +520,7 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     fun cancelExecution(terminalId: String? = null) {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
         session.executionProvider.cancelActiveProcess()
         session.activeJob?.cancel()
@@ -438,6 +530,7 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     fun clearTerminal(terminalId: String? = null) {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
         val promptLine = TerminalLine(
             text = "klix@mobile:${session.currentCwd}$",
@@ -474,6 +567,7 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     fun getPreviousHistory(terminalId: String? = null): String? {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return null
         val history = session.commandHistory
         if (history.isEmpty()) return null
@@ -487,6 +581,7 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     fun getNextHistory(terminalId: String? = null): String? {
+        val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return null
         val history = session.commandHistory
         if (history.isEmpty() || session.historyIndex == -1) return null

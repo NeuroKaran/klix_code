@@ -11,6 +11,9 @@ import com.klix.code.data.model.FileNode
 import com.klix.code.data.model.ProjectItem
 import com.klix.code.data.repository.WorkspaceRepository
 import com.klix.code.data.repository.WorkspaceRepositoryImpl
+import com.klix.code.data.workspace.SandboxWorkspace
+import com.klix.code.data.workspace.SandboxWorkspaceManager
+import com.klix.code.data.workspace.SandboxWorkspaceManagerImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,8 +21,15 @@ import kotlinx.coroutines.launch
 
 class EditorViewModel @JvmOverloads constructor(
     application: Application,
-    private val repository: WorkspaceRepository = WorkspaceRepositoryImpl(application)
+    private val repository: WorkspaceRepository = WorkspaceRepositoryImpl(application),
+    val workspaceManager: SandboxWorkspaceManager = SandboxWorkspaceManagerImpl(application)
 ) : AndroidViewModel(application) {
+
+    val activeWorkspace: StateFlow<SandboxWorkspace?> = workspaceManager.activeWorkspace
+    val workspaces: StateFlow<List<SandboxWorkspace>> = workspaceManager.workspaces
+
+    private val workspaceTabsMap = mutableMapOf<String, List<EditorTab>>()
+    private val workspaceActiveTabMap = mutableMapOf<String, Uri?>()
 
     private val _recentProjects = MutableStateFlow<List<ProjectItem>>(emptyList())
     val recentProjects: StateFlow<List<ProjectItem>> = _recentProjects.asStateFlow()
@@ -64,36 +74,101 @@ class EditorViewModel @JvmOverloads constructor(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
-        loadRecentProjects()
+        viewModelScope.launch {
+            workspaceManager.initialize()
+            val active = workspaceManager.activeWorkspace.value
+            if (active != null) {
+                openWorkspaceInternal(active)
+            }
+            workspaceManager.workspaces.collect { list ->
+                _recentProjects.value = list.map { ProjectItem(it.rootUri, it.name, it.lastOpened) }
+            }
+        }
     }
 
-    fun loadRecentProjects() {
+    fun switchWorkspace(workspaceId: String) {
         viewModelScope.launch {
-            val list = repository.getRecentProjects()
-            _recentProjects.value = list
-            if (_currentProject.value == null) {
-                if (list.isNotEmpty()) {
-                    // Restore the most recent project automatically across app restarts
-                    openProject(list.first().uri, list.first().name)
-                } else {
-                    // Open default Local Sandbox Workspace so terminal and GUI share the same folder
-                    openSandboxWorkspace()
+            val current = workspaceManager.activeWorkspace.value
+            if (current != null) {
+                workspaceTabsMap[current.id] = _openTabs.value
+                workspaceActiveTabMap[current.id] = _activeTabUri.value
+            }
+            val target = workspaceManager.switchWorkspace(workspaceId) ?: return@launch
+            openWorkspaceInternal(target)
+        }
+    }
+
+    fun createWorkspace(name: String) {
+        viewModelScope.launch {
+            val current = workspaceManager.activeWorkspace.value
+            if (current != null) {
+                workspaceTabsMap[current.id] = _openTabs.value
+                workspaceActiveTabMap[current.id] = _activeTabUri.value
+            }
+            val result = workspaceManager.createWorkspace(name)
+            result.onSuccess { newWs ->
+                openWorkspaceInternal(newWs)
+            }
+        }
+    }
+
+    fun deleteWorkspace(workspaceId: String) {
+        viewModelScope.launch {
+            workspaceTabsMap.remove(workspaceId)
+            workspaceActiveTabMap.remove(workspaceId)
+            val success = workspaceManager.deleteWorkspace(workspaceId)
+            if (success) {
+                val nextActive = workspaceManager.activeWorkspace.value
+                if (nextActive != null) {
+                    openWorkspaceInternal(nextActive)
                 }
             }
         }
     }
 
+    private suspend fun openWorkspaceInternal(workspace: SandboxWorkspace) {
+        _isLoading.value = true
+        _statusMessage.value = "Opening workspace ${workspace.name}..."
+        try {
+            _currentProject.value = ProjectItem(workspace.rootUri, workspace.name, workspace.lastOpened)
+            _openTabs.value = workspaceTabsMap[workspace.id] ?: emptyList()
+            _activeTabUri.value = workspaceActiveTabMap[workspace.id]
+            val tree = repository.loadTree(workspace.rootUri)
+            _fileTree.value = tree
+            _statusMessage.value = "Workspace loaded"
+        } catch (e: Exception) {
+            _statusMessage.value = "Failed to open workspace: ${e.message}"
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    fun loadRecentProjects() {
+        viewModelScope.launch {
+            val list = workspaceManager.getWorkspaces()
+            _recentProjects.value = list.map { ProjectItem(it.rootUri, it.name, it.lastOpened) }
+        }
+    }
+
     fun openSandboxWorkspace() {
-        val sandboxWorkspace = java.io.File(getApplication<Application>().filesDir, "sandbox/rootfs/workspace").apply { mkdirs() }
-        openProject(Uri.fromFile(sandboxWorkspace), "Sandbox Workspace")
+        viewModelScope.launch {
+            val active = workspaceManager.activeWorkspace.value
+            if (active != null) {
+                openWorkspaceInternal(active)
+            }
+        }
     }
 
     fun openProject(uri: Uri, name: String) {
+        val existingWs = workspaceManager.workspaces.value.find { it.rootUri == uri }
+        if (existingWs != null) {
+            switchWorkspace(existingWs.id)
+            return
+        }
         viewModelScope.launch {
             _isLoading.value = true
             _statusMessage.value = "Opening project $name..."
             try {
-                repository.persistProjectPermission(uri, name)
                 _currentProject.value = ProjectItem(uri, name)
                 refreshTree()
                 _statusMessage.value = "Workspace loaded"

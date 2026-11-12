@@ -174,41 +174,45 @@ fun StreakSidebarCard(
         label = "flame_pulse"
     )
 
-    GlassCard(
-        shape = RoundedCornerShape(20.dp),
-        modifier = modifier.fillMaxWidth(),
-        onClick = onClick
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(com.klix.code.ui.theme.KlixStreakCardGradient)
+            .border(1.dp, com.klix.code.ui.theme.KlixBorderHairline, RoundedCornerShape(24.dp))
+            .clickable(onClick = onClick)
+            .pressEffect(0.96f)
+            .padding(horizontal = 14.dp, vertical = 14.dp)
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Mockup 8: Hero Streak Card with fiery mascot
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.klix_mascot_streak),
-                    contentDescription = "Streak Mascot",
-                    modifier = Modifier
-                        .size(68.dp)
-                        .scale(flamePulse)
-                )
+            // Mascot streak fire (cheering 2D Klix Bot in vector flame aura)
+            Image(
+                painter = painterResource(id = R.drawable.mascot_streak_fire),
+                contentDescription = "Streak Fire Mascot",
+                modifier = Modifier
+                    .size(76.dp)
+                    .scale(flamePulse)
+            )
 
-                Text(
-                    text = "$streakCount Days Streak",
-                    fontSize = 16.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    letterSpacing = (-0.3).sp
-                )
-            }
+            // Center Title: "7 Days Streak" (20.sp ExtraBold)
+            Text(
+                text = "$streakCount Days Streak",
+                style = com.klix.code.ui.theme.KlixTypography.sheetHeader,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = com.klix.code.ui.theme.KlixInkPrimary,
+                letterSpacing = (-0.4).sp
+            )
 
-            // 7-Day Activity Dots Row (M T W T F S S)
+            // 7-Column weekly strip (M T W T F S S) with #D5FB66 circular checkmark badges
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -220,15 +224,23 @@ fun StreakSidebarCard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
+                        Text(
+                            text = dayLabels[i],
+                            style = com.klix.code.ui.theme.KlixTypography.codePill,
+                            fontSize = 11.sp,
+                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isToday) com.klix.code.ui.theme.KlixInkPrimary else com.klix.code.ui.theme.KlixInkSecondary
+                        )
+
                         Box(
                             modifier = Modifier
-                                .size(18.dp)
+                                .size(22.dp)
                                 .clip(CircleShape)
-                                .background(if (isActive) StreakActiveColor else DotInactiveColor)
-                                .then(
-                                    if (isToday && !isActive) {
-                                        Modifier.border(1.2.dp, FlameOrange, CircleShape)
-                                    } else Modifier
+                                .background(if (isActive) Color(0xFFD5FB66) else Color(0x33000000))
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isActive) Color(0xFFD5FB66) else Color(0x44CBD5E1),
+                                    shape = CircleShape
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -236,19 +248,11 @@ fun StreakSidebarCard(
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    tint = Color.Black,
-                                    modifier = Modifier.size(11.dp)
+                                    tint = Color(0xFF0C0D14),
+                                    modifier = Modifier.size(13.dp)
                                 )
                             }
                         }
-
-                        Text(
-                            text = dayLabels[i],
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isToday) (if (isActive) StreakActiveColor else FlameOrange) else TextSecondary
-                        )
                     }
                 }
             }

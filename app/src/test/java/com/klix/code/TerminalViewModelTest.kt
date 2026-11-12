@@ -2,7 +2,9 @@ package com.klix.code
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import com.klix.code.data.sandbox.SandboxExecutionProvider
+import com.klix.code.data.workspace.SandboxWorkspace
 import com.klix.code.ui.terminal.TerminalViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -213,5 +215,131 @@ class TerminalViewModelTest {
         val lines = terminalViewModel.terminalLines.value
         val count = lines.count { it.text.contains("Process interrupted") }
         assertTrue(count >= 1)
+    }
+
+    @Test
+    fun testAutoDetectAndSwitchWorkspaceUpdatesCwdAndPrompt() {
+        val dummyUri = mock(Uri::class.java)
+        `when`(dummyUri.toString()).thenReturn("file:///workspaces/project-beta")
+
+        val ws2 = SandboxWorkspace(
+            id = "ws_beta_123",
+            name = "Project Beta",
+            directoryName = "project-beta",
+            relativePath = "/workspaces/project-beta",
+            rootUri = dummyUri
+        )
+
+        terminalViewModel.onActiveWorkspaceChanged(ws2)
+
+        assertEquals("/workspaces/project-beta", terminalViewModel.currentCwd.value)
+        val lines = terminalViewModel.terminalLines.value
+        assertTrue(lines.any { it.text.contains("Project Beta") })
+        val prompt = lines.lastOrNull { it.isPrompt }
+        assertNotNull(prompt)
+        assertEquals("klix@mobile:/workspaces/project-beta$", prompt?.text)
+    }
+
+    @Test
+    fun testWorkspaceSwitchPreservesSeparateTerminalSessions() {
+        val dummyUri1 = mock(Uri::class.java)
+        `when`(dummyUri1.toString()).thenReturn("file:///workspaces/default")
+        val ws1 = SandboxWorkspace(
+            id = "default_workspace",
+            name = "Default Workspace",
+            directoryName = "default",
+            relativePath = "/workspaces/default",
+            rootUri = dummyUri1
+        )
+
+        val dummyUri2 = mock(Uri::class.java)
+        `when`(dummyUri2.toString()).thenReturn("file:///workspaces/project-two")
+        val ws2 = SandboxWorkspace(
+            id = "ws_two",
+            name = "Project Two",
+            directoryName = "project-two",
+            relativePath = "/workspaces/project-two",
+            rootUri = dummyUri2
+        )
+
+        // 1. Start in ws1, execute a command and create a 2nd terminal
+        terminalViewModel.onActiveWorkspaceChanged(ws1)
+        terminalViewModel.executeCommand("help")
+        val ws1Term2Id = terminalViewModel.addNewTerminal("Server Tab")
+        assertEquals(2, terminalViewModel.tabs.value.size)
+
+        // 2. Switch to ws2: it should auto-create its own Terminal 1 with project-two cwd
+        terminalViewModel.onActiveWorkspaceChanged(ws2)
+        assertEquals(1, terminalViewModel.tabs.value.size)
+        assertEquals("/workspaces/project-two", terminalViewModel.currentCwd.value)
+
+        terminalViewModel.executeCommand("clear")
+        assertEquals(1, terminalViewModel.terminalLines.value.size)
+        assertEquals("klix@mobile:/workspaces/project-two$", terminalViewModel.terminalLines.value.first().text)
+
+        // 3. Switch back to ws1: should restore its 2 tabs, active Server Tab, and help output
+        terminalViewModel.onActiveWorkspaceChanged(ws1)
+        assertEquals(2, terminalViewModel.tabs.value.size)
+        assertEquals(ws1Term2Id, terminalViewModel.activeTerminalId.value)
+        assertEquals("Server Tab", terminalViewModel.tabs.value.find { it.id == ws1Term2Id }?.title)
+
+        // 4. Switch back to ws2: still has 1 cleared tab
+        terminalViewModel.onActiveWorkspaceChanged(ws2)
+        assertEquals(1, terminalViewModel.tabs.value.size)
+        assertEquals("Terminal 1", terminalViewModel.tabs.value[0].title)
+    }
+
+    @Test
+    fun testWorkspaceDeletionCleansUpSessions() {
+        val dummyUri = mock(Uri::class.java)
+        `when`(dummyUri.toString()).thenReturn("file:///workspaces/to-delete")
+        val wsToDelete = SandboxWorkspace(
+            id = "ws_to_delete",
+            name = "Temporary",
+            directoryName = "to-delete",
+            relativePath = "/workspaces/to-delete",
+            rootUri = dummyUri
+        )
+
+        terminalViewModel.onActiveWorkspaceChanged(wsToDelete)
+        terminalViewModel.addNewTerminal("Temp 2")
+        assertEquals(2, terminalViewModel.tabs.value.size)
+
+        terminalViewModel.onWorkspaceDeleted("ws_to_delete")
+
+        // Switch to fresh workspace
+        val dummyUriMain = mock(Uri::class.java)
+        `when`(dummyUriMain.toString()).thenReturn("file:///workspaces/default")
+        val wsMain = SandboxWorkspace(
+            id = "default_workspace",
+            name = "Default Workspace",
+            directoryName = "default",
+            relativePath = "/workspaces/default",
+            rootUri = dummyUriMain
+        )
+        terminalViewModel.onActiveWorkspaceChanged(wsMain)
+        assertEquals(1, terminalViewModel.tabs.value.size)
+    }
+
+    @Test
+    fun testWorkspaceDeletionImmediatelyCleansUpActiveBuffers() {
+        val dummyUri = mock(Uri::class.java)
+        `when`(dummyUri.toString()).thenReturn("file:///workspaces/ephemeral")
+        val ephemeralWs = SandboxWorkspace(
+            id = "ws_ephemeral",
+            name = "Ephemeral",
+            directoryName = "ephemeral",
+            relativePath = "/workspaces/ephemeral",
+            rootUri = dummyUri
+        )
+
+        terminalViewModel.onActiveWorkspaceChanged(ephemeralWs)
+        terminalViewModel.executeCommand("echo secret_key_12345")
+        assertTrue(terminalViewModel.terminalLines.value.any { it.text.contains("secret_key_12345") })
+
+        terminalViewModel.onWorkspaceDeleted("ws_ephemeral")
+
+        // Ephemeral buffers should not linger in active lines
+        assertFalse(terminalViewModel.terminalLines.value.any { it.text.contains("secret_key_12345") })
     }
 }

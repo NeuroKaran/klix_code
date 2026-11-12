@@ -4,6 +4,7 @@ import android.net.Uri
 import com.klix.code.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
@@ -102,12 +103,19 @@ import com.klix.code.ui.theme.OnAccentPrimaryColor
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
+import com.klix.code.data.workspace.SandboxWorkspace
+import com.klix.code.ui.components.workspace.WorkspaceDropdownSelector
 
 @Composable
 fun FileTreeView(
     rootNode: FileNode?,
     activeFileUri: Uri?,
     currentProjectName: String? = null,
+    activeWorkspace: SandboxWorkspace? = null,
+    workspaces: List<SandboxWorkspace> = emptyList(),
+    onSelectWorkspace: ((String) -> Unit)? = null,
+    onCreateWorkspace: ((String) -> Unit)? = null,
+    onDeleteWorkspace: ((String) -> Unit)? = null,
     isSandboxInstalled: Boolean = true,
     isUpdateAvailable: Boolean = false,
     onShowSandboxWarning: (() -> Unit)? = null,
@@ -147,15 +155,15 @@ fun FileTreeView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(GlassSurfaceColor)
+            .background(com.klix.code.ui.theme.KlixSurfaceSheet)
     ) {
         // Workspace Tree Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(GlassSurfaceElevatedColor)
-                .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.18f, midAlpha = 0.05f)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .background(com.klix.code.ui.theme.KlixSurfaceSheet)
+                .border(0.5.dp, com.klix.code.ui.theme.KlixBorderHairline)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -165,24 +173,22 @@ fun FileTreeView(
             ) {
                 Text(
                     text = "Klix Code",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.4).sp,
-                    color = TextPrimary
+                    style = com.klix.code.ui.theme.KlixTypography.screenTitle,
+                    color = com.klix.code.ui.theme.KlixInkPrimary
                 )
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(LimeBrandColor)
+                        .background(Color(0xFFD5FB66))
                         .clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "v${BuildConfig.VERSION_NAME}",
-                        fontSize = 11.sp,
+                        style = com.klix.code.ui.theme.KlixTypography.codePill,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = Color(0xFF0C0D14)
                     )
                 }
             }
@@ -244,7 +250,7 @@ fun FileTreeView(
 
         // Active Workspace sub-bar
         val displayName = currentProjectName ?: rootNode?.name ?: "No Workspace"
-        val isSandbox = rootNode?.uri?.toString()?.contains("sandbox") == true
+        val isSandbox = rootNode?.uri?.toString()?.contains("sandbox") == true || rootNode?.uri?.toString()?.contains("workspaces") == true
 
         Row(
             modifier = Modifier
@@ -255,25 +261,36 @@ fun FileTreeView(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.weight(1f, fill = false)
-            ) {
-                Icon(
-                    imageVector = if (isSandbox) Icons.Default.Terminal else Icons.Default.Folder,
-                    contentDescription = null,
-                    tint = if (isSandbox) LimeBrandColor else CyanBrandColor,
-                    modifier = Modifier.size(15.dp)
+            if (workspaces.isNotEmpty() && onSelectWorkspace != null && onCreateWorkspace != null && onDeleteWorkspace != null) {
+                WorkspaceDropdownSelector(
+                    activeWorkspace = activeWorkspace,
+                    workspaces = workspaces,
+                    onSelectWorkspace = onSelectWorkspace,
+                    onCreateWorkspace = onCreateWorkspace,
+                    onDeleteWorkspace = onDeleteWorkspace,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
-                Text(
-                    text = displayName.uppercase(),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Icon(
+                        imageVector = if (isSandbox) Icons.Default.Terminal else Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = if (isSandbox) LimeBrandColor else CyanBrandColor,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Text(
+                        text = displayName.uppercase(),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             if (!isSandbox && onOpenSandboxWorkspace != null) {
@@ -310,9 +327,8 @@ fun FileTreeView(
         ) {
             Text(
                 text = "Workspace Files",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                style = com.klix.code.ui.theme.KlixTypography.sectionHeader,
+                color = com.klix.code.ui.theme.KlixInkPrimary
             )
         }
 
@@ -552,13 +568,12 @@ fun FileTreeView(
         }
         }
 
-        // Mockup 8: Floating Pill Footer with Theme Switcher & Settings
+        // Screen 8: Floating Pill Footer with Segmented Theme Toggle & Settings
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(bottom = 14.dp)
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(bottom = 14.dp, start = 16.dp, end = 16.dp),
             contentAlignment = Alignment.Center
         ) {
             val context = LocalContext.current
@@ -567,31 +582,75 @@ fun FileTreeView(
             Row(
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(GlassSurfacePillColor)
-                    .glassBorder(CircleShape, strokeWidth = 1.dp)
+                    .background(Color(0xFF121521))
+                    .border(1.dp, Color(0xFF2E364F), CircleShape)
                     .padding(horizontal = 6.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Theme Toggle: Light / Dark
-                Box(
+                // Segmented Theme Toggle (Light / Dark)
+                Row(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(if (isDark) Color(0xFF253046) else LimeBrandColor)
-                        .clickable {
-                            val nextMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
-                            ThemeManager.setThemeMode(context, nextMode)
-                        }
-                        .pressEffect(0.94f)
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.Center
+                        .background(Color(0xFF1B2030))
+                        .padding(2.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (isDark) "🌙 Dark" else "☀️ Light",
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isDark) Color.White else Color.Black
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(if (!isDark) Color(0xFFD5FB66) else Color.Transparent)
+                            .clickable { ThemeManager.setThemeMode(context, ThemeMode.LIGHT) }
+                            .pressEffect(0.94f)
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LightMode,
+                                contentDescription = "Light",
+                                tint = if (!isDark) Color(0xFF0C0D14) else Color(0xFF94A3B8),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "Light",
+                                style = com.klix.code.ui.theme.KlixTypography.codePill,
+                                fontWeight = FontWeight.Bold,
+                                color = if (!isDark) Color(0xFF0C0D14) else Color(0xFF94A3B8)
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(if (isDark) Color(0xFFD5FB66) else Color.Transparent)
+                            .clickable { ThemeManager.setThemeMode(context, ThemeMode.DARK) }
+                            .pressEffect(0.94f)
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DarkMode,
+                                contentDescription = "Dark",
+                                tint = if (isDark) Color(0xFF0C0D14) else Color(0xFF94A3B8),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "Dark",
+                                style = com.klix.code.ui.theme.KlixTypography.codePill,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDark) Color(0xFF0C0D14) else Color(0xFF94A3B8)
+                            )
+                        }
+                    }
                 }
 
                 // Settings Button
@@ -612,7 +671,7 @@ fun FileTreeView(
                     )
                     Text(
                         text = "Settings",
-                        fontSize = 12.sp,
+                        style = com.klix.code.ui.theme.KlixTypography.bodySecondary,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
                     )
@@ -817,20 +876,33 @@ private fun FileTreeRow(
             )
         } else {
             Spacer(modifier = Modifier.width(22.dp))
-            val extColor = when (node.extension.lowercase()) {
-                "kt", "kts" -> Color(0xFFC084FC)
-                "py" -> Color(0xFFFACC15)
-                "js", "ts", "jsx", "tsx" -> CyanBrandColor
-                "json" -> LimeBrandColor
-                "md" -> Color(0xFF38BDF8)
-                else -> TextSecondary
+            val logoRes = when (node.extension.lowercase()) {
+                "py" -> R.drawable.ic_logo_python
+                "kt", "kts", "java" -> R.drawable.ic_logo_kotlin
+                "js", "ts", "jsx", "tsx", "mjs" -> R.drawable.ic_logo_nodejs
+                "cpp", "c", "h", "hpp" -> R.drawable.ic_logo_cpp
+                "sh", "bash" -> R.drawable.ic_logo_alpine
+                else -> null
             }
-            Icon(
-                imageVector = Icons.Default.Description,
-                contentDescription = null,
-                tint = extColor,
-                modifier = Modifier.size(16.dp)
-            )
+            if (logoRes != null) {
+                Image(
+                    painter = painterResource(id = logoRes),
+                    contentDescription = node.name,
+                    modifier = Modifier.size(16.dp)
+                )
+            } else {
+                val extColor = when (node.extension.lowercase()) {
+                    "json" -> LimeBrandColor
+                    "md" -> Color(0xFF38BDF8)
+                    else -> TextSecondary
+                }
+                Icon(
+                    imageVector = Icons.Default.Description,
+                    contentDescription = null,
+                    tint = extColor,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(6.dp))
@@ -845,6 +917,48 @@ private fun FileTreeRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
+
+        // Screen 8 Badges
+        if (node.name.equals("server.js", ignoreCase = true) || node.extension.lowercase() in listOf("js", "mjs")) {
+            Box(
+                modifier = Modifier
+                    .border(1.dp, com.klix.code.ui.theme.KlixBorderHairline, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 4.dp, vertical = 1.dp)
+            ) {
+                Text(
+                    text = "JS",
+                    style = com.klix.code.ui.theme.KlixTypography.codePill,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = com.klix.code.ui.theme.KlixInkSecondary
+                )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+        } else if (node.name.contains("orbit-ui", ignoreCase = true)) {
+            Row(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color(0x22F97316))
+                    .border(1.dp, Color(0x66F97316), CircleShape)
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_icon_git_branch),
+                    contentDescription = "main",
+                    modifier = Modifier.size(10.dp)
+                )
+                Text(
+                    text = "main",
+                    style = com.klix.code.ui.theme.KlixTypography.codePill,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFF97316)
+                )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+        }
 
         // Contextual buttons
         if (node.isDirectory) {

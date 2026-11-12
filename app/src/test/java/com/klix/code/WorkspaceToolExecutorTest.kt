@@ -24,9 +24,13 @@ class WorkspaceToolExecutorTest {
         var outputToReturn: String = "All tests passed (2/2)",
         var exitCodeToReturn: Int = 0
     ) : ExecutionProvider {
+        var lastCommand: String? = null
+        var lastWorkingDir: String? = null
         override fun getTierName(): String = "Fake Execution"
         override fun isAvailable(): Boolean = true
         override suspend fun runCommand(command: String, workingDir: String?): CommandResult {
+            lastCommand = command
+            lastWorkingDir = workingDir
             return CommandResult(
                 exitCode = exitCodeToReturn,
                 stdout = outputToReturn,
@@ -457,5 +461,70 @@ class WorkspaceToolExecutorTest {
         val result = executor.execute(null, toolCall)
         org.junit.Assert.assertFalse(result.isSuccess)
         assertTrue(result.error!!.contains("Missing required parameter 'question'"))
+    }
+
+    @Test
+    fun testRunCommandScopesToActiveWorkspaceRoot() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val fakeExec = FakeExecutionProvider()
+        val executor = WorkspaceToolExecutor(fakeRepo, fakeExec)
+
+        val wsUri = mock(Uri::class.java)
+        org.mockito.Mockito.`when`(wsUri.path).thenReturn("/data/user/0/com.klix.code/files/sandbox/rootfs/workspaces/project-charlie")
+
+        val toolCall = ToolCallRequest(
+            id = "cmd_1",
+            name = "run_command",
+            rawArguments = """{"command": "ls -la"}""",
+            parsedArguments = mapOf("command" to "ls -la")
+        )
+
+        val result = executor.execute(wsUri, toolCall)
+        assertTrue(result.isSuccess)
+        assertEquals("ls -la", fakeExec.lastCommand)
+        assertEquals("/workspaces/project-charlie", fakeExec.lastWorkingDir)
+    }
+
+    @Test
+    fun testRunCommandResolvesRelativeWorkingDir() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val fakeExec = FakeExecutionProvider()
+        val executor = WorkspaceToolExecutor(fakeRepo, fakeExec)
+
+        val wsUri = mock(Uri::class.java)
+        org.mockito.Mockito.`when`(wsUri.path).thenReturn("/workspaces/project-delta")
+
+        val toolCall = ToolCallRequest(
+            id = "cmd_2",
+            name = "run_command",
+            rawArguments = """{"command": "pytest", "working_dir": "./tests/unit"}""",
+            parsedArguments = mapOf("command" to "pytest", "working_dir" to "./tests/unit")
+        )
+
+        val result = executor.execute(wsUri, toolCall)
+        assertTrue(result.isSuccess)
+        assertEquals("/workspaces/project-delta/tests/unit", fakeExec.lastWorkingDir)
+    }
+
+    @Test
+    fun testRunCommandPreventsWorkingDirTraversalAboveWorkspaceRoot() = runBlocking {
+        val fakeRepo = FakeWorkspaceRepository()
+        val fakeExec = FakeExecutionProvider()
+        val executor = WorkspaceToolExecutor(fakeRepo, fakeExec)
+
+        val wsUri = mock(Uri::class.java)
+        org.mockito.Mockito.`when`(wsUri.path).thenReturn("/workspaces/project-delta")
+
+        val toolCall = ToolCallRequest(
+            id = "cmd_3",
+            name = "run_command",
+            rawArguments = """{"command": "cat flag", "working_dir": "../../../../etc"}""",
+            parsedArguments = mapOf("command" to "cat flag", "working_dir" to "../../../../etc")
+        )
+
+        val result = executor.execute(wsUri, toolCall)
+        assertTrue(result.isSuccess)
+        // Traversal above /workspaces/project-delta is clamped to workspace root
+        assertEquals("/workspaces/project-delta/etc", fakeExec.lastWorkingDir)
     }
 }

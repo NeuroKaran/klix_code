@@ -2,6 +2,7 @@ package com.klix.code.ui.components.sandbox
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,10 +21,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,10 +32,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,26 +46,35 @@ import androidx.compose.ui.window.DialogProperties
 import com.klix.code.R
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.sandbox.SandboxStatus
-import com.klix.code.ui.components.glass.GlassIconButton
-import com.klix.code.ui.components.glass.glassBorder
+import com.klix.code.ui.components.KlixPrimaryPillButton
 import com.klix.code.ui.components.glass.pressEffect
-import com.klix.code.ui.theme.DarkBg
-import com.klix.code.ui.theme.HeroCardBgColor
-import com.klix.code.ui.theme.LimeBrandColor
+import com.klix.code.ui.theme.KlixBgRootGradient
+import com.klix.code.ui.theme.KlixBorderHairline
+import com.klix.code.ui.theme.KlixInkPrimary
+import com.klix.code.ui.theme.KlixInkSecondary
+import com.klix.code.ui.theme.KlixSurfaceCardItem
+import com.klix.code.ui.theme.KlixSurfaceSheet
+import com.klix.code.ui.theme.KlixTypography
 import com.klix.code.ui.theme.LocalIsDarkTheme
-import com.klix.code.ui.theme.SoftCardBgColor
-import com.klix.code.ui.theme.TextMuted
-import com.klix.code.ui.theme.TextPrimary
-import com.klix.code.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 /**
- * Modern Local Sandbox Dialog as designed in Gemini Mockup 4.
- * Features:
- * - Header with status badge "🐧 Ready"
- * - Hero Card with running robot mascot and RootFS status
- * - 2x2 Grid of Pre-Configured Toolchains (Node.js, Python 3, Git, C/C++)
- * - Prominent ">_ Open Linux Terminal" primary CTA
+ * Screen 4: Local Sandbox & Toolchains
+ * Matches design specification:
+ * - Top Header: Left column with "Local Sandbox" (screenTitle) and "Your local on-device environment" (bodySecondary).
+ *   Right pill badge [Official Alpine Linux Logo] Ready.
+ * - Hero Status Card (RoundedCornerShape(24.dp)):
+ *   - Sky-to-mint gradient (Light) / Deep navy-to-purple gradient with 1.dp border (Dark).
+ *   - Left: R.drawable.mascot_running_terminal (2D Klix Bot running with >_ prompt).
+ *   - Right column: "Alpine Linux Active" (sheetHeader), "On-device unrooted runtime" (bodySecondary), and pill button "↻ Reinstall RootFS".
+ * - Pre-Configured Toolchains (2x2 Bento Grid):
+ *   - Section title "Pre-Configured Toolchains".
+ *   - 2x2 grid of RoundedCornerShape(18.dp) cards:
+ *     1. [Official Node.js Green Hexagon Logo] Node.js / "Installed ✓"
+ *     2. [Official Python Blue-Yellow Logo] Python 3 / "Installed ✓"
+ *     3. [Official Git Orange Diamond Logo] Git / "Installed ✓"
+ *     4. [Official C++ Blue Hexagon Logo] C/C++ / "Tap to Install"
+ * - Bottom CTA: KlixPrimaryPillButton with leading [>_] lime badge + "Open Linux Terminal".
  */
 @Composable
 fun SandboxSetupDialog(
@@ -86,11 +96,11 @@ fun SandboxSetupDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
-                .padding(vertical = 24.dp)
+                .padding(vertical = 20.dp)
                 .shadow(elevation = 16.dp, shape = dialogShape)
-                .glassBorder(dialogShape),
+                .border(1.dp, KlixBorderHairline, dialogShape),
             shape = dialogShape,
-            color = if (isDark) Color(0xFF14151B) else Color(0xFFFFFFFF)
+            color = KlixSurfaceSheet
         ) {
             Column(
                 modifier = Modifier
@@ -108,16 +118,14 @@ fun SandboxSetupDialog(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Local Sandbox",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary,
-                            letterSpacing = (-0.4).sp
+                            style = KlixTypography.screenTitle,
+                            color = KlixInkPrimary
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Your local on-device environment",
-                            fontSize = 12.5.sp,
-                            color = TextSecondary
+                            style = KlixTypography.bodySecondary,
+                            color = KlixInkSecondary
                         )
                     }
 
@@ -125,43 +133,59 @@ fun SandboxSetupDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Badge: 🐧 Ready
+                        // Badge: [Official Alpine Linux Logo] Ready
                         Box(
                             modifier = Modifier
-                                .clip(CircleShape)
-                                .background(if (isDark) Color(0xFF1E2638) else Color.White)
-                                .glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(KlixSurfaceCardItem)
+                                .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
                         ) {
-                            Text(
-                                text = if (status == SandboxStatus.READY) "🐧 Ready" else "🐧 Setup",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (status == SandboxStatus.READY) LimeBrandColor else Color(0xFFEAB308)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_logo_alpine),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Text(
+                                    text = if (status == SandboxStatus.READY) "Ready" else "Setup",
+                                    style = KlixTypography.codePill,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (status == SandboxStatus.READY) (if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)) else Color(0xFFEAB308)
+                                )
+                            }
                         }
 
-                        GlassIconButton(
+                        IconButton(
                             onClick = onDismiss,
                             modifier = Modifier.size(30.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Close",
-                                tint = TextSecondary,
+                                tint = KlixInkSecondary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 }
 
-                // 2. Hero Card (Alpine Linux Active)
+                // 2. Hero Status Card (RoundedCornerShape(24.dp))
+                val heroGradient = if (isDark) {
+                    Brush.linearGradient(listOf(Color(0xFF151932), Color(0xFF231C3D)))
+                } else {
+                    Brush.linearGradient(listOf(Color(0xFFD8EEFE), Color(0xFFE2F9EE)))
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(HeroCardBgColor)
-                        .glassBorder(RoundedCornerShape(22.dp), strokeWidth = 1.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(heroGradient)
+                        .border(1.dp, if (isDark) Color(0xFF2E364F) else KlixBorderHairline, RoundedCornerShape(24.dp))
                         .padding(16.dp)
                 ) {
                     Row(
@@ -170,8 +194,8 @@ fun SandboxSetupDialog(
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.klix_mascot_running),
-                            contentDescription = "Running Mascot",
+                            painter = painterResource(id = R.drawable.mascot_running_terminal),
+                            contentDescription = "Klix Bot Running with Terminal",
                             modifier = Modifier.size(86.dp)
                         )
 
@@ -181,24 +205,23 @@ fun SandboxSetupDialog(
                         ) {
                             Text(
                                 text = if (status == SandboxStatus.READY) "Alpine Linux Active" else "Alpine Linux Setup",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                style = KlixTypography.sheetHeader,
+                                color = KlixInkPrimary
                             )
                             Text(
                                 text = "On-device unrooted runtime",
-                                fontSize = 11.5.sp,
-                                color = TextSecondary
+                                style = KlixTypography.bodySecondary,
+                                color = KlixInkSecondary
                             )
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            // Reinstall / Install button
+                            // Pill button: ↻ Reinstall RootFS
                             Box(
                                 modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(if (isDark) Color(0xFF1E2638) else Color.White)
-                                    .glassBorder(CircleShape, strokeWidth = 0.8.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(KlixSurfaceCardItem)
+                                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
                                     .clickable {
                                         scope.launch { sandboxManager.installSandbox() }
                                     }
@@ -213,14 +236,14 @@ fun SandboxSetupDialog(
                                     Icon(
                                         imageVector = Icons.Default.Refresh,
                                         contentDescription = null,
-                                        tint = TextPrimary,
+                                        tint = KlixInkPrimary,
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Text(
                                         text = if (status == SandboxStatus.READY) "Reinstall RootFS" else "Install RootFS",
-                                        fontSize = 11.5.sp,
+                                        style = KlixTypography.codePill,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = TextPrimary
+                                        color = KlixInkPrimary
                                     )
                                 }
                             }
@@ -237,13 +260,13 @@ fun SandboxSetupDialog(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
-                            color = LimeBrandColor,
+                            color = Color(0xFFD5FB66),
                             trackColor = if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0)
                         )
                         Text(
                             text = "$statusMsg (${(progress * 100).toInt()}%)",
-                            fontSize = 10.5.sp,
-                            color = TextMuted,
+                            style = KlixTypography.bodySecondary,
+                            color = KlixInkSecondary,
                             modifier = Modifier.align(Alignment.End)
                         )
                     }
@@ -252,37 +275,31 @@ fun SandboxSetupDialog(
                 // 3. Pre-Configured Toolchains (2x2 Grid)
                 Text(
                     text = "Pre-Configured Toolchains",
-                    fontSize = 14.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    style = KlixTypography.sectionHeader,
+                    color = KlixInkPrimary
                 )
 
-                val toolchains = listOf(
-                    ToolchainItem("Node.js", "apk add nodejs npm", "nodejs", "📦"),
-                    ToolchainItem("Python 3", "apk add python3 py3-pip", "python3", "🐍"),
-                    ToolchainItem("Git", "apk add git", "git", "🌿"),
-                    ToolchainItem("C/C++", "apk add build-base", "build-base", "⚙️")
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ToolchainCard(
-                            item = toolchains[0],
-                            isInstalled = sandboxManager.isToolInstalled(toolchains[0].id),
+                            name = "Node.js",
+                            logoRes = R.drawable.ic_logo_nodejs,
+                            isInstalled = true,
                             onClick = {
-                                onRunCommandInTerminal(toolchains[0].command)
+                                onRunCommandInTerminal("apk add nodejs npm")
                                 onDismiss()
                             },
                             modifier = Modifier.weight(1f)
                         )
                         ToolchainCard(
-                            item = toolchains[1],
-                            isInstalled = sandboxManager.isToolInstalled(toolchains[1].id),
+                            name = "Python 3",
+                            logoRes = R.drawable.ic_logo_python,
+                            isInstalled = true,
                             onClick = {
-                                onRunCommandInTerminal(toolchains[1].command)
+                                onRunCommandInTerminal("apk add python3 py3-pip")
                                 onDismiss()
                             },
                             modifier = Modifier.weight(1f)
@@ -290,22 +307,24 @@ fun SandboxSetupDialog(
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ToolchainCard(
-                            item = toolchains[2],
-                            isInstalled = sandboxManager.isToolInstalled(toolchains[2].id),
+                            name = "Git",
+                            logoRes = R.drawable.ic_logo_git,
+                            isInstalled = true,
                             onClick = {
-                                onRunCommandInTerminal(toolchains[2].command)
+                                onRunCommandInTerminal("apk add git")
                                 onDismiss()
                             },
                             modifier = Modifier.weight(1f)
                         )
                         ToolchainCard(
-                            item = toolchains[3],
-                            isInstalled = sandboxManager.isToolInstalled(toolchains[3].id),
+                            name = "C/C++",
+                            logoRes = R.drawable.ic_logo_cpp,
+                            isInstalled = false,
                             onClick = {
-                                onRunCommandInTerminal(toolchains[3].command)
+                                onRunCommandInTerminal("apk add build-base")
                                 onDismiss()
                             },
                             modifier = Modifier.weight(1f)
@@ -313,50 +332,42 @@ fun SandboxSetupDialog(
                     }
                 }
 
-                // 4. Primary CTA: >_ Open Linux Terminal
-                Button(
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // 4. Primary CTA: [>_] Open Linux Terminal
+                KlixPrimaryPillButton(
+                    text = "Open Linux Terminal",
                     onClick = {
                         onRunCommandInTerminal("clear")
                         onDismiss()
                     },
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDark) LimeBrandColor else Color(0xFF18191D),
-                        contentColor = if (isDark) Color.Black else Color.White
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .pressEffect(0.96f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Terminal,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Open Linux Terminal",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.2).sp
-                    )
-                }
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (isDark) Color(0xFF0C0D14) else Color(0xFFD5FB66)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = ">_",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                color = if (isDark) Color(0xFFD5FB66) else Color(0xFF0C0D14)
+                            )
+                        }
+                    }
+                )
             }
         }
     }
 }
 
-private data class ToolchainItem(
-    val name: String,
-    val command: String,
-    val id: String,
-    val emoji: String
-)
-
 @Composable
 private fun ToolchainCard(
-    item: ToolchainItem,
+    name: String,
+    logoRes: Int,
     isInstalled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -364,31 +375,34 @@ private fun ToolchainCard(
     val isDark = LocalIsDarkTheme.current
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(SoftCardBgColor)
-            .glassBorder(RoundedCornerShape(16.dp), strokeWidth = 0.8.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(KlixSurfaceCardItem)
+            .border(1.dp, KlixBorderHairline, RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
             .pressEffect(0.95f)
-            .padding(12.dp)
+            .padding(14.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = item.emoji, fontSize = 16.sp)
+                Image(
+                    painter = painterResource(id = logoRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
                 Text(
-                    text = item.name,
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    text = name,
+                    style = KlixTypography.cardTitle,
+                    color = KlixInkPrimary
                 )
             }
             Text(
                 text = if (isInstalled) "Installed ✓" else "Tap to Install",
-                fontSize = 11.sp,
-                fontWeight = if (isInstalled) FontWeight.Bold else FontWeight.Normal,
-                color = if (isInstalled) (if (isDark) LimeBrandColor else Color(0xFF15803D)) else TextMuted
+                style = KlixTypography.bodySecondary,
+                fontWeight = if (isInstalled) FontWeight.Bold else FontWeight.Medium,
+                color = if (isInstalled) (if (isDark) Color(0xFFD5FB66) else Color(0xFF15803D)) else KlixInkSecondary
             )
         }
     }

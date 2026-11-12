@@ -1,9 +1,11 @@
 package com.klix.code
 
+import android.content.Context
 import android.net.Uri
 import com.klix.code.data.agent.provider.ChatMessage
 import com.klix.code.data.agent.provider.MessageRole
 import com.klix.code.data.agent.session.ChatSession
+import com.klix.code.data.agent.session.ChatSessionRepositoryImpl
 import com.klix.code.data.agent.session.TaggedFileItem
 import com.klix.code.data.agent.session.flattenFileTree
 import com.klix.code.data.agent.tools.ToolCallRequest
@@ -11,11 +13,14 @@ import com.klix.code.data.agent.tools.ToolCallResult
 import com.klix.code.data.model.FileNode
 import com.klix.code.ui.components.agent.MarkdownBlock
 import com.klix.code.ui.components.agent.parseMarkdown
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
+import java.io.File
 
 class ChatSessionTest {
 
@@ -179,5 +184,93 @@ class ChatSessionTest {
         assertEquals(2, tags.size)
         assertEquals("app/src/main/java/MainActivity.kt", tags[0])
         assertEquals("app/build.gradle.kts", tags[1])
+    }
+
+    @Test
+    fun testWorkspacePartitionedChatRepository() = runBlocking {
+        val mockContext = mock(Context::class.java)
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "klix_test_chat_repo_${System.currentTimeMillis()}")
+        tempDir.mkdirs()
+        `when`(mockContext.filesDir).thenReturn(tempDir)
+
+        val ws1Dir = File(tempDir, "workspaces/project-alpha").apply { mkdirs() }
+        val ws2Dir = File(tempDir, "workspaces/project-beta").apply { mkdirs() }
+
+        val repo = ChatSessionRepositoryImpl(mockContext) { wsId ->
+            when (wsId) {
+                "ws_alpha" -> ws1Dir
+                "ws_beta" -> ws2Dir
+                else -> null
+            }
+        }
+
+        // Initially both should be empty
+        assertTrue(repo.getSessions("ws_alpha").isEmpty())
+        assertTrue(repo.getSessions("ws_beta").isEmpty())
+
+        // Save session in alpha
+        val sessionAlpha = ChatSession(id = "s_alpha_1", title = "Alpha Architecture")
+        repo.saveSession("ws_alpha", sessionAlpha)
+        repo.setActiveSessionId("ws_alpha", "s_alpha_1")
+
+        // Save session in beta
+        val sessionBeta = ChatSession(id = "s_beta_1", title = "Beta Tests")
+        repo.saveSession("ws_beta", sessionBeta)
+        repo.setActiveSessionId("ws_beta", "s_beta_1")
+
+        // Verify alpha only sees its session
+        val alphaSessions = repo.getSessions("ws_alpha")
+        assertEquals(1, alphaSessions.size)
+        assertEquals("s_alpha_1", alphaSessions[0].id)
+        assertEquals("s_alpha_1", repo.getActiveSessionId("ws_alpha"))
+
+        // Verify beta only sees its session
+        val betaSessions = repo.getSessions("ws_beta")
+        assertEquals(1, betaSessions.size)
+        assertEquals("s_beta_1", betaSessions[0].id)
+        assertEquals("s_beta_1", repo.getActiveSessionId("ws_beta"))
+
+        // Verify files exist inside respective workspace .klix/ folders
+        assertTrue(File(ws1Dir, ".klix/chat_sessions.json").exists())
+        assertTrue(File(ws2Dir, ".klix/chat_sessions.json").exists())
+
+        // Delete session in alpha
+        repo.deleteSession("ws_alpha", "s_alpha_1")
+        assertTrue(repo.getSessions("ws_alpha").isEmpty())
+        // Beta should still have its session intact
+        assertEquals(1, repo.getSessions("ws_beta").size)
+    }
+
+    @Test
+    fun testChatRepositoryResolvesDirectoryViaRegistryWhenProviderNull() = runBlocking {
+        val mockContext = mock(Context::class.java)
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "klix_test_chat_fallback_${System.currentTimeMillis()}")
+        tempDir.mkdirs()
+        `when`(mockContext.filesDir).thenReturn(tempDir)
+
+        val wsDir = File(tempDir, "sandbox/rootfs/workspaces/custom-slug").apply { mkdirs() }
+        val registryFile = File(tempDir, "sandbox_workspaces_registry.json")
+        registryFile.writeText("""
+            [
+                {
+                    "id": "ws_12345",
+                    "name": "Custom Workspace",
+                    "directoryName": "custom-slug",
+                    "relativePath": "/workspaces/custom-slug",
+                    "rootUri": "file://${wsDir.absolutePath.replace('\\', '/')}",
+                    "createdAt": 1000,
+                    "lastOpened": 1000
+                }
+            ]
+        """.trimIndent())
+
+        val repo = ChatSessionRepositoryImpl(mockContext, null)
+        val session = ChatSession(id = "s_fall_1", title = "Fallback Chat")
+        repo.saveSession("ws_12345", session)
+
+        val retrieved = repo.getSessions("ws_12345")
+        assertEquals(1, retrieved.size)
+        assertEquals("s_fall_1", retrieved[0].id)
+        assertTrue(File(wsDir, ".klix/chat_sessions.json").exists())
     }
 }

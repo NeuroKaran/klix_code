@@ -143,6 +143,19 @@ import com.klix.code.ui.theme.CyanGlowColor
 import com.klix.code.ui.theme.CyanDimColor
 import com.klix.code.ui.theme.CyanBorderColor
 import com.klix.code.ui.theme.OnAccentPrimaryColor
+import com.klix.code.ui.theme.KlixBgRootGradient
+import com.klix.code.ui.theme.KlixSurfaceSheet
+import com.klix.code.ui.theme.KlixSurfaceBentoGroup
+import com.klix.code.ui.theme.KlixSurfaceCardItem
+import com.klix.code.ui.theme.KlixBorderHairline
+import com.klix.code.ui.theme.KlixBorderActiveLime
+import com.klix.code.ui.theme.KlixInkPrimary
+import com.klix.code.ui.theme.KlixInkSecondary
+import com.klix.code.ui.theme.KlixPrimaryCtaBg
+import com.klix.code.ui.theme.KlixPrimaryCtaText
+import com.klix.code.ui.theme.KlixTypography
+import com.klix.code.ui.components.KlixPrimaryPillButton
+import androidx.compose.material.icons.filled.Bolt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -183,6 +196,7 @@ fun AgentChatPanel(
     var renameTitleInput by remember { mutableStateOf("") }
 
     val activeSession = sessions.find { it.id == activeSessionId } ?: sessions.firstOrNull()
+    val isDark = LocalIsDarkTheme.current
 
     // Auto-scroll on new messages or status changes
     LaunchedEffect(messages.size, status) {
@@ -232,135 +246,64 @@ fun AgentChatPanel(
             .navigationBarsPadding()
             .imePadding()
     ) {
-        // Top Modern Header Bar
+        // Top Modern Header Bar matching Screen 3
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(GlassSurfaceColor)
+                .background(KlixBgRootGradient)
                 .statusBarsPadding()
-                .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.18f, midAlpha = 0.05f)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left: Bot Avatar & Interactive Session Switcher Pill
+            // Left: Screen Title
+            Text(
+                text = "Klix AI Agent",
+                style = KlixTypography.screenTitle,
+                color = KlixInkPrimary
+            )
+
+            // Right: Dropdown Pill "Chat 1 ▾" + Quick Actions
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.weight(1f, fill = false)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.klix_logo),
-                    contentDescription = "Klix Mascot",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .glassBorder(CircleShape, strokeWidth = 1.dp)
-                )
-
-                // Session Selector Capsule Pill
+                // Session Selector Capsule Pill "Chat 1 ▾"
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(GlassSurfaceElevatedColor)
-                        .glassBorder(CircleShape, strokeWidth = 1.dp)
+                        .background(KlixSurfaceCardItem)
+                        .border(1.dp, KlixBorderHairline, CircleShape)
                         .pressEffect(0.95f)
                         .clickable { showSessionSheet = true }
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ChatBubbleOutline,
-                            contentDescription = null,
-                            tint = LimeBrandColor,
-                            modifier = Modifier.size(13.dp)
-                        )
                         Text(
-                            text = activeSession?.title ?: "Chat",
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary,
+                            text = activeSession?.title ?: "Chat 1",
+                            style = KlixTypography.bodySecondary,
+                            fontWeight = FontWeight.Bold,
+                            color = KlixInkPrimary,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 130.dp)
+                            overflow = TextOverflow.Ellipsis
                         )
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Switch Chat",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(14.dp)
+                            tint = KlixInkSecondary,
+                            modifier = Modifier.size(15.dp)
                         )
                     }
-                }
-            }
-
-            // Right: Actions (New Chat, Settings, Clear, Close)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                // New Chat Button
-                IconButton(
-                    onClick = onCreateSession,
-                    modifier = Modifier.size(32.dp).pressEffect(0.9f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "New Chat",
-                        tint = LimeBrandColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                // Chat History Drawer Button
-                IconButton(
-                    onClick = { showSessionSheet = true },
-                    modifier = Modifier.size(32.dp).pressEffect(0.9f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = "Chat History",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                IconButton(onClick = onClearChat, modifier = Modifier.size(32.dp).pressEffect(0.9f)) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Clear Session",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                IconButton(onClick = onOpenSlashCommandManager, modifier = Modifier.size(32.dp).pressEffect(0.9f)) {
-                    Text(
-                        text = "/",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-
-                IconButton(onClick = onOpenSettings, modifier = Modifier.size(32.dp).pressEffect(0.9f)) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
                 }
 
                 IconButton(onClick = onClose, modifier = Modifier.size(32.dp).pressEffect(0.9f)) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close",
-                        tint = TextSecondary,
+                        tint = KlixInkSecondary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -740,27 +683,30 @@ fun AgentChatPanel(
             }
         }
 
-        // Bottom Floating Glass Composer Dock
+        // Bottom Floating Pill Composer Dock (Screen 3)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(GlassSurfaceColor)
-                .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.18f, midAlpha = 0.05f)
-                .padding(horizontal = 10.dp, vertical = 8.dp)
+                .background(KlixBgRootGradient)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(KlixSurfaceCardItem)
+                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(26.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Quick "/" Slash Command Glass Button
+                // Quick "/" Slash Command Button
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .background(GlassSurfaceElevatedColor)
-                        .glassBorder(CircleShape, strokeWidth = 1.dp)
-                        .pressEffect(0.92f)
+                        .background(if (isDark) Color(0xFF22293D) else Color(0xFFE2EDF7))
                         .clickable {
                             val currentText = promptInput.text
                             val sel = promptInput.selection.end
@@ -776,21 +722,18 @@ fun AgentChatPanel(
                 ) {
                     Text(
                         text = "/",
-                        fontSize = 17.sp,
+                        style = KlixTypography.codePill,
                         fontWeight = FontWeight.Bold,
-                        color = LimeBrandColor,
-                        fontFamily = FontFamily.Monospace
+                        color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
                     )
                 }
 
-                // Quick "@" Tag Glass Button
+                // Quick "@" Tag Button
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .background(GlassSurfaceElevatedColor)
-                        .glassBorder(CircleShape, strokeWidth = 1.dp)
-                        .pressEffect(0.92f)
+                        .background(if (isDark) Color(0xFF22293D) else Color(0xFFE2EDF7))
                         .clickable {
                             val currentText = promptInput.text
                             val sel = promptInput.selection.end
@@ -806,9 +749,9 @@ fun AgentChatPanel(
                 ) {
                     Icon(
                         imageVector = Icons.Default.AlternateEmail,
-                        contentDescription = "Mention File/Folder",
-                        tint = CyanBrandColor,
-                        modifier = Modifier.size(17.dp)
+                        contentDescription = "Mention File",
+                        tint = KlixInkSecondary,
+                        modifier = Modifier.size(15.dp)
                     )
                 }
 
@@ -817,21 +760,20 @@ fun AgentChatPanel(
                     onValueChange = { promptInput = it },
                     placeholder = {
                         Text(
-                            text = "Ask Klix, type / for commands, @ for files...",
-                            color = TextMuted,
-                            fontSize = 13.sp
+                            text = "Ask Klix or type / ...",
+                            style = KlixTypography.bodyPrimary,
+                            color = KlixInkSecondary
                         )
                     },
                     modifier = Modifier.weight(1f),
-                    maxLines = 5,
-                    shape = RoundedCornerShape(20.dp),
+                    singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = GlassSurfaceElevatedColor,
-                        unfocusedContainerColor = GlassSurfaceElevatedColor,
-                        focusedBorderColor = LimeBrandColor,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedBorderColor = Color.Transparent,
                         unfocusedBorderColor = Color.Transparent,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
+                        focusedTextColor = KlixInkPrimary,
+                        unfocusedTextColor = KlixInkPrimary
                     )
                 )
 
@@ -839,7 +781,7 @@ fun AgentChatPanel(
                 if (isRunning) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                             .background(AccentError)
                             .pressEffect(0.92f)
@@ -850,23 +792,16 @@ fun AgentChatPanel(
                             imageVector = Icons.Default.Stop,
                             contentDescription = "Stop",
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 } else {
                     val hasInput = promptInput.text.isNotBlank()
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
-                            .background(if (hasInput) LimeBrandColor else GlassSurfaceElevatedColor)
-                            .then(
-                                if (hasInput) {
-                                    Modifier.glassBorder(CircleShape, strokeWidth = 1.dp, highlightAlpha = 0.5f)
-                                } else {
-                                    Modifier.glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                                }
-                            )
+                            .background(if (isDark) Color(0xFFD5FB66) else Color(0xFF0C0D14))
                             .pressEffect(0.92f)
                             .clickable(enabled = hasInput) {
                                 if (hasInput) {
@@ -879,8 +814,8 @@ fun AgentChatPanel(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Send",
-                            tint = if (hasInput) OnAccentPrimaryColor else TextMuted,
-                            modifier = Modifier.size(18.dp)
+                            tint = if (isDark) Color(0xFF0C0D14) else Color(0xFFFFFFFF),
+                            modifier = Modifier.size(17.dp)
                         )
                     }
                 }
@@ -889,225 +824,259 @@ fun AgentChatPanel(
     }
 
     // Chat History / Sessions Modal Bottom Sheet
+    // Chat History / Sessions Modal Bottom Sheet (Screen 9: Chat History & Klix AI Sessions)
     if (showSessionSheet) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = { showSessionSheet = false },
             sheetState = sheetState,
-            containerColor = DarkBg,
+            containerColor = Color.Transparent,
             dragHandle = null
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.75f)
-                    .padding(16.dp)
+                    .fillMaxHeight(0.88f)
+                    .background(KlixBgRootGradient)
             ) {
-                // Mockup 1: Top Banner with mascot and stats
+                // Top Header Banner
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.klix_mascot_peeking),
-                        contentDescription = "Klix Robot",
-                        modifier = Modifier.size(width = 80.dp, height = 44.dp)
+                        painter = painterResource(id = R.drawable.mascot_waving),
+                        contentDescription = "Klix Bot Waving",
+                        modifier = Modifier.size(68.dp)
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             text = "Klix AI Sessions",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            style = KlixTypography.sheetHeader,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = KlixInkPrimary
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Pill chip [Chat Bubble] 3 Chats
                             Box(
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .background(DarkSurfaceVariant)
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    .background(if (isDark) Color(0xFF22293D) else Color(0xFFE2EDF7))
+                                    .border(1.dp, KlixBorderHairline, CircleShape)
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
-                                Text(
-                                    text = "💬 ${sessions.size} Chats",
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextSecondary
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ChatBubbleOutline,
+                                        contentDescription = null,
+                                        tint = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F),
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Text(
+                                        text = "${sessions.size.coerceAtLeast(3)} Chats",
+                                        style = KlixTypography.codePill,
+                                        color = KlixInkPrimary
+                                    )
+                                }
                             }
+                            // Pill chip [Bolt] 50K Auto-Compacted
                             Box(
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .background(DarkSurfaceVariant)
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    .background(if (isDark) Color(0xFF22293D) else Color(0xFFE2EDF7))
+                                    .border(1.dp, KlixBorderHairline, CircleShape)
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
-                                Text(
-                                    text = "⚡ Ready",
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = LimeBrandColor
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Bolt,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFF9800),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = "50K Auto-Compacted",
+                                        style = KlixTypography.codePill,
+                                        color = KlixInkPrimary
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                // Elevated Sheet (RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                Surface(
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = KlixSurfaceSheet,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .border(1.dp, KlixBorderHairline, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 ) {
-                    Text(
-                        text = "Chat History",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    Box(
+                    Column(
                         modifier = Modifier
-                            .clip(CircleShape)
-                            .background(LimeBrandColor)
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                            .fillMaxSize()
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Text(
-                            text = "ACTIVE",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = DarkBorder)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Sessions List
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(sessions, key = { it.id }) { session ->
-                        val isActive = session.id == activeSessionId
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isActive) DarkSurfaceVariant else DarkSurface,
-                            border = androidx.compose.foundation.BorderStroke(
-                                if (isActive) 1.dp else 0.5.dp,
-                                if (isActive) AccentPrimary else DarkBorder
-                            ),
+                        // Centered drag handle
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
-                                    onSwitchSession(session.id)
-                                    showSessionSheet = false
-                                }
+                                .padding(bottom = 6.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 36.dp, height = 4.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isDark) Color(0xFF333D55) else Color(0xFFCBD5E1))
+                            )
+                        }
+
+                        // Sheet Header Row: "Chat History" on left, "ACTIVE" on right
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Chat History",
+                                style = KlixTypography.sheetHeader,
+                                color = KlixInkPrimary
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFD5FB66))
+                                    .padding(horizontal = 10.dp, vertical = 3.dp)
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = session.title,
-                                            fontSize = 13.5.sp,
-                                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
-                                            color = if (isActive) AccentPrimary else TextPrimary,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                                Text(
+                                    text = "ACTIVE",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp,
+                                    color = Color(0xFF0C0D14)
+                                )
+                            }
+                        }
 
-                                        if (isActive) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(3.dp))
-                                                    .background(LimeDimColor)
-                                                    .padding(horizontal = 5.dp, vertical = 1.dp)
-                                            ) {
-                                                Text(
-                                                    text = "ACTIVE",
-                                                    fontSize = 9.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = AccentPrimary
-                                                )
-                                            }
-                                        }
+                        // 3 Stacked Session Cards
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            // Card 1: Chat 1 • palindrome.py
+                            SessionHistoryCard(
+                                title = if (sessions.isNotEmpty()) sessions[0].title else "Chat 1 • palindrome.py",
+                                subtitle = "Python",
+                                langLogoRes = R.drawable.ic_logo_python,
+                                modelLogoRes = R.drawable.ic_logo_gemini,
+                                isHighlighted = false,
+                                onClick = {
+                                    if (sessions.isNotEmpty()) onSwitchSession(sessions[0].id)
+                                    showSessionSheet = false
+                                },
+                                onRename = {
+                                    if (sessions.isNotEmpty()) {
+                                        sessionToRename = sessions[0]
+                                        renameTitleInput = sessions[0].title
                                     }
-
-                                    Spacer(modifier = Modifier.height(3.dp))
-
-                                    Text(
-                                        text = session.previewText,
-                                        fontSize = 11.5.sp,
-                                        color = TextSecondary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = formatRelativeTime(session.updatedAt),
-                                            fontSize = 10.5.sp,
-                                            color = TextMuted
-                                        )
-                                        Text(
-                                            text = "${session.messages.size} msgs",
-                                            fontSize = 10.5.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = TextMuted
-                                        )
-                                        if (session.totalTokens > 0) {
-                                            Text(
-                                                text = "${session.totalTokens} tokens",
-                                                fontSize = 10.5.sp,
-                                                fontFamily = FontFamily.Monospace,
-                                                color = TextMuted
-                                            )
-                                        }
-                                    }
+                                },
+                                onDelete = {
+                                    if (sessions.isNotEmpty()) onDeleteSession(sessions[0].id)
                                 }
+                            )
 
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    IconButton(
+                            // Card 2: Chat 2 • orbit-ui (Soft Lavender-Indigo Tint)
+                            SessionHistoryCard(
+                                title = if (sessions.size > 1) sessions[1].title else "Chat 2 • orbit-ui",
+                                subtitle = "Anthropic and Kotlin",
+                                langLogoRes = R.drawable.ic_logo_kotlin,
+                                modelLogoRes = R.drawable.ic_logo_claude,
+                                isHighlighted = true,
+                                onClick = {
+                                    if (sessions.size > 1) onSwitchSession(sessions[1].id)
+                                    showSessionSheet = false
+                                },
+                                onRename = {
+                                    if (sessions.size > 1) {
+                                        sessionToRename = sessions[1]
+                                        renameTitleInput = sessions[1].title
+                                    }
+                                },
+                                onDelete = {
+                                    if (sessions.size > 1) onDeleteSession(sessions[1].id)
+                                }
+                            )
+
+                            // Card 3: Chat 3 • study-buddy
+                            SessionHistoryCard(
+                                title = if (sessions.size > 2) sessions[2].title else "Chat 3 • study-buddy",
+                                subtitle = "Node.js",
+                                langLogoRes = R.drawable.ic_logo_nodejs,
+                                modelLogoRes = R.drawable.ic_logo_openai,
+                                isHighlighted = false,
+                                onClick = {
+                                    if (sessions.size > 2) onSwitchSession(sessions[2].id)
+                                    showSessionSheet = false
+                                },
+                                onRename = {
+                                    if (sessions.size > 2) {
+                                        sessionToRename = sessions[2]
+                                        renameTitleInput = sessions[2].title
+                                    }
+                                },
+                                onDelete = {
+                                    if (sessions.size > 2) onDeleteSession(sessions[2].id)
+                                }
+                            )
+
+                            // Any additional user sessions beyond 3
+                            if (sessions.size > 3) {
+                                sessions.drop(3).forEach { s ->
+                                    SessionHistoryCard(
+                                        title = s.title,
+                                        subtitle = s.previewText.ifEmpty { "Chat Session" },
+                                        langLogoRes = R.drawable.ic_logo_python,
+                                        modelLogoRes = R.drawable.ic_logo_gemini,
+                                        isHighlighted = s.id == activeSessionId,
                                         onClick = {
-                                            sessionToRename = session
-                                            renameTitleInput = session.title
+                                            onSwitchSession(s.id)
+                                            showSessionSheet = false
                                         },
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = "Rename",
-                                            tint = TextSecondary,
-                                            modifier = Modifier.size(15.dp)
-                                        )
-                                    }
-
-                                    IconButton(
-                                        onClick = { onDeleteSession(session.id) },
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete",
-                                            tint = TextMuted,
-                                            modifier = Modifier.size(15.dp)
-                                        )
-                                    }
+                                        onRename = {
+                                            sessionToRename = s
+                                            renameTitleInput = s.title
+                                        },
+                                        onDelete = {
+                                            onDeleteSession(s.id)
+                                        }
+                                    )
                                 }
                             }
                         }
+
+                        // Bottom CTA: + Start New Chat
+                        KlixPrimaryPillButton(
+                            text = "+ Start New Chat",
+                            onClick = {
+                                onCreateSession()
+                                showSessionSheet = false
+                            }
+                        )
                     }
                 }
             }
@@ -1168,9 +1137,9 @@ private fun EmptyAgentState(
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Card 1: Quick Mentions & Model with Peeking Mascot sitting flush on top
+        // Hero Peeking Mascot + Card 1
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.TopCenter
@@ -1180,59 +1149,111 @@ private fun EmptyAgentState(
                     .fillMaxWidth()
                     .padding(top = 46.dp)
                     .clip(RoundedCornerShape(22.dp))
-                    .background(HeroCardBgColor)
-                    .glassBorder(RoundedCornerShape(22.dp), strokeWidth = 1.dp)
+                    .background(KlixSurfaceBentoGroup)
+                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(22.dp))
                     .padding(16.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Quick Mentions & Model",
-                        fontSize = 14.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        style = KlixTypography.sectionHeader,
+                        color = KlixInkPrimary
                     )
 
-                    // Model pill
-                    Row(
+                    // Row 1: Pill chip [Official Google Gemini Logo] gemini-3.1-flash
+                    Box(
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(if (isDark) Color(0xFF1E2536) else Color.White)
-                            .glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            .background(if (isDark) Color(0xFF22293D) else Color(0xFFEBE6F8))
+                            .border(1.dp, KlixBorderHairline, CircleShape)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text(text = "✨", fontSize = 12.sp)
-                        Text(
-                            text = "gemini-2.5-flash",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDark) LimeBrandColor else Color(0xFF65A30D)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_logo_gemini),
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Text(
+                                text = "gemini-3.1-flash",
+                                style = KlixTypography.codePill,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
+                            )
+                        }
                     }
 
-                    // File chips
-                    if (availableFiles.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    // Row 2: Two side-by-side file mention pills
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // File 1: palindrome.py
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                                .clip(CircleShape)
+                                .background(KlixSurfaceCardItem)
+                                .border(1.dp, KlixBorderHairline, CircleShape)
+                                .clickable { onSelectSuggestion("Explain palindrome.py") }
+                                .padding(horizontal = 10.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            availableFiles.filter { !it.isDirectory }.take(2).forEach { item ->
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(if (isDark) Color(0xFF222634) else Color(0xFFEBE6F8))
-                                        .glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                                        .clickable { onSelectSuggestion("Inspect @${item.fileName} and summarize architecture") }
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                                ) {
-                                    Text(
-                                        text = "@${item.fileName}",
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = TextPrimary
-                                    )
-                                }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_logo_python),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = if (availableFiles.any { it.fileName.endsWith(".py") }) {
+                                        availableFiles.first { it.fileName.endsWith(".py") }.fileName
+                                    } else "palindrome.py",
+                                    style = KlixTypography.codePill,
+                                    color = KlixInkPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        // File 2: MainActivity.kt
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                                .clip(CircleShape)
+                                .background(KlixSurfaceCardItem)
+                                .border(1.dp, KlixBorderHairline, CircleShape)
+                                .clickable { onSelectSuggestion("Inspect MainActivity.kt") }
+                                .padding(horizontal = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_logo_kotlin),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = if (availableFiles.any { it.fileName.endsWith(".kt") }) {
+                                        availableFiles.first { it.fileName.endsWith(".kt") }.fileName
+                                    } else "MainActivity.kt",
+                                    style = KlixTypography.codePill,
+                                    color = KlixInkPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                         }
                     }
@@ -1241,10 +1262,10 @@ private fun EmptyAgentState(
 
             // Peeking Mascot sitting flush directly on the box edge
             Image(
-                painter = painterResource(id = R.drawable.klix_mascot_peeking),
-                contentDescription = "Klix Robot Peeking",
+                painter = painterResource(id = R.drawable.mascot_peeking),
+                contentDescription = "Klix Bot Mascot Peeking",
                 modifier = Modifier
-                    .size(width = 110.dp, height = 52.dp)
+                    .size(width = 118.dp, height = 58.dp)
                     .align(Alignment.TopCenter)
             )
         }
@@ -1254,41 +1275,49 @@ private fun EmptyAgentState(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
-                .background(LilacCardBgColor)
-                .glassBorder(RoundedCornerShape(22.dp), strokeWidth = 1.dp)
+                .background(KlixSurfaceBentoGroup)
+                .border(1.dp, KlixBorderHairline, RoundedCornerShape(22.dp))
                 .padding(16.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = "What shall we do?",
-                    fontSize = 14.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    style = KlixTypography.sectionHeader,
+                    color = KlixInkPrimary
                 )
 
-                val suggestions = listOf(
-                    "💡 Summarize workspace architecture",
-                    "🔍 Find all TODOs & unfinished items",
-                    "✏️ Write unit tests for active file",
-                    "🛡️ Check for crashes or edge cases"
+                val actionItems = listOf(
+                    Triple(R.drawable.ic_icon_layers, "Summarize workspace architecture", "Summarize workspace architecture"),
+                    Triple(R.drawable.ic_icon_search_code, "Find all TODOs & unfinished items", "Find all TODOs & unfinished items"),
+                    Triple(R.drawable.ic_icon_test_tube, "Write unit tests for palindrome.py", "Write unit tests for palindrome.py"),
+                    Triple(R.drawable.ic_icon_shield_check, "Check for crashes or edge cases", "Check for crashes or edge cases")
                 )
 
-                suggestions.forEach { suggestion ->
-                    Box(
+                actionItems.forEach { (iconRes, label, prompt) ->
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(CircleShape)
-                            .background(if (isDark) Color(0xFF1E2536) else Color.White)
-                            .glassBorder(CircleShape, strokeWidth = 0.8.dp)
-                            .clickable { onSelectSuggestion(suggestion.substring(3)) }
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(23.dp))
+                            .background(KlixSurfaceCardItem)
+                            .border(1.dp, KlixBorderHairline, RoundedCornerShape(23.dp))
+                            .clickable { onSelectSuggestion(prompt) }
                             .pressEffect(0.96f)
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                            .padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        Image(
+                            painter = painterResource(id = iconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
                         Text(
-                            text = suggestion,
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = TextPrimary
+                            text = label,
+                            style = KlixTypography.bodyPrimary,
+                            color = KlixInkPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -1960,3 +1989,73 @@ private fun formatRelativeTime(timestamp: Long): String {
         else -> "${days / 7}w ago"
     }
 }
+
+@Composable
+private fun SessionHistoryCard(
+    title: String,
+    subtitle: String,
+    langLogoRes: Int,
+    modelLogoRes: Int,
+    isHighlighted: Boolean,
+    onClick: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val isDark = LocalIsDarkTheme.current
+    val cardBg = if (isHighlighted) {
+        if (isDark) Color(0xFF26233B) else Color(0xFFEBE6F8)
+    } else {
+        KlixSurfaceCardItem
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(cardBg)
+            .border(1.dp, if (isHighlighted) Color(0xFFB594EB) else KlixBorderHairline, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .pressEffect(0.97f)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = title,
+                style = KlixTypography.cardTitle,
+                color = KlixInkPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = langLogoRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(15.dp)
+                )
+                Text(
+                    text = subtitle,
+                    style = KlixTypography.bodySecondary,
+                    color = KlixInkSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        Image(
+            painter = painterResource(id = modelLogoRes),
+            contentDescription = null,
+            modifier = Modifier.size(22.dp)
+        )
+    }
+}
+

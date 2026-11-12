@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Kotlin official geometric mark -->
+    <path
+        android:fillColor="#7F52FF"
+        android:pathData="M2,2 L12,2 L2,12 Z" />
+    <path
+        android:fillColor="#C711E1"
+        android:pathData="M12,2 L22,2 L2,22 L2,12 Z" />
+    <path
+        android:fillColor="#F88909"
+        android:pathData="M12,12 L22,2 L22,22 L2,22 Z" />
+</vector>

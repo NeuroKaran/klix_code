@@ -44,7 +44,7 @@ class WorkspaceToolExecutor(
                     executeMultiReplaceFileContent(rootTreeUri, toolCall, dryRunWrite)
                 AgentTools.LIST_DIR.name -> executeListDir(rootTreeUri, toolCall)
                 AgentTools.SEARCH_FILES.name -> executeSearchFiles(rootTreeUri, toolCall)
-                AgentTools.RUN_COMMAND.name -> executeRunCommand(toolCall)
+                AgentTools.RUN_COMMAND.name -> executeRunCommand(rootTreeUri, toolCall)
                 AgentTools.FETCH_WEB_PAGE.name, "read_url_content", "fetch_url" -> executeFetchWebPage(toolCall)
                 AgentTools.SEARCH_WEB.name -> executeSearchWeb(toolCall)
                 AgentTools.INVOKE_SUBAGENT.name, "subagent" -> executeInvokeSubagent(toolCall)
@@ -549,11 +549,52 @@ class WorkspaceToolExecutor(
         )
     }
 
-    private suspend fun executeRunCommand(toolCall: ToolCallRequest): ToolCallResult {
+    private suspend fun executeRunCommand(rootTreeUri: Uri?, toolCall: ToolCallRequest): ToolCallResult {
         val command = toolCall.parsedArguments["command"]
             ?: return ToolCallResult(toolCall.id, toolCall.name, false, "", "Missing required parameter 'command'.")
 
-        val result = executionProvider.runCommand(command)
+        val explicitDir = toolCall.parsedArguments["working_dir"] ?: toolCall.parsedArguments["workingDir"]
+        val baseWsDir = if (rootTreeUri != null) {
+            val normPath = (rootTreeUri.path ?: "").replace('\\', '/').trimEnd('/')
+            if (normPath.contains("/workspaces/")) {
+                "/workspaces/" + normPath.substringAfter("/workspaces/")
+            } else {
+                "/workspaces/default"
+            }
+        } else {
+            "/workspaces/default"
+        }
+
+        val workingDir = if (!explicitDir.isNullOrBlank()) {
+            val trimmedDir = explicitDir.trim().replace('\\', '/')
+            if (trimmedDir.startsWith("/")) {
+                trimmedDir
+            } else {
+                val cleanRelative = trimmedDir.removePrefix("./").trimStart('/')
+                if (cleanRelative.isEmpty()) {
+                    baseWsDir
+                } else {
+                    val segments = cleanRelative.split('/').filter { it.isNotEmpty() && it != "." }
+                    val resolvedSegments = mutableListOf<String>()
+                    val baseSegments = baseWsDir.split('/').filter { it.isNotEmpty() }
+                    resolvedSegments.addAll(baseSegments)
+                    for (seg in segments) {
+                        if (seg == "..") {
+                            if (resolvedSegments.size > baseSegments.size) {
+                                resolvedSegments.removeAt(resolvedSegments.size - 1)
+                            }
+                        } else {
+                            resolvedSegments.add(seg)
+                        }
+                    }
+                    "/" + resolvedSegments.joinToString("/")
+                }
+            }
+        } else {
+            baseWsDir
+        }
+
+        val result = executionProvider.runCommand(command, workingDir)
         return ToolCallResult(
             toolCallId = toolCall.id,
             name = toolCall.name,

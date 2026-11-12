@@ -29,6 +29,7 @@ import com.klix.code.data.repository.WorkspaceRepositoryImpl
 import com.klix.code.data.security.KeyManager
 import com.klix.code.data.security.KeyManagerImpl
 import com.klix.code.data.sandbox.SandboxExecutionProvider
+import com.klix.code.data.workspace.SandboxWorkspace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,13 +37,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import com.klix.code.data.workspace.SandboxWorkspaceManager
+import com.klix.code.data.workspace.SandboxWorkspaceManagerImpl
+
 class AgentViewModel @JvmOverloads constructor(
     application: Application,
     private val repository: WorkspaceRepository = WorkspaceRepositoryImpl(application),
     private val keyManager: KeyManager = KeyManagerImpl(application),
     private val executionProvider: SandboxExecutionProvider = SandboxExecutionProvider(application),
     private val sessionRepository: ChatSessionRepository = ChatSessionRepositoryImpl(application),
-    private val slashCommandRepository: SlashCommandRepository = SlashCommandRepositoryImpl(application)
+    private val slashCommandRepository: SlashCommandRepository = SlashCommandRepositoryImpl(application),
+    val workspaceManager: SandboxWorkspaceManager = SandboxWorkspaceManagerImpl(application)
 ) : AndroidViewModel(application) {
 
     private val toolExecutor = WorkspaceToolExecutor(repository, executionProvider)
@@ -83,7 +88,8 @@ class AgentViewModel @JvmOverloads constructor(
     private val _isSlashCommandManagerOpen = MutableStateFlow(false)
     val isSlashCommandManagerOpen: StateFlow<Boolean> = _isSlashCommandManagerOpen.asStateFlow()
 
-    // Active workspace context tracked for slash command template expansions
+    // Active workspace context tracked for slash command template expansions and tool execution
+    private var currentWorkspace: SandboxWorkspace? = null
     var currentWorkspaceUri: Uri? = null
         private set
     var currentWorkspaceName: String = "Workspace"
@@ -94,6 +100,14 @@ class AgentViewModel @JvmOverloads constructor(
         private set
 
     init {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                workspaceManager.initialize()
+            } catch (_: Exception) {}
+        }
+        sessionRepository.setWorkspaceDirectoryProvider { wsId ->
+            workspaceManager.getWorkspaceDirectoryById(wsId)
+        }
         harness.onSessionUpdated = { msgs, promptTokens, completionTokens ->
             onHarnessSessionUpdated(msgs, promptTokens, completionTokens)
         }
@@ -102,17 +116,69 @@ class AgentViewModel @JvmOverloads constructor(
         loadSlashCommands()
     }
 
-    private fun loadSavedSessions() {
+    private fun getCurrentWorkspaceId(): String = currentWorkspace?.id ?: "default_workspace"
+
+    fun onActiveWorkspaceChanged(workspace: SandboxWorkspace) {
+        if (workspace.id == currentWorkspace?.id) return
+
+        // Cancel any in-flight agent tasks before switching context
+        harness.cancelTask()
+
+        // Persist currently active session of outgoing workspace
+        val prevWorkspaceId = currentWorkspace?.id
+        if (prevWorkspaceId != null) {
+            val activeSession = _sessions.value.find { it.id == _activeSessionId.value }
+            if (activeSession != null) {
+                viewModelScope.launch(Dispatchers.IO) {
+                    sessionRepository.saveSession(prevWorkspaceId, activeSession)
+                }
+            }
+        }
+
+        currentWorkspace = workspace
+        currentWorkspaceUri = workspace.rootUri
+        currentWorkspaceName = workspace.name
+
+        // Immediately update harness context with active workspace URI and name
+        harness.updateContext(
+            workspaceUri = workspace.rootUri,
+            workspaceName = workspace.name,
+            activeFileName = activeFileName,
+            activeFileContent = activeFileContent
+        )
+
+        // Load chat sessions for new workspace
+        loadSavedSessions(workspace.id)
+    }
+
+    fun onWorkspaceDeleted(workspaceId: String) {
+        val wasActive = (currentWorkspace?.id == workspaceId)
+        if (wasActive) {
+            harness.cancelTask()
+            currentWorkspace = null
+            currentWorkspaceUri = null
+            currentWorkspaceName = "Workspace"
+            _sessions.value = emptyList()
+            _activeSessionId.value = ""
+            harness.restoreSession(emptyList(), 0, 0)
+        }
         viewModelScope.launch(Dispatchers.IO) {
-            val list = sessionRepository.getSessions()
-            val savedActiveId = sessionRepository.getActiveSessionId()
+            sessionRepository.onWorkspaceDeleted(workspaceId)
+        }
+    }
+
+    private fun loadSavedSessions(targetWorkspaceId: String? = null) {
+        val wsId = targetWorkspaceId ?: getCurrentWorkspaceId()
+        viewModelScope.launch(Dispatchers.IO) {
+            val list = sessionRepository.getSessions(wsId)
+            val savedActiveId = sessionRepository.getActiveSessionId(wsId)
 
             if (list.isEmpty()) {
                 val initialSession = ChatSession(title = "Chat 1")
                 _sessions.value = listOf(initialSession)
                 _activeSessionId.value = initialSession.id
-                sessionRepository.saveSession(initialSession)
-                sessionRepository.setActiveSessionId(initialSession.id)
+                sessionRepository.saveSession(wsId, initialSession)
+                sessionRepository.setActiveSessionId(wsId, initialSession.id)
                 withContext(Dispatchers.Main) {
                     harness.restoreSession(
                         initialSession.messages,
@@ -124,7 +190,7 @@ class AgentViewModel @JvmOverloads constructor(
                 _sessions.value = list
                 val target = list.find { it.id == savedActiveId } ?: list.first()
                 _activeSessionId.value = target.id
-                sessionRepository.setActiveSessionId(target.id)
+                sessionRepository.setActiveSessionId(wsId, target.id)
                 withContext(Dispatchers.Main) {
                     harness.restoreSession(
                         target.messages,
@@ -142,6 +208,7 @@ class AgentViewModel @JvmOverloads constructor(
         completionTokens: Int
     ) {
         viewModelScope.launch(Dispatchers.IO) {
+            val wsId = getCurrentWorkspaceId()
             val currentId = _activeSessionId.value
             val currentList = _sessions.value.toMutableList()
             val index = currentList.indexOfFirst { it.id == currentId }
@@ -164,13 +231,14 @@ class AgentViewModel @JvmOverloads constructor(
                 )
                 currentList[index] = updated
                 _sessions.value = currentList
-                sessionRepository.saveSession(updated)
+                sessionRepository.saveSession(wsId, updated)
             }
         }
     }
 
     fun createNewSession(title: String = "New Chat"): String {
         harness.cancelTask()
+        val wsId = getCurrentWorkspaceId()
         val newSession = ChatSession(title = title)
         val updatedList = listOf(newSession) + _sessions.value
         _sessions.value = updatedList
@@ -179,8 +247,8 @@ class AgentViewModel @JvmOverloads constructor(
         harness.restoreSession(emptyList(), 0, 0)
 
         viewModelScope.launch(Dispatchers.IO) {
-            sessionRepository.saveSession(newSession)
-            sessionRepository.setActiveSessionId(newSession.id)
+            sessionRepository.saveSession(wsId, newSession)
+            sessionRepository.setActiveSessionId(wsId, newSession.id)
         }
         return newSession.id
     }
@@ -188,17 +256,19 @@ class AgentViewModel @JvmOverloads constructor(
     fun switchSession(sessionId: String) {
         if (sessionId == _activeSessionId.value) return
         harness.cancelTask()
+        val wsId = getCurrentWorkspaceId()
 
         val target = _sessions.value.find { it.id == sessionId } ?: return
         _activeSessionId.value = target.id
         harness.restoreSession(target.messages, target.promptTokens, target.completionTokens)
 
         viewModelScope.launch(Dispatchers.IO) {
-            sessionRepository.setActiveSessionId(target.id)
+            sessionRepository.setActiveSessionId(wsId, target.id)
         }
     }
 
     fun deleteSession(sessionId: String) {
+        val wsId = getCurrentWorkspaceId()
         val currentList = _sessions.value.filter { it.id != sessionId }
         val wasActive = _activeSessionId.value == sessionId
 
@@ -212,9 +282,9 @@ class AgentViewModel @JvmOverloads constructor(
             _activeSessionId.value = fresh.id
             harness.restoreSession(emptyList(), 0, 0)
             viewModelScope.launch(Dispatchers.IO) {
-                sessionRepository.deleteSession(sessionId)
-                sessionRepository.saveSession(fresh)
-                sessionRepository.setActiveSessionId(fresh.id)
+                sessionRepository.deleteSession(wsId, sessionId)
+                sessionRepository.saveSession(wsId, fresh)
+                sessionRepository.setActiveSessionId(wsId, fresh.id)
             }
         } else {
             _sessions.value = currentList
@@ -223,12 +293,12 @@ class AgentViewModel @JvmOverloads constructor(
                 _activeSessionId.value = nextSession.id
                 harness.restoreSession(nextSession.messages, nextSession.promptTokens, nextSession.completionTokens)
                 viewModelScope.launch(Dispatchers.IO) {
-                    sessionRepository.deleteSession(sessionId)
-                    sessionRepository.setActiveSessionId(nextSession.id)
+                    sessionRepository.deleteSession(wsId, sessionId)
+                    sessionRepository.setActiveSessionId(wsId, nextSession.id)
                 }
             } else {
                 viewModelScope.launch(Dispatchers.IO) {
-                    sessionRepository.deleteSession(sessionId)
+                    sessionRepository.deleteSession(wsId, sessionId)
                 }
             }
         }
@@ -236,6 +306,7 @@ class AgentViewModel @JvmOverloads constructor(
 
     fun renameSession(sessionId: String, newTitle: String) {
         if (newTitle.isBlank()) return
+        val wsId = getCurrentWorkspaceId()
         val currentList = _sessions.value.toMutableList()
         val index = currentList.indexOfFirst { it.id == sessionId }
         if (index >= 0) {
@@ -246,7 +317,7 @@ class AgentViewModel @JvmOverloads constructor(
             currentList[index] = updated
             _sessions.value = currentList
             viewModelScope.launch(Dispatchers.IO) {
-                sessionRepository.saveSession(updated)
+                sessionRepository.saveSession(wsId, updated)
             }
         }
     }

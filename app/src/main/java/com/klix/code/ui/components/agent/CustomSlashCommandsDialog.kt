@@ -2,20 +2,19 @@ package com.klix.code.ui.components.agent
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import com.klix.code.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,21 +23,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -53,6 +47,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,23 +56,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.klix.code.data.agent.command.BuiltInSlashCommands
+import com.klix.code.R
 import com.klix.code.data.agent.command.SlashCommand
 import com.klix.code.data.agent.command.SlashCommandActionType
+import com.klix.code.ui.components.KlixPeekingMascotScaffold
+import com.klix.code.ui.components.KlixPrimaryPillButton
+import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.AccentError
-import com.klix.code.ui.theme.AccentPrimary
-import com.klix.code.ui.theme.AccentSecondary
-import com.klix.code.ui.theme.AccentWarning
-import com.klix.code.ui.theme.DarkBg
-import com.klix.code.ui.theme.DarkBorder
-import com.klix.code.ui.theme.DarkSurface
-import com.klix.code.ui.theme.DarkSurfaceVariant
-import com.klix.code.ui.theme.LimeDimColor
-import com.klix.code.ui.theme.LimeBorderColor
-import com.klix.code.ui.theme.TextMuted
-import com.klix.code.ui.theme.TextPrimary
-import com.klix.code.ui.theme.TextSecondary
+import com.klix.code.ui.theme.KlixBorderActiveLime
+import com.klix.code.ui.theme.KlixBorderHairline
+import com.klix.code.ui.theme.KlixInkPrimary
+import com.klix.code.ui.theme.KlixInkSecondary
+import com.klix.code.ui.theme.KlixPrimaryCtaBg
+import com.klix.code.ui.theme.KlixPrimaryCtaText
+import com.klix.code.ui.theme.KlixSurfaceBentoGroup
+import com.klix.code.ui.theme.KlixSurfaceCardItem
+import com.klix.code.ui.theme.KlixSurfaceMacroTint
+import com.klix.code.ui.theme.KlixSurfaceSheet
+import com.klix.code.ui.theme.KlixTypography
+import com.klix.code.ui.theme.LocalIsDarkTheme
 
+/**
+ * Screen 6: Slash Commands Studio
+ * Matches design specification:
+ * - Layout: KlixPeekingMascotScaffold(title = "Slash Commands")
+ * - Card 1 — Built-in Quick Commands (surfaceBentoGroup, RoundedCornerShape(22.dp)):
+ *   - FlowRow of 4 pill chips (JetBrains Mono 12.sp) with 1.5dp vector icons:
+ *     - [Git-Branch Icon] /refactor
+ *     - [Wrench Icon] /fix
+ *     - [Shield-Check Icon] /test
+ *     - [Book-Open Icon] /explain
+ * - Card 2 — Custom Macros (2) (surfaceMacroTint gradient card, RoundedCornerShape(22.dp)):
+ *   - 2 stacked inner cards (RoundedCornerShape(16.dp)):
+ *     1. [Official Google Gemini Star Logo] /summarize — "Summarize file in 3 key bullet points"
+ *     2. [Official Anthropic Claude Starburst Logo] /optimize — "Analyze Big-O and optimize speed"
+ * - Bottom CTA: KlixPrimaryPillButton(text = "+ Create Custom Command")
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CustomSlashCommandsDialog(
     commands: List<SlashCommand>,
@@ -89,217 +105,207 @@ fun CustomSlashCommandsDialog(
     var commandToDelete by remember { mutableStateOf<SlashCommand?>(null) }
 
     val customCommands = commands.filter { !it.isBuiltIn }
-    val builtInCommands = commands.filter { it.isBuiltIn }
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .heightIn(max = 680.dp)
-                .shadow(elevation = 16.dp, shape = RoundedCornerShape(16.dp)),
-            shape = RoundedCornerShape(16.dp),
-            color = DarkSurfaceVariant,
-            border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp)
-            ) {
-                // Mockup 6: Peeking Mascot on top of Slash Commands card
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.klix_mascot_peeking),
-                        contentDescription = "Klix Robot Peeking",
-                        modifier = Modifier
-                            .size(width = 110.dp, height = 52.dp)
-                            .padding(bottom = 6.dp)
-                    )
-                }
-
-                // Header
+        KlixPeekingMascotScaffold(
+            topBar = {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(LimeDimColor),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Terminal,
-                                contentDescription = null,
-                                tint = AccentPrimary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        Column {
-                            Text(
-                                text = "Slash Commands",
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = "Create and run custom agent task macros",
-                                fontSize = 11.5.sp,
-                                color = TextMuted
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Slash Commands",
+                        style = KlixTypography.screenTitle,
+                        color = KlixInkPrimary
+                    )
 
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = TextMuted,
+                            tint = KlixInkSecondary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = DarkBorder)
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (showEditor) {
-                    // Command Editor Form
-                    CommandEditForm(
-                        initialCommand = editingCommand,
-                        existingTriggers = commands.map { it.trigger.lowercase() },
-                        onSave = { saved ->
-                            onSaveCommand(saved)
-                            showEditor = false
-                            editingCommand = null
-                        },
-                        onCancel = {
-                            showEditor = false
-                            editingCommand = null
-                        }
-                    )
-                } else {
-                    // Top Action: Add Command Button
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "CUSTOM COMMANDS (${customCommands.size})",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AccentSecondary,
-                            letterSpacing = 0.8.sp
-                        )
-
-                        Button(
-                            onClick = {
-                                editingCommand = null
-                                showEditor = true
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AccentPrimary
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 12.dp,
-                                vertical = 6.dp
-                            )
+            }
+        ) {
+            if (showEditor) {
+                // Command Editor View
+                CommandEditForm(
+                    initialCommand = editingCommand,
+                    existingTriggers = commands.map { it.trigger.lowercase() },
+                    onSave = { saved ->
+                        onSaveCommand(saved)
+                        showEditor = false
+                        editingCommand = null
+                    },
+                    onCancel = {
+                        showEditor = false
+                        editingCommand = null
+                    }
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Card 1 — Built-in Quick Commands
+                    item {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(22.dp),
+                            color = KlixSurfaceBentoGroup,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, KlixBorderHairline)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp),
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "New Command",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Built-in Quick Commands",
+                                    style = KlixTypography.sectionHeader,
+                                    color = KlixInkPrimary
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    QuickCommandChip(
+                                        iconRes = R.drawable.ic_icon_git_branch,
+                                        label = "/refactor"
+                                    )
+                                    QuickCommandChip(
+                                        iconRes = R.drawable.ic_icon_wrench,
+                                        label = "/fix"
+                                    )
+                                    QuickCommandChip(
+                                        iconRes = R.drawable.ic_icon_shield_check,
+                                        label = "/test"
+                                    )
+                                    QuickCommandChip(
+                                        iconRes = R.drawable.ic_icon_book_open,
+                                        label = "/explain"
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    // Card 2 — Custom Macros (surfaceMacroTint gradient card)
+                    item {
+                        val count = if (customCommands.isNotEmpty()) customCommands.size else 2
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(22.dp))
+                                .background(KlixSurfaceMacroTint)
+                                .border(1.dp, KlixBorderHairline, RoundedCornerShape(22.dp))
+                                .padding(16.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(
+                                    text = "Custom Macros ($count)",
+                                    style = KlixTypography.sectionHeader,
+                                    color = KlixInkPrimary
+                                )
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (customCommands.isEmpty()) {
-                            item {
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp),
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = DarkSurface,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(16.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = "No custom commands yet",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = TextSecondary
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "Tap 'New Command' to create your first custom slash command with prompt templates and file variables.",
-                                            fontSize = 11.5.sp,
-                                            color = TextMuted,
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                if (customCommands.isEmpty()) {
+                                    // Default preview macros matching specifications
+                                    CustomMacroCard(
+                                        iconRes = R.drawable.ic_logo_gemini,
+                                        trigger = "summarize",
+                                        description = "Summarize file in 3 key bullet points",
+                                        onEdit = {
+                                            editingCommand = SlashCommand(
+                                                id = "custom_summarize",
+                                                trigger = "summarize",
+                                                description = "Summarize file in 3 key bullet points",
+                                                template = "Provide a concise 3-bullet-point summary of {file}:\n\n```\n{code}\n```\n\nSpecific focus: {input}",
+                                                actionType = SlashCommandActionType.PROMPT,
+                                                isBuiltIn = false
+                                            )
+                                            showEditor = true
+                                        },
+                                        onDelete = null
+                                    )
+
+                                    CustomMacroCard(
+                                        iconRes = R.drawable.ic_logo_claude,
+                                        trigger = "optimize",
+                                        description = "Analyze Big-O and optimize speed",
+                                        onEdit = {
+                                            editingCommand = SlashCommand(
+                                                id = "custom_optimize",
+                                                trigger = "optimize",
+                                                description = "Analyze Big-O and optimize speed",
+                                                template = "Analyze the algorithmic runtime and memory complexity of the code in {file} and provide high-performance alternatives:\n\n```\n{code}\n```\n\nKey areas: {input}",
+                                                actionType = SlashCommandActionType.PROMPT,
+                                                isBuiltIn = false
+                                            )
+                                            showEditor = true
+                                        },
+                                        onDelete = null
+                                    )
+                                } else {
+                                    customCommands.forEach { cmd ->
+                                        val icon = when {
+                                            cmd.trigger.contains("summarize", ignoreCase = true) -> R.drawable.ic_logo_gemini
+                                            cmd.trigger.contains("optimize", ignoreCase = true) -> R.drawable.ic_logo_claude
+                                            cmd.trigger.contains("claude", ignoreCase = true) -> R.drawable.ic_logo_claude
+                                            else -> R.drawable.ic_logo_gemini
+                                        }
+
+                                        CustomMacroCard(
+                                            iconRes = icon,
+                                            trigger = cmd.trigger,
+                                            description = cmd.description,
+                                            onEdit = {
+                                                editingCommand = cmd
+                                                showEditor = true
+                                            },
+                                            onDelete = {
+                                                commandToDelete = cmd
+                                            }
                                         )
                                     }
                                 }
                             }
-                        } else {
-                            items(customCommands) { cmd ->
-                                CommandCard(
-                                    command = cmd,
-                                    onEdit = {
-                                        editingCommand = cmd
-                                        showEditor = true
-                                    },
-                                    onDelete = {
-                                        commandToDelete = cmd
-                                    }
-                                )
-                            }
-                        }
-
-                        // Built-in Commands Section (Collapsible Reference)
-                        item {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            BuiltInCommandsReferenceSection(builtIns = builtInCommands)
                         }
                     }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Bottom CTA
+                KlixPrimaryPillButton(
+                    text = "+ Create Custom Command",
+                    onClick = {
+                        editingCommand = null
+                        showEditor = true
+                    }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
@@ -312,16 +318,15 @@ fun CustomSlashCommandsDialog(
             title = {
                 Text(
                     text = "Delete /${target.trigger}?",
-                    color = TextPrimary,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    style = KlixTypography.sectionHeader,
+                    color = KlixInkPrimary
                 )
             },
             text = {
                 Text(
                     text = "Are you sure you want to delete this custom slash command? This action cannot be undone.",
-                    color = TextSecondary,
-                    fontSize = 13.sp
+                    style = KlixTypography.bodySecondary,
+                    color = KlixInkSecondary
                 )
             },
             confirmButton = {
@@ -330,152 +335,139 @@ fun CustomSlashCommandsDialog(
                         onDeleteCommand(target.id)
                         commandToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentError)
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentError),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Delete", color = Color.White)
+                    Text("Delete", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { commandToDelete = null }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text("Cancel", color = KlixInkSecondary)
                 }
             },
-            containerColor = DarkSurface,
-            shape = RoundedCornerShape(12.dp)
+            containerColor = KlixSurfaceSheet,
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }
 
 @Composable
-private fun CommandCard(
-    command: SlashCommand,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+private fun QuickCommandChip(
+    iconRes: Int,
+    label: String
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        color = DarkSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
+        shape = CircleShape,
+        color = KlixSurfaceCardItem,
+        border = androidx.compose.foundation.BorderStroke(1.dp, KlixBorderHairline),
+        modifier = Modifier.pressEffect(0.95f)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    // Command Trigger Pill
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(LimeDimColor)
-                            .border(0.5.dp, LimeBorderColor, RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "/${command.trigger}",
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.5.sp,
-                            color = AccentPrimary
-                        )
-                    }
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            Image(
+                painter = painterResource(id = iconRes),
+                contentDescription = label,
+                modifier = Modifier.size(15.dp),
+                colorFilter = ColorFilter.tint(KlixInkPrimary)
+            )
+            Text(
+                text = label,
+                style = KlixTypography.codePill,
+                color = KlixInkPrimary
+            )
+        }
+    }
+}
 
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFF2A2040))
-                            .padding(horizontal = 5.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = "CUSTOM",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFA78BFA)
-                        )
-                    }
+@Composable
+private fun CustomMacroCard(
+    iconRes: Int,
+    trigger: String,
+    description: String,
+    onEdit: () -> Unit,
+    onDelete: (() -> Unit)?
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .pressEffect(0.98f),
+        shape = RoundedCornerShape(16.dp),
+        color = KlixSurfaceCardItem,
+        border = androidx.compose.foundation.BorderStroke(1.dp, KlixBorderHairline),
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Vector Model / Logo
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(KlixSurfaceBentoGroup),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = trigger,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
 
-                // Edit & Delete Buttons
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconButton(
-                        onClick = onEdit,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = TextMuted,
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "/$trigger",
+                        style = KlixTypography.codePill,
+                        fontWeight = FontWeight.Bold,
+                        color = KlixInkPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = description,
+                        style = KlixTypography.bodySecondary,
+                        color = KlixInkSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
 
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = KlixInkSecondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                if (onDelete != null) {
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete",
                             tint = AccentError,
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = command.description,
-                fontSize = 12.sp,
-                color = TextSecondary
-            )
-
-            if (command.template.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { expanded = !expanded },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = if (expanded) "Hide Template" else "Show Template",
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = AccentPrimary
-                    )
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = AccentPrimary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-
-                AnimatedVisibility(visible = expanded) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
-                        shape = RoundedCornerShape(6.dp),
-                        color = DarkSurfaceVariant,
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder)
-                    ) {
-                        Text(
-                            text = command.template,
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = TextMuted,
-                            modifier = Modifier.padding(8.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -499,18 +491,18 @@ private fun CommandEditForm(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(DarkSurface, RoundedCornerShape(12.dp))
-            .border(1.dp, DarkBorder, RoundedCornerShape(12.dp))
-            .padding(14.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(KlixSurfaceBentoGroup)
+            .border(1.dp, KlixBorderHairline, RoundedCornerShape(22.dp))
+            .padding(16.dp)
     ) {
         Text(
-            text = if (initialCommand == null) "Create Custom Slash Command" else "Edit /${initialCommand.trigger}",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
+            text = if (initialCommand == null) "Create Custom Command" else "Edit /${initialCommand.trigger}",
+            style = KlixTypography.sectionHeader,
+            color = KlixInkPrimary
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Trigger input
         OutlinedTextField(
@@ -520,24 +512,25 @@ private fun CommandEditForm(
                 trigger = clean
                 errorMessage = null
             },
-            label = { Text("Command Trigger (e.g. summarize)") },
+            label = { Text("Command Trigger (e.g. summarize)", style = KlixTypography.bodySecondary) },
             prefix = {
                 Text(
                     text = "/",
-                    color = AccentPrimary,
+                    color = KlixBorderActiveLime,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace
                 )
             },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = DarkSurfaceVariant,
-                unfocusedContainerColor = DarkSurfaceVariant,
-                focusedBorderColor = AccentPrimary,
-                unfocusedBorderColor = DarkBorder,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
+                focusedContainerColor = KlixSurfaceCardItem,
+                unfocusedContainerColor = KlixSurfaceCardItem,
+                focusedBorderColor = KlixBorderActiveLime,
+                unfocusedBorderColor = KlixBorderHairline,
+                focusedTextColor = KlixInkPrimary,
+                unfocusedTextColor = KlixInkPrimary
             )
         )
 
@@ -550,17 +543,18 @@ private fun CommandEditForm(
                 description = it
                 errorMessage = null
             },
-            label = { Text("Short Description") },
+            label = { Text("Short Description", style = KlixTypography.bodySecondary) },
             placeholder = { Text("What does this command do?") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = DarkSurfaceVariant,
-                unfocusedContainerColor = DarkSurfaceVariant,
-                focusedBorderColor = AccentPrimary,
-                unfocusedBorderColor = DarkBorder,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
+                focusedContainerColor = KlixSurfaceCardItem,
+                unfocusedContainerColor = KlixSurfaceCardItem,
+                focusedBorderColor = KlixBorderActiveLime,
+                unfocusedBorderColor = KlixBorderHairline,
+                focusedTextColor = KlixInkPrimary,
+                unfocusedTextColor = KlixInkPrimary
             )
         )
 
@@ -569,10 +563,10 @@ private fun CommandEditForm(
         // Variable Insertion Helper Chips
         Text(
             text = "Insert template variables (tap to add):",
-            fontSize = 11.sp,
-            color = TextMuted
+            style = KlixTypography.bodySecondary,
+            color = KlixInkSecondary
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -588,7 +582,7 @@ private fun CommandEditForm(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Template input
         OutlinedTextField(
@@ -597,18 +591,19 @@ private fun CommandEditForm(
                 template = it
                 errorMessage = null
             },
-            label = { Text("Prompt Instructions Template") },
+            label = { Text("Prompt Instructions Template", style = KlixTypography.bodySecondary) },
             placeholder = { Text("e.g. Summarize the following code in {file}:\n\n```\n{code}\n```\n\nFocus on: {input}") },
-            minLines = 4,
-            maxLines = 8,
+            minLines = 3,
+            maxLines = 6,
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = DarkSurfaceVariant,
-                unfocusedContainerColor = DarkSurfaceVariant,
-                focusedBorderColor = AccentPrimary,
-                unfocusedBorderColor = DarkBorder,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
+                focusedContainerColor = KlixSurfaceCardItem,
+                unfocusedContainerColor = KlixSurfaceCardItem,
+                focusedBorderColor = KlixBorderActiveLime,
+                unfocusedBorderColor = KlixBorderHairline,
+                focusedTextColor = KlixInkPrimary,
+                unfocusedTextColor = KlixInkPrimary
             )
         )
 
@@ -617,11 +612,11 @@ private fun CommandEditForm(
             Text(
                 text = errorMessage!!,
                 color = AccentError,
-                fontSize = 11.5.sp
+                style = KlixTypography.bodySecondary
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Buttons
         Row(
@@ -630,7 +625,7 @@ private fun CommandEditForm(
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(onClick = onCancel) {
-                Text("Cancel", color = TextMuted)
+                Text("Cancel", color = KlixInkSecondary)
             }
             Spacer(modifier = Modifier.width(8.dp))
             Button(
@@ -674,13 +669,15 @@ private fun CommandEditForm(
                     )
                     onSave(updated)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary),
-                shape = RoundedCornerShape(8.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = KlixPrimaryCtaBg,
+                    contentColor = KlixPrimaryCtaText
+                ),
+                shape = CircleShape
             ) {
                 Text(
                     text = if (initialCommand == null) "Create Command" else "Save Changes",
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -694,104 +691,22 @@ private fun VariableChip(
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.clickable { onClick() },
-        shape = RoundedCornerShape(6.dp),
-        color = DarkSurfaceVariant,
-        border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder)
+        modifier = Modifier
+            .clickable { onClick() }
+            .pressEffect(0.93f),
+        shape = RoundedCornerShape(8.dp),
+        color = KlixSurfaceCardItem,
+        border = androidx.compose.foundation.BorderStroke(1.dp, KlixBorderHairline)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = label,
-                fontSize = 10.5.sp,
-                fontWeight = FontWeight.SemiBold,
-                fontFamily = FontFamily.Monospace,
-                color = AccentPrimary
+                style = KlixTypography.codePill,
+                color = KlixInkPrimary
             )
         }
     }
 }
-
-@Composable
-private fun BuiltInCommandsReferenceSection(builtIns: List<SlashCommand>) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        color = DarkSurface,
-        border = androidx.compose.foundation.BorderStroke(0.5.dp, DarkBorder)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SmartToy,
-                        contentDescription = null,
-                        tint = TextMuted,
-                        modifier = Modifier.size(15.dp)
-                    )
-                    Text(
-                        text = "BUILT-IN COMMANDS (${builtIns.size})",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextMuted,
-                        letterSpacing = 0.8.sp
-                    )
-                }
-
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = TextMuted,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-
-            AnimatedVisibility(visible = expanded) {
-                Column(
-                    modifier = Modifier.padding(top = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    builtIns.forEach { cmd ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(DarkSurfaceVariant, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "/${cmd.trigger}",
-                                fontSize = 11.5.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold,
-                                color = AccentPrimary
-                            )
-                            Text(
-                                text = cmd.description,
-                                fontSize = 11.sp,
-                                color = TextSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-

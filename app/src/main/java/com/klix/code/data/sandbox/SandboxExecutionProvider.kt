@@ -223,13 +223,15 @@ class SandboxExecutionProvider(
             val rootfsDir = sandboxManager.getRootfsDir()
             val isSandboxReady = sandboxManager.isInstalled()
 
-            val currentDir = if (!workingDir.isNullOrBlank()) workingDir else "/workspace"
+            val currentDir = if (!workingDir.isNullOrBlank()) workingDir else "/workspaces/default"
             val wrappedCommand = "echo \"__KLIX_PID:\$\$\"; cd \"$currentDir\" 2>/dev/null; $command; __KLIX_STATUS=$?; echo \"__KLIX_PWD:\$(pwd):STATUS:\$__KLIX_STATUS\"; exit \$__KLIX_STATUS"
 
             val effectiveWorkingDir = if (!workingDir.isNullOrBlank() && File(workingDir).exists()) {
                 File(workingDir)
+            } else if (!workingDir.isNullOrBlank()) {
+                File(rootfsDir, workingDir.removePrefix("/")).apply { if (!exists()) mkdirs() }
             } else {
-                File(rootfsDir, "workspace").apply { if (!exists()) mkdirs() }
+                File(rootfsDir, "workspaces/default").apply { if (!exists()) mkdirs() }
             }
 
             // Command builder

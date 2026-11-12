@@ -7,6 +7,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import com.klix.code.ui.components.HomeDashboard
 import com.klix.code.ui.components.NavTab
 import com.klix.code.ui.components.agent.KlixBuddyCompanionCard
+import com.klix.code.data.workspace.SandboxWorkspace
+import com.klix.code.ui.components.workspace.WorkspaceDropdownSelector
 
 import android.content.Context
 import android.content.Intent
@@ -105,6 +107,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.ui.res.painterResource
+import com.klix.code.ui.theme.KlixBorderHairline
+import com.klix.code.ui.theme.KlixInkPrimary
+import com.klix.code.ui.theme.KlixInkSecondary
+import com.klix.code.ui.theme.KlixPrimaryCtaBg
+import com.klix.code.ui.theme.KlixPrimaryCtaText
+import com.klix.code.ui.theme.KlixSurfaceBentoGroup
+import com.klix.code.ui.theme.KlixSurfaceCardItem
+import com.klix.code.ui.theme.KlixSurfaceSheet
+import com.klix.code.ui.theme.KlixTypography
 import com.klix.code.ui.components.DiffViewerDialog
 import com.klix.code.ui.components.EditorAccessoryBar
 import com.klix.code.ui.components.EditorTabBar
@@ -221,8 +235,18 @@ class MainActivity : ComponentActivity() {
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
 
+                val activeWorkspace by viewModel.activeWorkspace.collectAsState()
+                val allWorkspaces by viewModel.workspaces.collectAsState()
                 val currentProject by viewModel.currentProject.collectAsState()
                 val recentProjects by viewModel.recentProjects.collectAsState()
+
+                // Auto-detect and switch terminal & AI chat when active workspace changes
+                LaunchedEffect(activeWorkspace) {
+                    activeWorkspace?.let { ws ->
+                        terminalViewModel.onActiveWorkspaceChanged(ws)
+                        agentViewModel.onActiveWorkspaceChanged(ws)
+                    }
+                }
                 val fileTree by viewModel.fileTree.collectAsState()
                 val openTabs by viewModel.openTabs.collectAsState()
                 val activeTabUri by viewModel.activeTabUri.collectAsState()
@@ -365,12 +389,21 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .fillMaxWidth(0.84f)
                                 .fillMaxHeight(),
-                            drawerContainerColor = GlassSurfaceColor
+                            drawerContainerColor = KlixSurfaceSheet
                         ) {
                             FileTreeView(
                                 rootNode = fileTree,
                                 activeFileUri = activeTabUri,
-                                currentProjectName = currentProject?.name,
+                                currentProjectName = activeWorkspace?.name ?: currentProject?.name,
+                                activeWorkspace = activeWorkspace,
+                                workspaces = allWorkspaces,
+                                onSelectWorkspace = { id -> viewModel.switchWorkspace(id) },
+                                onCreateWorkspace = { name -> viewModel.createWorkspace(name) },
+                                onDeleteWorkspace = { id ->
+                                    terminalViewModel.onWorkspaceDeleted(id)
+                                    agentViewModel.onWorkspaceDeleted(id)
+                                    viewModel.deleteWorkspace(id)
+                                },
                                 isSandboxInstalled = isSandboxInstalled,
                                 isUpdateAvailable = updateState is UpdateUIState.Available,
                                 onShowSandboxWarning = {
@@ -432,33 +465,59 @@ class MainActivity : ComponentActivity() {
                         topBar = {
                             if (openTabs.isNotEmpty()) {
                                 val activeTab = openTabs.find { it.uri == activeTabUri }
-                                val fileIcon = when (activeTab?.extension?.lowercase()) {
-                                    "py" -> "🐍"
-                                    "kt", "kts", "java" -> "☕"
-                                    "js", "ts", "html", "css" -> "🌐"
-                                    else -> "📄"
+                                val logoRes = when (activeTab?.extension?.lowercase()) {
+                                    "py" -> R.drawable.ic_logo_python
+                                    "kt", "kts", "java" -> R.drawable.ic_logo_kotlin
+                                    "js", "ts", "html", "css" -> R.drawable.ic_logo_nodejs
+                                    "cpp", "c", "h", "hpp" -> R.drawable.ic_logo_cpp
+                                    "sh", "bash" -> R.drawable.ic_logo_alpine
+                                    else -> null
                                 }
 
                                 TopAppBar(
                                     title = {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            modifier = Modifier
-                                                .clip(CircleShape)
-                                                .background(if (LocalIsDarkTheme.current) Color(0xFF222938) else Color(0xFFEBE6F8))
-                                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
-                                            Text(text = fileIcon, fontSize = 13.sp)
-                                            Text(
-                                                text = activeTab?.name ?: currentProject?.name ?: "Klix Code",
-                                                fontSize = 13.5.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                letterSpacing = (-0.2).sp,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                color = TextPrimary
+                                            WorkspaceDropdownSelector(
+                                                activeWorkspace = activeWorkspace,
+                                                workspaces = allWorkspaces,
+                                                onSelectWorkspace = { id -> viewModel.switchWorkspace(id) },
+                                                onCreateWorkspace = { name -> viewModel.createWorkspace(name) },
+                                                onDeleteWorkspace = { id ->
+                                                    terminalViewModel.onWorkspaceDeleted(id)
+                                                    agentViewModel.onWorkspaceDeleted(id)
+                                                    viewModel.deleteWorkspace(id)
+                                                }
                                             )
+                                            activeTab?.let { tab ->
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                    modifier = Modifier
+                                                        .clip(CircleShape)
+                                                        .background(KlixSurfaceCardItem)
+                                                        .border(1.dp, KlixBorderHairline, CircleShape)
+                                                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                                                ) {
+                                                    if (logoRes != null) {
+                                                        Image(
+                                                            painter = painterResource(id = logoRes),
+                                                            contentDescription = tab.name,
+                                                            modifier = Modifier.size(14.dp)
+                                                        )
+                                                    }
+                                                    Text(
+                                                        text = tab.name,
+                                                        style = KlixTypography.codePill,
+                                                        fontWeight = FontWeight.Bold,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        color = KlixInkPrimary
+                                                    )
+                                                }
+                                            }
                                         }
                                     },
                                     navigationIcon = {
@@ -475,12 +534,19 @@ class MainActivity : ComponentActivity() {
                                             Icon(
                                                 imageVector = Icons.Default.Menu,
                                                 contentDescription = "Menu",
-                                                tint = TextPrimary,
+                                                tint = KlixInkPrimary,
                                                 modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     },
                                     actions = {
+                                        // Streak Pill Button
+                                        StreakPillButton(
+                                            streakCount = streakState.streakCount,
+                                            isClaimedToday = streakState.isClaimedToday,
+                                            onClick = { showDailyStreakDialog = true }
+                                        )
+
                                         // Primary Run Button (runs active file in terminal)
                                         Button(
                                             onClick = {
@@ -500,26 +566,26 @@ class MainActivity : ComponentActivity() {
                                             },
                                             shape = CircleShape,
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = LimeBrandColor,
-                                                contentColor = Color.Black
+                                                containerColor = KlixPrimaryCtaBg,
+                                                contentColor = KlixPrimaryCtaText
                                             ),
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp),
                                             modifier = Modifier
-                                                .height(30.dp)
+                                                .height(32.dp)
                                                 .pressEffect(0.92f)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.PlayArrow,
                                                 contentDescription = "Run",
                                                 modifier = Modifier.size(14.dp),
-                                                tint = Color.Black
+                                                tint = KlixPrimaryCtaText
                                             )
                                             Spacer(modifier = Modifier.width(3.dp))
                                             Text(
                                                 text = "Run",
-                                                fontSize = 11.5.sp,
+                                                style = KlixTypography.codePill,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.Black
+                                                color = KlixPrimaryCtaText
                                             )
                                         }
 
@@ -648,14 +714,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                 colors = TopAppBarDefaults.topAppBarColors(
-                                    containerColor = GlassSurfaceColor
+                                    containerColor = KlixSurfaceSheet
                                 ),
-                                modifier = Modifier.glassBorder(
-                                    RoundedCornerShape(0.dp),
-                                    strokeWidth = 0.5.dp,
-                                    highlightAlpha = 0.18f,
-                                    midAlpha = 0.05f
-                                )
+                                modifier = Modifier.border(0.5.dp, KlixBorderHairline)
                             )
                             }
                         },
@@ -813,7 +874,15 @@ class MainActivity : ComponentActivity() {
 
                                 val activeTab = openTabs.find { it.uri == activeTabUri }
                                 if (activeTab != null) {
-                                    Box(modifier = Modifier.weight(1f)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .background(KlixSurfaceCardItem)
+                                            .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
+                                    ) {
                                         androidx.compose.runtime.key(activeTab.uri) {
                                             SoraEditorView(
                                                 content = activeTab.content,
@@ -832,21 +901,30 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
 
-                                    // Mockup 7: Klix Buddy Companion Card
+                                    // Screen 7: Klix Buddy Inline Assistant Card
                                     KlixBuddyCompanionCard(
                                         activeFileName = activeTab.name,
                                         onTriggerCommand = { cmd ->
                                             isAgentPanelOpen = true
                                             agentPromptText = "$cmd ${activeTab.name}"
                                         },
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
                                 }
                             } else {
                                 // Modern Home Dashboard when no tabs are open (Gemini Mockup 0)
                                 HomeDashboard(
-                                    userName = "Developer",
-                                    currentWorkspaceName = currentProject?.name ?: "Sandbox Workspace",
+                                    userName = "Prasanjit",
+                                    currentWorkspaceName = activeWorkspace?.name ?: currentProject?.name ?: "Default Workspace",
+                                    activeWorkspace = activeWorkspace,
+                                    workspaces = allWorkspaces,
+                                    onSelectWorkspace = { id -> viewModel.switchWorkspace(id) },
+                                    onCreateWorkspace = { name -> viewModel.createWorkspace(name) },
+                                    onDeleteWorkspace = { id ->
+                                        terminalViewModel.onWorkspaceDeleted(id)
+                                        agentViewModel.onWorkspaceDeleted(id)
+                                        viewModel.deleteWorkspace(id)
+                                    },
                                     streakCount = streakState.streakCount,
                                     isStreakClaimedToday = streakState.isClaimedToday,
                                     onOpenStreak = { showDailyStreakDialog = true },
@@ -864,7 +942,14 @@ class MainActivity : ComponentActivity() {
                                         terminalViewModel.openSetupDialog()
                                     },
                                     recentProjects = recentProjects,
-                                    onSelectProject = { uri, name -> viewModel.openProject(uri, name) },
+                                    onSelectProject = { uri, name ->
+                                        val match = allWorkspaces.find { it.rootUri == uri }
+                                        if (match != null) {
+                                            viewModel.switchWorkspace(match.id)
+                                        } else {
+                                            viewModel.openProject(uri, name)
+                                        }
+                                    },
                                     onOpenFolder = { showRecentProjectsDialog = true },
                                     selectedTab = NavTab.HOME,
                                     onSelectTab = { tab ->
