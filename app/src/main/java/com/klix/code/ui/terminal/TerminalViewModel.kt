@@ -402,6 +402,15 @@ class TerminalViewModel @JvmOverloads constructor(
                 printHelp(session)
                 return
             }
+            "exit" -> {
+                val sessions = getCurrentSessions()
+                if (sessions.size > 1 && sessions.indexOf(session) > 0) {
+                    closeTerminal(session.id)
+                } else {
+                    clearTerminal(session.id)
+                }
+                return
+            }
             "sandbox-setup" -> {
                 openSetupDialog()
                 appendIdlePrompt(session)

@@ -197,8 +197,9 @@ fun TerminalView(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            tabs.forEach { tab ->
+            tabs.forEachIndexed { index, tab ->
                 val isActive = tab.id == activeTabId
+                val isCloseable = TerminalTabUiHelper.isCloseable(index, tabs.size)
                 val logoRes = when {
                     tab.title.contains("python", ignoreCase = true) || tab.title.contains("py", ignoreCase = true) -> R.drawable.ic_logo_python
                     tab.title.contains("node", ignoreCase = true) || tab.title.contains("js", ignoreCase = true) -> R.drawable.ic_logo_nodejs
@@ -217,7 +218,7 @@ fun TerminalView(
                         )
                         .clickable { viewModel.selectTerminal(tab.id) }
                         .pressEffect(0.95f)
-                        .padding(horizontal = 12.dp),
+                        .padding(start = 12.dp, end = if (isCloseable) 8.dp else 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
@@ -237,6 +238,23 @@ fun TerminalView(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        if (isCloseable) {
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                                    .clickable { viewModel.closeTerminal(tab.id) }
+                                    .pressEffect(0.85f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close ${tab.title}",
+                                    tint = if (isActive) KlixInkPrimary else KlixInkSecondary,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -647,4 +665,9 @@ private fun TerminalRenameDialog(
             }
         }
     )
+}
+
+internal object TerminalTabUiHelper {
+    fun isCloseable(tabIndex: Int, totalTabs: Int): Boolean =
+        totalTabs > 1 && tabIndex > 0
 }

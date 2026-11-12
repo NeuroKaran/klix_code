@@ -1144,6 +1144,16 @@ private fun EmptyAgentState(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.TopCenter
         ) {
+            // Mascot peeking gracefully from behind Card 1
+            Image(
+                painter = painterResource(id = R.drawable.mascot_peeking),
+                contentDescription = "Klix Bot Mascot Peeking",
+                modifier = Modifier
+                    .size(width = 118.dp, height = 58.dp)
+                    .align(Alignment.TopCenter)
+            )
+
+            // Card 1: Quick Mentions & Model (overlapping bottom of mascot so it peeks cleanly behind border)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1259,15 +1269,6 @@ private fun EmptyAgentState(
                     }
                 }
             }
-
-            // Peeking Mascot sitting flush directly on the box edge
-            Image(
-                painter = painterResource(id = R.drawable.mascot_peeking),
-                contentDescription = "Klix Bot Mascot Peeking",
-                modifier = Modifier
-                    .size(width = 118.dp, height = 58.dp)
-                    .align(Alignment.TopCenter)
-            )
         }
 
         // Card 2: What shall we do?

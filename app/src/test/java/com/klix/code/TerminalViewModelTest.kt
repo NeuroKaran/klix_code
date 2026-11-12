@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import com.klix.code.data.sandbox.SandboxExecutionProvider
 import com.klix.code.data.workspace.SandboxWorkspace
+import com.klix.code.ui.components.terminal.TerminalTabUiHelper
 import com.klix.code.ui.terminal.TerminalViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -155,6 +156,37 @@ class TerminalViewModelTest {
         terminalViewModel.closeTerminal(term2Id)
         assertEquals(1, terminalViewModel.tabs.value.size)
         assertEquals(term1Id, terminalViewModel.activeTerminalId.value)
+    }
+
+    @Test
+    fun testTerminalTabUiHelperCloseableRules() {
+        // Single tab (primary tab only) cannot be closed
+        assertFalse(TerminalTabUiHelper.isCloseable(tabIndex = 0, totalTabs = 1))
+
+        // Two tabs: primary tab (0) cannot be closed, secondary tab (1) can be closed
+        assertFalse(TerminalTabUiHelper.isCloseable(tabIndex = 0, totalTabs = 2))
+        assertTrue(TerminalTabUiHelper.isCloseable(tabIndex = 1, totalTabs = 2))
+
+        // Three tabs: primary tab cannot be closed, both secondary tabs can be closed
+        assertFalse(TerminalTabUiHelper.isCloseable(tabIndex = 0, totalTabs = 3))
+        assertTrue(TerminalTabUiHelper.isCloseable(tabIndex = 1, totalTabs = 3))
+        assertTrue(TerminalTabUiHelper.isCloseable(tabIndex = 2, totalTabs = 3))
+    }
+
+    @Test
+    fun testExitCommandClosesSecondaryTerminalTab() {
+        val term1Id = terminalViewModel.activeTerminalId.value
+        val term2Id = terminalViewModel.addNewTerminal()
+        assertEquals(2, terminalViewModel.tabs.value.size)
+        assertEquals(term2Id, terminalViewModel.activeTerminalId.value)
+
+        // Type 'exit' in secondary terminal
+        terminalViewModel.executeCommand("exit")
+
+        // Should close terminal 2 and cleanly switch active back to terminal 1
+        assertEquals(1, terminalViewModel.tabs.value.size)
+        assertEquals(term1Id, terminalViewModel.activeTerminalId.value)
+        assertEquals("Terminal 1", terminalViewModel.tabs.value[0].title)
     }
 
     @Test
