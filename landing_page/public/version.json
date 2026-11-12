@@ -1,9 +1,9 @@
 {
-  "versionCode": 14,
-  "versionName": "0.4.2",
+  "versionCode": 15,
+  "versionName": "0.4.3",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.2.apk",
-  "releaseNotes": "• Consolidated Review Report Action Items: Full interactive UI refactor\n• Factual Sandbox Readiness: Factual READY vs SETUP REQUIRED badge and active model pill\n• Scoped Navigation Dock: Floating nav dock scoped strictly to Home Dashboard\n• 48dp Touch Targets: Standardized interactive touch targets and 20dp inner icons\n• Dual-Branch Workspaces: Distinct empty state card and populated recent workspaces list\n• Overflow Top Bar: Consolidated editor actions into state-aware DropdownMenu with active tinting",
-  "releaseDate": "2026-11-09",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.3.apk",
+  "releaseNotes": "• 9-Screen Visual Redesign: Complete UI refactor matching Design.md specifications with dual-theme Frosted Sky-to-Mint and Cosmic Obsidian palettes\n• Vector Asset System: Zero system emojis; 100% official vector logos (Gemini, Claude, OpenAI, OpenRouter, Kotlin, Python, Node.js, Git, C++, Alpine)\n• 2D Klix Bot Mascot: Official 2D sprite integrations across heroes, peeking scaffolds, terminal runtime, and streak cards\n• Sandbox Multi-Workspace Isolation: Independent workspaces with isolated filesystem roots, terminal instances, and AI chat sessions\n• Unit Test Suite: 120 automated tests passing with 100% success rate",
+  "releaseDate": "2026-11-12",
   "forceUpdate": false
 }
