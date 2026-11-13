@@ -1,5 +1,7 @@
 package com.klix.code.data.agent.provider
 
+import com.klix.code.data.agent.model.DiscoveredModel
+import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.tools.AgentTools
 import com.klix.code.data.agent.tools.ToolCallRequest
 import kotlinx.coroutines.Dispatchers
@@ -176,6 +178,52 @@ class AnthropicAdapter(
                 completionTokens = completionTokens,
                 rawJson = responseBody
             )
+        }
+    }
+
+    override suspend fun listModels(apiKey: String, customEndpoint: String?): List<DiscoveredModel> = withContext(Dispatchers.IO) {
+        if (apiKey.isBlank()) return@withContext emptyList()
+        val endpoint = customEndpoint?.ifBlank { null } ?: "https://api.anthropic.com/v1/models"
+        val request = Request.Builder()
+            .url(endpoint)
+            .addHeader("x-api-key", apiKey)
+            .addHeader("anthropic-version", "2023-06-01")
+            .get()
+            .build()
+
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext emptyList()
+                val body = response.body?.string() ?: return@withContext emptyList()
+                parseModelsJson(body)
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    internal fun parseModelsJson(jsonString: String): List<DiscoveredModel> {
+        return try {
+            val json = JSONObject(jsonString)
+            val data = json.optJSONArray("data") ?: return emptyList()
+            val list = mutableListOf<DiscoveredModel>()
+            for (i in 0 until data.length()) {
+                val item = data.getJSONObject(i)
+                val id = item.optString("id")
+                if (id.isBlank()) continue
+                val name = item.optString("display_name", id)
+                list.add(
+                    DiscoveredModel(
+                        id = id,
+                        name = name,
+                        provider = ModelProvider.ANTHROPIC,
+                        isFree = false
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 }

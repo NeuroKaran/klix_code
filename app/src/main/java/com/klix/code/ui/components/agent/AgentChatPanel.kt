@@ -35,6 +35,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -105,6 +107,7 @@ import androidx.compose.ui.unit.sp
 import com.klix.code.data.agent.command.SlashCommand
 import com.klix.code.data.agent.harness.HarnessStatus
 import com.klix.code.data.agent.harness.PendingApproval
+import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.model.ProviderSettings
 import com.klix.code.data.agent.provider.ChatMessage
 import com.klix.code.data.agent.provider.MessageRole
@@ -352,6 +355,9 @@ fun AgentChatPanel(
             if (messages.isEmpty()) {
                 EmptyAgentState(
                     availableFiles = availableFiles,
+                    activeProvider = settings.activeProvider,
+                    activeModel = settings.activeModel,
+                    onOpenSettings = onOpenSettings,
                     onSelectSuggestion = { suggestion ->
                         promptInput = TextFieldValue(
                             text = suggestion,
@@ -688,16 +694,16 @@ fun AgentChatPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(KlixBgRootGradient)
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(horizontal = 14.dp, vertical = 8.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(26.dp))
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(28.dp))
                     .background(KlixSurfaceCardItem)
-                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(26.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(28.dp))
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
@@ -755,26 +761,31 @@ fun AgentChatPanel(
                     )
                 }
 
-                OutlinedTextField(
+                BasicTextField(
                     value = promptInput,
                     onValueChange = { promptInput = it },
-                    placeholder = {
-                        Text(
-                            text = "Ask Klix or type / ...",
-                            style = KlixTypography.bodyPrimary,
-                            color = KlixInkSecondary
-                        )
-                    },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 6.dp),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedTextColor = KlixInkPrimary,
-                        unfocusedTextColor = KlixInkPrimary
-                    )
+                    textStyle = KlixTypography.bodyPrimary.copy(color = KlixInkPrimary),
+                    cursorBrush = SolidColor(if (isDark) Color(0xFFD5FB66) else Color(0xFF0C0D14)),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (promptInput.text.isEmpty()) {
+                                Text(
+                                    text = "Ask Klix or type / ...",
+                                    style = KlixTypography.bodyPrimary,
+                                    color = KlixInkSecondary,
+                                    maxLines = 1
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
 
                 val isRunning = status == HarnessStatus.THINKING || status == HarnessStatus.EXECUTING_TOOL
@@ -1127,6 +1138,9 @@ fun AgentChatPanel(
 @Composable
 private fun EmptyAgentState(
     availableFiles: List<TaggedFileItem>,
+    activeProvider: ModelProvider = ModelProvider.GEMINI,
+    activeModel: String = "gemini-2.5-flash",
+    onOpenSettings: () -> Unit = {},
     onSelectSuggestion: (String) -> Unit
 ) {
     val isDark = LocalIsDarkTheme.current
@@ -1139,15 +1153,6 @@ private fun EmptyAgentState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Hero Mascot Logo seated nicely above Card 1
-        Image(
-            painter = painterResource(id = R.drawable.mascot_peeking),
-            contentDescription = "Klix Bot Mascot Peeking",
-            modifier = Modifier
-                .size(width = 118.dp, height = 58.dp)
-                .padding(top = 8.dp)
-        )
-
         // Card 1: Quick Mentions & Model
         Box(
             modifier = Modifier
@@ -1157,112 +1162,119 @@ private fun EmptyAgentState(
                 .border(1.dp, KlixBorderHairline, RoundedCornerShape(22.dp))
                 .padding(16.dp)
         ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = "Quick Mentions & Model",
-                        style = KlixTypography.sectionHeader,
-                        color = KlixInkPrimary
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Quick Mentions & Model",
+                    style = KlixTypography.sectionHeader,
+                    color = KlixInkPrimary
+                )
 
-                    // Row 1: Pill chip [Official Google Gemini Logo] gemini-3.1-flash
+                // Row 1: Pill chip [Active Provider Logo] activeModel
+                val logoRes = when (activeProvider) {
+                    ModelProvider.ANTHROPIC -> R.drawable.ic_logo_claude
+                    ModelProvider.OPENAI -> R.drawable.ic_logo_openai
+                    ModelProvider.CUSTOM_OPENAI_COMPATIBLE -> R.drawable.ic_logo_openrouter
+                    ModelProvider.GEMINI -> R.drawable.ic_logo_gemini
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(if (isDark) Color(0xFF22293D) else Color(0xFFEBE6F8))
+                        .border(1.dp, KlixBorderHairline, CircleShape)
+                        .clickable(onClick = onOpenSettings)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = logoRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = activeModel.substringAfterLast('/'),
+                            style = KlixTypography.codePill,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
+                        )
+                    }
+                }
+
+                // Row 2: Two side-by-side file mention pills
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // File 1: palindrome.py
                     Box(
                         modifier = Modifier
+                            .weight(1f)
+                            .height(38.dp)
                             .clip(CircleShape)
-                            .background(if (isDark) Color(0xFF22293D) else Color(0xFFEBE6F8))
+                            .background(KlixSurfaceCardItem)
                             .border(1.dp, KlixBorderHairline, CircleShape)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .clickable { onSelectSuggestion("Explain palindrome.py") }
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.ic_logo_gemini),
+                                painter = painterResource(id = R.drawable.ic_logo_python),
                                 contentDescription = null,
-                                modifier = Modifier.size(15.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "gemini-3.1-flash",
+                                text = if (availableFiles.any { it.fileName.endsWith(".py") }) {
+                                    availableFiles.first { it.fileName.endsWith(".py") }.fileName
+                                } else "palindrome.py",
                                 style = KlixTypography.codePill,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
+                                color = KlixInkPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
-                    // Row 2: Two side-by-side file mention pills
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    // File 2: MainActivity.kt
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(38.dp)
+                            .clip(CircleShape)
+                            .background(KlixSurfaceCardItem)
+                            .border(1.dp, KlixBorderHairline, CircleShape)
+                            .clickable { onSelectSuggestion("Inspect MainActivity.kt") }
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        // File 1: palindrome.py
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(38.dp)
-                                .clip(CircleShape)
-                                .background(KlixSurfaceCardItem)
-                                .border(1.dp, KlixBorderHairline, CircleShape)
-                                .clickable { onSelectSuggestion("Explain palindrome.py") }
-                                .padding(horizontal = 10.dp),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_logo_python),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = if (availableFiles.any { it.fileName.endsWith(".py") }) {
-                                        availableFiles.first { it.fileName.endsWith(".py") }.fileName
-                                    } else "palindrome.py",
-                                    style = KlixTypography.codePill,
-                                    color = KlixInkPrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
-                        // File 2: MainActivity.kt
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(38.dp)
-                                .clip(CircleShape)
-                                .background(KlixSurfaceCardItem)
-                                .border(1.dp, KlixBorderHairline, CircleShape)
-                                .clickable { onSelectSuggestion("Inspect MainActivity.kt") }
-                                .padding(horizontal = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_logo_kotlin),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = if (availableFiles.any { it.fileName.endsWith(".kt") }) {
-                                        availableFiles.first { it.fileName.endsWith(".kt") }.fileName
-                                    } else "MainActivity.kt",
-                                    style = KlixTypography.codePill,
-                                    color = KlixInkPrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_logo_kotlin),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = if (availableFiles.any { it.fileName.endsWith(".kt") }) {
+                                    availableFiles.first { it.fileName.endsWith(".kt") }.fileName
+                                } else "MainActivity.kt",
+                                style = KlixTypography.codePill,
+                                color = KlixInkPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
             }
+        }
 
         // Card 2: What shall we do?
         Box(

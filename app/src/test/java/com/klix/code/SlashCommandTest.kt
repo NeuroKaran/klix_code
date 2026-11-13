@@ -114,6 +114,7 @@ class SlashCommandTest {
         assertTrue(triggers.contains("test"))
         assertTrue(triggers.contains("doc"))
         assertTrue(triggers.contains("review"))
+        assertTrue(triggers.contains("boost"))
         assertTrue(triggers.contains("commit"))
         assertTrue(triggers.contains("clear"))
         assertTrue(triggers.contains("new"))

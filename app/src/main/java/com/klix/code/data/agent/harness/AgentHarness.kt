@@ -1,8 +1,11 @@
 package com.klix.code.data.agent.harness
 
 import android.net.Uri
+import com.klix.code.data.agent.model.DiscoveredModel
+import com.klix.code.data.agent.model.ModelDiscoveryRepository
 import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.model.ProviderSettings
+import com.klix.code.data.security.KeyManager
 import com.klix.code.data.agent.provider.ChatMessage
 import com.klix.code.data.agent.provider.MessageRole
 import com.klix.code.data.agent.provider.ModelProviderAdapter
@@ -48,7 +51,9 @@ data class PendingQuestion(
 
 class AgentHarness(
     private val toolExecutor: WorkspaceToolExecutor,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
+    val keyManager: KeyManager? = null,
+    val modelDiscoveryRepository: ModelDiscoveryRepository = ModelDiscoveryRepository(keyManager)
 ) {
 
     companion object {
@@ -78,6 +83,50 @@ class AgentHarness(
 
     private val _totalCompletionTokens = MutableStateFlow(0)
     val totalCompletionTokens: StateFlow<Int> = _totalCompletionTokens.asStateFlow()
+
+    private val _availableModels = MutableStateFlow<List<DiscoveredModel>>(emptyList())
+    val availableModels: StateFlow<List<DiscoveredModel>> = _availableModels.asStateFlow()
+
+    private val _isFetchingModels = MutableStateFlow(false)
+    val isFetchingModels: StateFlow<Boolean> = _isFetchingModels.asStateFlow()
+
+    suspend fun refreshAvailableModels(forceRefresh: Boolean = false): List<DiscoveredModel> {
+        _isFetchingModels.value = true
+        return try {
+            val models = modelDiscoveryRepository.getAvailableModels(
+                provider = currentSettings.activeProvider,
+                apiKey = currentApiKey,
+                customEndpoint = currentSettings.customEndpointUrl,
+                forceRefresh = forceRefresh
+            )
+            _availableModels.value = models
+            models
+        } finally {
+            _isFetchingModels.value = false
+        }
+    }
+
+    suspend fun fetchModelsForProvider(
+        provider: ModelProvider,
+        apiKey: String?,
+        customEndpoint: String? = null,
+        forceRefresh: Boolean = false
+    ): List<DiscoveredModel> {
+        _isFetchingModels.value = true
+        return try {
+            val key = apiKey ?: (if (provider == currentSettings.activeProvider) currentApiKey else keyManager?.getApiKey(provider)) ?: ""
+            val models = modelDiscoveryRepository.getAvailableModels(
+                provider = provider,
+                apiKey = key,
+                customEndpoint = customEndpoint ?: currentSettings.customEndpointUrl,
+                forceRefresh = forceRefresh
+            )
+            _availableModels.value = models
+            models
+        } finally {
+            _isFetchingModels.value = false
+        }
+    }
 
     var onSessionUpdated: ((messages: List<ChatMessage>, promptTokens: Int, completionTokens: Int) -> Unit)? = null
     private val detectedTaggedContext = mutableMapOf<String, String>()
@@ -116,9 +165,17 @@ class AgentHarness(
         this.activeFileContent = activeFileContent
     }
 
-    fun configureProvider(settings: ProviderSettings, apiKey: String) {
+    fun configureProvider(settings: ProviderSettings, apiKey: String, autoRefresh: Boolean = true) {
+        val providerChanged = this.currentSettings.activeProvider != settings.activeProvider
+        val keyChanged = this.currentApiKey != apiKey
         this.currentSettings = settings
         this.currentApiKey = apiKey
+
+        if (autoRefresh && (providerChanged || keyChanged || _availableModels.value.isEmpty())) {
+            scope.launch {
+                refreshAvailableModels(forceRefresh = keyChanged)
+            }
+        }
     }
 
     fun restoreSession(messages: List<ChatMessage>, promptTokens: Int, completionTokens: Int) {

@@ -1114,11 +1114,16 @@ class MainActivity : ComponentActivity() {
 
                 // Agent Settings Dialog
                 if (isAgentSettingsOpen) {
+                    val availableModels by agentViewModel.availableModels.collectAsState()
+                    val isFetchingModels by agentViewModel.isFetchingModels.collectAsState()
                     AgentSettingsDialog(
                         currentSettings = agentSettings,
+                        availableModels = availableModels,
+                        isFetchingModels = isFetchingModels,
                         onGetApiKey = { provider -> agentViewModel.getApiKey(provider) },
                         onSaveApiKey = { provider, key -> agentViewModel.saveApiKey(provider, key) },
                         onSaveSettings = { updated -> agentViewModel.updateSettings(updated) },
+                        onRefreshModels = { provider, key, forceRefresh -> agentViewModel.fetchModelsForProvider(provider, key, forceRefresh = forceRefresh) },
                         onDismiss = { agentViewModel.toggleSettings() }
                     )
                 }

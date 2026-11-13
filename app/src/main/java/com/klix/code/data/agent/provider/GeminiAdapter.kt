@@ -1,5 +1,7 @@
 package com.klix.code.data.agent.provider
 
+import com.klix.code.data.agent.model.DiscoveredModel
+import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.tools.AgentTools
 import com.klix.code.data.agent.tools.ToolCallRequest
 import kotlinx.coroutines.Dispatchers
@@ -211,6 +213,78 @@ class GeminiAdapter(
                 completionTokens = completionTokens,
                 rawJson = responseBody
             )
+        }
+    }
+
+    override suspend fun listModels(apiKey: String, customEndpoint: String?): List<DiscoveredModel> = withContext(Dispatchers.IO) {
+        if (apiKey.isBlank()) return@withContext emptyList()
+        val url = "https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey"
+        val request = Request.Builder().url(url).get().build()
+
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext emptyList()
+                val body = response.body?.string() ?: return@withContext emptyList()
+                parseModelsJson(body)
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    internal fun parseModelsJson(jsonString: String): List<DiscoveredModel> {
+        return try {
+            val json = JSONObject(jsonString)
+            val modelsArr = json.optJSONArray("models") ?: return emptyList()
+            val list = mutableListOf<DiscoveredModel>()
+
+            for (i in 0 until modelsArr.length()) {
+                val item = modelsArr.getJSONObject(i)
+                val rawName = item.optString("name")
+                val id = rawName.removePrefix("models/")
+                if (id.isBlank()) continue
+
+                val methods = item.optJSONArray("supportedGenerationMethods")
+                var supportsGenerate = false
+                if (methods != null) {
+                    for (j in 0 until methods.length()) {
+                        if (methods.getString(j) == "generateContent") {
+                            supportsGenerate = true
+                            break
+                        }
+                    }
+                } else {
+                    supportsGenerate = true
+                }
+                if (!supportsGenerate) continue
+
+                val displayName = item.optString("displayName", id)
+                val description = item.optString("description").takeIf { it.isNotBlank() }
+
+                list.add(
+                    DiscoveredModel(
+                        id = id,
+                        name = displayName,
+                        description = description,
+                        isFree = false,
+                        provider = ModelProvider.GEMINI
+                    )
+                )
+            }
+
+            list.sortByDescending {
+                when {
+                    it.id.startsWith("gemini-2.5") -> 100
+                    it.id.startsWith("gemini-3.1") -> 95
+                    it.id.startsWith("gemini-2.0") -> 90
+                    it.id.startsWith("gemini-1.5") -> 80
+                    else -> 10
+                }
+            }
+
+            list
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 }

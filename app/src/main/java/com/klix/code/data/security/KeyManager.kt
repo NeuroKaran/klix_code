@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.klix.code.data.agent.model.DiscoveredModel
 import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.model.ProviderSettings
 
@@ -14,6 +15,8 @@ interface KeyManager {
     fun getSettings(): ProviderSettings
     fun updateSettings(settings: ProviderSettings)
     fun clearAllKeys()
+    fun getCachedModels(provider: ModelProvider): List<DiscoveredModel>? = null
+    fun setCachedModels(provider: ModelProvider, models: List<DiscoveredModel>) {}
 }
 
 class KeyManagerImpl(private val context: Context) : KeyManager {
@@ -104,5 +107,27 @@ class KeyManagerImpl(private val context: Context) : KeyManager {
             editor.remove("key_${provider.name}")
         }
         editor.apply()
+    }
+
+    override fun getCachedModels(provider: ModelProvider): List<DiscoveredModel>? {
+        val raw = prefs.getString("cached_models_${provider.name}", null) ?: return null
+        return try {
+            val arr = org.json.JSONArray(raw)
+            val list = mutableListOf<DiscoveredModel>()
+            for (i in 0 until arr.length()) {
+                list.add(DiscoveredModel.fromJson(arr.getJSONObject(i)))
+            }
+            if (list.isEmpty()) null else list
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    override fun setCachedModels(provider: ModelProvider, models: List<DiscoveredModel>) {
+        try {
+            val arr = org.json.JSONArray()
+            models.forEach { arr.put(it.toJson()) }
+            prefs.edit().putString("cached_models_${provider.name}", arr.toString()).apply()
+        } catch (_: Exception) {}
     }
 }

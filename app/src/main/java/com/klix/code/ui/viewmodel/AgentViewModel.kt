@@ -14,6 +14,7 @@ import com.klix.code.data.agent.harness.AgentHarness
 import com.klix.code.data.agent.harness.HarnessStatus
 import com.klix.code.data.agent.harness.PendingApproval
 import com.klix.code.data.agent.harness.PendingQuestion
+import com.klix.code.data.agent.model.DiscoveredModel
 import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.model.ProviderSettings
 import com.klix.code.data.agent.provider.ChatMessage
@@ -51,7 +52,7 @@ class AgentViewModel @JvmOverloads constructor(
 ) : AndroidViewModel(application) {
 
     private val toolExecutor = WorkspaceToolExecutor(repository, executionProvider)
-    val harness = AgentHarness(toolExecutor, viewModelScope)
+    val harness = AgentHarness(toolExecutor, viewModelScope, keyManager)
 
     val messages: StateFlow<List<ChatMessage>> = harness.messages
     val status: StateFlow<HarnessStatus> = harness.status
@@ -60,6 +61,8 @@ class AgentViewModel @JvmOverloads constructor(
     val pendingQuestion: StateFlow<PendingQuestion?> = harness.pendingQuestion
     val totalPromptTokens: StateFlow<Int> = harness.totalPromptTokens
     val totalCompletionTokens: StateFlow<Int> = harness.totalCompletionTokens
+    val availableModels: StateFlow<List<DiscoveredModel>> = harness.availableModels
+    val isFetchingModels: StateFlow<Boolean> = harness.isFetchingModels
 
     private val _settings = MutableStateFlow(ProviderSettings())
     val settings: StateFlow<ProviderSettings> = _settings.asStateFlow()
@@ -503,5 +506,20 @@ class AgentViewModel @JvmOverloads constructor(
     fun updateSettings(newSettings: ProviderSettings) {
         keyManager.updateSettings(newSettings)
         syncHarnessConfig()
+    }
+
+    fun fetchModelsForProvider(
+        provider: ModelProvider,
+        apiKey: String? = null,
+        forceRefresh: Boolean = false
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val key = apiKey ?: keyManager.getApiKey(provider) ?: ""
+            harness.fetchModelsForProvider(
+                provider = provider,
+                apiKey = key,
+                forceRefresh = forceRefresh
+            )
+        }
     }
 }

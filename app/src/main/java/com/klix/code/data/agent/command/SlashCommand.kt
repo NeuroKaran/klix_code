@@ -105,6 +105,15 @@ object BuiltInSlashCommands {
             iconName = "doc"
         ),
         SlashCommand(
+            id = "builtin_boost",
+            trigger = "boost",
+            description = "Boost and supercharge code performance, algorithmic efficiency, and memory footprint",
+            template = "Analyze the code in {file} to maximize runtime execution performance, eliminate bottlenecks, and boost efficiency:\n\n```\n{code}\n```\n\nPerformance goals: {input}",
+            actionType = SlashCommandActionType.PROMPT,
+            isBuiltIn = true,
+            iconName = "bolt"
+        ),
+        SlashCommand(
             id = "builtin_review",
             trigger = "review",
             description = "Perform a thorough code review for quality and edge cases",

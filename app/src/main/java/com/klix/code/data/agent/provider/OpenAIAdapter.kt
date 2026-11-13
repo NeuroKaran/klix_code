@@ -1,5 +1,7 @@
 package com.klix.code.data.agent.provider
 
+import com.klix.code.data.agent.model.DiscoveredModel
+import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.tools.AgentTools
 import com.klix.code.data.agent.tools.ToolCallRequest
 import kotlinx.coroutines.Dispatchers
@@ -155,6 +157,125 @@ class OpenAIAdapter(
                 completionTokens = completionTokens,
                 rawJson = responseBody
             )
+        }
+    }
+
+    override suspend fun listModels(apiKey: String, customEndpoint: String?): List<DiscoveredModel> = withContext(Dispatchers.IO) {
+        val isOpenRouter = customEndpoint?.contains("openrouter.ai") == true ||
+            (customEndpoint.isNullOrBlank() && apiKey.startsWith("sk-or-"))
+
+        if (!isOpenRouter && apiKey.isBlank()) {
+            return@withContext emptyList()
+        }
+
+        val url = when {
+            isOpenRouter -> "https://openrouter.ai/api/v1/models"
+            !customEndpoint.isNullOrBlank() -> {
+                when {
+                    customEndpoint.endsWith("/chat/completions") -> customEndpoint.replace("/chat/completions", "/models")
+                    customEndpoint.endsWith("/") -> "${customEndpoint}models"
+                    else -> "$customEndpoint/models"
+                }
+            }
+            else -> "https://api.openai.com/v1/models"
+        }
+
+        val reqBuilder = Request.Builder().url(url).get()
+        if (apiKey.isNotBlank()) {
+            reqBuilder.addHeader("Authorization", "Bearer $apiKey")
+        }
+
+        try {
+            client.newCall(reqBuilder.build()).execute().use { response ->
+                if (!response.isSuccessful) return@withContext emptyList()
+                val body = response.body?.string() ?: return@withContext emptyList()
+                val isOr = url.contains("openrouter.ai")
+                parseModelsJson(body, isOr, customEndpoint)
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    internal fun parseModelsJson(jsonString: String, isOr: Boolean, customEndpoint: String?): List<DiscoveredModel> {
+        return try {
+            val json = JSONObject(jsonString)
+            val data = json.optJSONArray("data") ?: return emptyList()
+            val list = mutableListOf<DiscoveredModel>()
+            val prov = if (isOr || !customEndpoint.isNullOrBlank()) ModelProvider.CUSTOM_OPENAI_COMPATIBLE else ModelProvider.OPENAI
+
+            for (i in 0 until data.length()) {
+                val item = data.getJSONObject(i)
+                val id = item.optString("id")
+                if (id.isBlank()) continue
+                val name = item.optString("name", id)
+                val description = item.optString("description").takeIf { it.isNotBlank() }
+                val contextLength = if (item.has("context_length")) item.optInt("context_length") else null
+
+                var isFree = false
+                var promptPrice: Double? = null
+                var compPrice: Double? = null
+
+                if (isOr) {
+                    val pricing = item.optJSONObject("pricing")
+                    if (pricing != null) {
+                        val promptStr = pricing.optString("prompt", "")
+                        val compStr = pricing.optString("completion", "")
+                        promptPrice = promptStr.toDoubleOrNull() ?: if (pricing.has("prompt")) pricing.optDouble("prompt", -1.0) else null
+                        compPrice = compStr.toDoubleOrNull() ?: if (pricing.has("completion")) pricing.optDouble("completion", -1.0) else null
+                    }
+
+                    val isZeroPrice = promptPrice != null && compPrice != null && promptPrice == 0.0 && compPrice == 0.0
+                    val hasPositivePrice = (promptPrice != null && promptPrice > 0.0) || (compPrice != null && compPrice > 0.0)
+                    isFree = (id.contains(":free", ignoreCase = true) ||
+                        name.contains("(free)", ignoreCase = true) ||
+                        isZeroPrice) && !hasPositivePrice
+                }
+
+                // For standard OpenAI, filter out non-chat models
+                if (prov == ModelProvider.OPENAI) {
+                    val isNonChat = id.contains("tts") || id.contains("whisper") ||
+                        id.contains("embedding") || id.contains("dall-e") ||
+                        id.contains("moderation") || id.contains("davinci") ||
+                        id.contains("babbage") || id.contains("curie") ||
+                        id.contains("realtime") || id.contains("transcription")
+                    if (isNonChat) continue
+                }
+
+                list.add(
+                    DiscoveredModel(
+                        id = id,
+                        name = name,
+                        description = description,
+                        isFree = isFree,
+                        contextLength = contextLength,
+                        provider = prov,
+                        promptPrice = if (promptPrice != null && promptPrice >= 0.0) promptPrice else null,
+                        completionPrice = if (compPrice != null && compPrice >= 0.0) compPrice else null
+                    )
+                )
+            }
+
+            // If standard OpenAI, prioritize common coding models
+            if (prov == ModelProvider.OPENAI) {
+                list.sortByDescending {
+                    when {
+                        it.id.startsWith("gpt-4o") -> 100
+                        it.id.startsWith("o3-mini") -> 95
+                        it.id.startsWith("o1") -> 90
+                        it.id.startsWith("gpt-4.5") -> 85
+                        it.id.startsWith("chatgpt") -> 80
+                        else -> 10
+                    }
+                }
+            } else if (isOr) {
+                // For OpenRouter, group by free first or preserve rich sorting
+                list.sortByDescending { if (it.isFree) 1 else 0 }
+            }
+
+            list
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 }

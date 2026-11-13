@@ -1,5 +1,6 @@
 package com.klix.code.data.agent.provider
 
+import com.klix.code.data.agent.model.DiscoveredModel
 import com.klix.code.data.agent.tools.ToolCallRequest
 import com.klix.code.data.agent.tools.ToolCallResult
 import com.klix.code.data.agent.tools.ToolDefinition
@@ -42,4 +43,5 @@ data class ProviderTurnResponse(
 
 interface ModelProviderAdapter {
     suspend fun sendTurn(request: ProviderTurnRequest): ProviderTurnResponse
+    suspend fun listModels(apiKey: String, customEndpoint: String? = null): List<DiscoveredModel> = emptyList()
 }
