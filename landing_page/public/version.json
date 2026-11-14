@@ -1,9 +1,9 @@
 {
-  "versionCode": 16,
-  "versionName": "0.4.4",
+  "versionCode": 17,
+  "versionName": "0.4.5",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.4.apk",
-  "releaseNotes": "• Dynamic Model Discovery: Automatically query provider models (OpenRouter, OpenAI, Gemini, Anthropic) upon entering API key\n• OpenRouter Free/Paid Categorization: Distinguish free vs paid models with dedicated filter chips and pricing metadata\n• Settings Dialog UX: Full swipe-up scrolling for Apply & Close button clear of system navigation bar\n• Terminal Tabs: New + Terminal button label and tab close affordances on additional tabs\n• Alpine RootFS Setup: Distinct download and reload icons with re-entrant installation guard\n• Agent Chat: Vertically centered composer text and streamlined panel layout",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.5.apk",
+  "releaseNotes": "• Dual-Theme Design Alignment: Landing page theme updated to match app's Light Aurora and Cosmic Sapphire-to-Violet Obsidian themes\n• 2D Mascot Integration: Official Klix Bot sprites integrated across hero, peeking sheets, streak fire, terminal, and waving states\n• Interactive Phone Showcase: Full Settings screen with active AI provider list and app theme controls\n• Centered Core Architecture: Section badge and layout centered to match headline and description typography",
   "releaseDate": "2026-11-14",
   "forceUpdate": false
 }
