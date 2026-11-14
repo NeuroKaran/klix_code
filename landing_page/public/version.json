@@ -1,9 +1,9 @@
 {
-  "versionCode": 17,
-  "versionName": "0.4.5",
+  "versionCode": 18,
+  "versionName": "0.4.6",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.5.apk",
-  "releaseNotes": "• Dual-Theme Design Alignment: Landing page theme updated to match app's Light Aurora and Cosmic Sapphire-to-Violet Obsidian themes\n• 2D Mascot Integration: Official Klix Bot sprites integrated across hero, peeking sheets, streak fire, terminal, and waving states\n• Interactive Phone Showcase: Full Settings screen with active AI provider list and app theme controls\n• Centered Core Architecture: Section badge and layout centered to match headline and description typography",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.6.apk",
+  "releaseNotes": "• Dynamic Sandbox Toolchain Detection: Toolchain cards now dynamically verify binary and package installation status without premature checkmarks\n• Download & Reinstall Action Transitions: Uninstalled tools show download action with Tap to Install; installed tools automatically flip to the circular buffer icon with Reinstall\n• Install Different Tools Guide: New terminal package card displaying 'apk add <package>' with one-click Copy and Run actions, plus 'apk get' syntax support\n• Line Numbers & Gutter Pinning: Fixed editor line numbers from scrolling off-screen and aligned gutter typography\n• Companion Card Mascot: Integrated 2D coding mascot avatar with automated /test and /optimize slash command orchestration",
   "releaseDate": "2026-11-14",
   "forceUpdate": false
 }
