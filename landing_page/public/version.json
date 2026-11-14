@@ -1,9 +1,9 @@
 {
-  "versionCode": 15,
-  "versionName": "0.4.3",
+  "versionCode": 16,
+  "versionName": "0.4.4",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.3.apk",
-  "releaseNotes": "• 9-Screen Visual Redesign: Complete UI refactor matching Design.md specifications with dual-theme Frosted Sky-to-Mint and Cosmic Obsidian palettes\n• Vector Asset System: Zero system emojis; 100% official vector logos (Gemini, Claude, OpenAI, OpenRouter, Kotlin, Python, Node.js, Git, C++, Alpine)\n• 2D Klix Bot Mascot: Official 2D sprite integrations across heroes, peeking scaffolds, terminal runtime, and streak cards\n• Sandbox Multi-Workspace Isolation: Independent workspaces with isolated filesystem roots, terminal instances, and AI chat sessions\n• Unit Test Suite: 120 automated tests passing with 100% success rate",
-  "releaseDate": "2026-11-12",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.4.apk",
+  "releaseNotes": "• Dynamic Model Discovery: Automatically query provider models (OpenRouter, OpenAI, Gemini, Anthropic) upon entering API key\n• OpenRouter Free/Paid Categorization: Distinguish free vs paid models with dedicated filter chips and pricing metadata\n• Settings Dialog UX: Full swipe-up scrolling for Apply & Close button clear of system navigation bar\n• Terminal Tabs: New + Terminal button label and tab close affordances on additional tabs\n• Alpine RootFS Setup: Distinct download and reload icons with re-entrant installation guard\n• Agent Chat: Vertically centered composer text and streamlined panel layout",
+  "releaseDate": "2026-11-14",
   "forceUpdate": false
 }
