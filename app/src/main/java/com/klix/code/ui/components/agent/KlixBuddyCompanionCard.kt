@@ -41,7 +41,7 @@ import com.klix.code.ui.theme.KlixTypography
 
 /**
  * Screen 7: Klix Buddy Inline Assistant Card (RoundedCornerShape(20.dp))
- * - Left: 2D Klix Bot avatar (R.drawable.mascot_peeking).
+ * - Left: 2D Klix Bot coding mascot (R.drawable.mascot_coding_laptop).
  * - Right column: "Klix Buddy says:" (bold), "Ready to test palindrome.py?", and two pill buttons:
  *   - [>_ Icon] /test
  *   - [Official Gemini Star Icon] /optimize
@@ -67,13 +67,12 @@ fun KlixBuddyCompanionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 2D Klix Bot Mascot Avatar
+            // 2D Klix Bot Coding Mascot Avatar
             Image(
-                painter = painterResource(id = R.drawable.mascot_peeking),
-                contentDescription = "Klix Bot Mascot",
+                painter = painterResource(id = R.drawable.mascot_coding_laptop),
+                contentDescription = "Klix Bot Coding Mascot",
                 modifier = Modifier
-                    .size(width = 54.dp, height = 40.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(46.dp)
             )
 
             Column(

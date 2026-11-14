@@ -164,7 +164,7 @@ Bundle **Plus Jakarta Sans** (`res/font/plus_jakarta_sans_*.ttf`) for UI/Display
 - **Code Editor Card (`RoundedCornerShape(20.dp)`)**:
   - Crisp `1.dp` border (`#CBD5E1` in Light, `#2E364F` in Dark), line-number gutter (`1..10`), and syntax-highlighted `JetBrains Mono 13.sp` code (`1.54x` line height).
 - **Klix Buddy Inline Assistant Card (`RoundedCornerShape(20.dp)`)**:
-  - Left: 2D Klix Bot avatar (`R.drawable.mascot_peeking`).
+  - Left: 2D Klix Bot coding mascot (`R.drawable.mascot_coding_laptop`).
   - Right column: `"Klix Buddy says:"` (bold), `"Ready to test palindrome.py?"`, and two pill buttons:
     - `[>_ Icon] /test`
     - `[Official Gemini Star Icon] /optimize`

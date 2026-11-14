@@ -427,8 +427,13 @@ class TerminalViewModel @JvmOverloads constructor(
         session.activeJob = scope.launch {
             setSessionExecuting(session, true)
             try {
+                val effectiveCommand = if (trimmed.startsWith("apk get ") || trimmed == "apk get") {
+                    trimmed.replaceFirst("apk get", "apk add")
+                } else {
+                    trimmed
+                }
                 val result = session.executionProvider.runStreamingCommand(
-                    command = trimmed,
+                    command = effectiveCommand,
                     workingDir = session.currentCwd
                 ) { chunk, isStdout ->
                     appendSessionOutput(session, chunk, isStdout)
@@ -449,6 +454,7 @@ class TerminalViewModel @JvmOverloads constructor(
             } finally {
                 setSessionExecuting(session, false)
                 appendIdlePrompt(session)
+                sandboxManager.refreshInstalledTools()
             }
         }
     }
@@ -611,6 +617,7 @@ class TerminalViewModel @JvmOverloads constructor(
             TerminalLine(text = "  sandbox-setup    Open Alpine Linux sandbox installer & package manager", color = TerminalColors.TextSecondary),
             TerminalLine(text = "  sandbox-status   View rootfs status and installation state", color = TerminalColors.TextSecondary),
             TerminalLine(text = "  apk add <pkg>    Install tools (e.g. nodejs, npm, python3, git)", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  apk get <pkg>    Alias for apk add", color = TerminalColors.TextSecondary),
             TerminalLine(text = "  help             Display this help guide", color = TerminalColors.TextSecondary),
             TerminalLine(text = "All standard Linux commands (ls, cat, grep, find, etc.) execute inside Alpine userland.", color = TerminalColors.TextMuted)
         )

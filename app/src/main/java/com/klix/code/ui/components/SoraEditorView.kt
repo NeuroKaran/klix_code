@@ -108,7 +108,17 @@ fun SoraEditorView(
             CodeEditor(ctx).apply {
                 controller.editor = this
                 isLineNumberEnabled = true
+                setPinLineNumber(true)
+                setFirstLineNumberAlwaysVisible(true)
                 typefaceText = Typeface.MONOSPACE
+                typefaceLineNumber = Typeface.MONOSPACE
+                setLineNumberAlign(android.graphics.Paint.Align.RIGHT)
+
+                val density = ctx.resources.displayMetrics.density
+                setLineNumberMarginLeft(12f * density)
+                setDividerMargin(6f * density, 8f * density)
+                setDividerWidth(1f * density)
+
                 colorScheme = EditorSetup.createColorScheme(isDark)
                 setTextSize(fontSizeSp)
                 this.isWordwrap = isWordWrap
@@ -145,6 +155,12 @@ fun SoraEditorView(
         },
         update = { editor ->
             controller.editor = editor
+            if (!editor.isLineNumberEnabled) {
+                editor.isLineNumberEnabled = true
+            }
+            if (!editor.isLineNumberPinned) {
+                editor.setPinLineNumber(true)
+            }
             // Dynamically update color scheme only when theme mode changes
             if (isDark != lastIsDark) {
                 lastIsDark = isDark
@@ -159,7 +175,12 @@ fun SoraEditorView(
             if (editor.isWordwrap != isWordWrap) {
                 editor.isWordwrap = isWordWrap
             }
-            if (editor.textSizePx != fontSizeSp) {
+            val targetPx = android.util.TypedValue.applyDimension(
+                android.util.TypedValue.COMPLEX_UNIT_SP,
+                fontSizeSp,
+                editor.resources.displayMetrics
+            )
+            if (kotlin.math.abs(editor.textSizePx - targetPx) > 0.5f) {
                 editor.setTextSize(fontSizeSp)
             }
             // Only update editor language when file extension changes, not on every keystroke

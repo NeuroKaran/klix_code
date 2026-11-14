@@ -22,11 +22,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,40 +67,35 @@ import com.klix.code.ui.theme.LocalIsDarkTheme
 
 /**
  * Screen 1: Sandbox Workspace Home
- * Matches design specification:
- * - Top Header: Left column with "Hey, Prasanjit" (screenTitle) and "Sandbox Workspace" (bodySecondary).
+ * - Top Header: Left column with dynamic greeting and active workspace dropdown.
  *   Right pill badge with flame icon + streakCount (RoundedCornerShape(20.dp)).
  * - Mascot Hero Bento Card (RoundedCornerShape(24.dp)):
  *   - Soft sky-to-mint gradient fill (Light) / dark indigo-to-olive glow fill with 1.dp neon-lime border (Dark).
  *   - Left side: R.drawable.mascot_coding_laptop (2D Klix Bot typing on laptop).
  *   - Top-right speech bubble: "What shall we build today?".
- *   - Bottom row inside card: Two side-by-side pill chips:
- *     1. [Vector CPU Icon] Thinking: 4K
- *     2. [Official Alpine Linux Hexagon Logo] Alpine: Ready
+ *   - Bottom row inside card: Alpine Status Pill Chip: [Official Alpine Linux Hexagon Logo] Alpine: Ready
  * - Primary CTA: KlixPrimaryPillButton(text = "+ Open Sandbox Workspace").
  * - Recent Workspaces Section:
- *   - Section title "Recent Workspaces"
- *   - 3 stacked 56.dp height rounded cards (RoundedCornerShape(16.dp)):
- *     1. [Official Kotlin Logo] orbit-ui
- *     2. [Official Python Logo] palindrome.py
- *     3. [Official Node.js Hexagon Logo] study-buddy
+ *   - Section title "Recent Workspaces" with "+ New" button.
+ *   - Realtime workspace cards displaying the user's active & recent workspaces.
  * - Bottom Bar: KlixFloatingBottomDock(selected = Home).
  */
 @Composable
 fun HomeDashboard(
-    userName: String = "Prasanjit",
+    userName: String = "",
+    onUpdateUserName: (String) -> Unit = {},
     currentWorkspaceName: String = "Sandbox Workspace",
     activeWorkspace: SandboxWorkspace? = null,
     workspaces: List<SandboxWorkspace> = emptyList(),
     onSelectWorkspace: (String) -> Unit = {},
     onCreateWorkspace: (String) -> Unit = {},
     onDeleteWorkspace: (String) -> Unit = {},
-    streakCount: Int = 7,
+    streakCount: Int = 1,
     isStreakClaimedToday: Boolean = true,
     onOpenStreak: () -> Unit = {},
     onOpenDrawer: () -> Unit = {},
     isSandboxInstalled: Boolean = true,
-    activeModelName: String = "Thinking: 4K",
+    activeModelName: String = "",
     onOpenSandboxWorkspace: () -> Unit = {},
     onConfigureSandbox: () -> Unit = {},
     recentProjects: List<ProjectItem> = emptyList(),
@@ -108,6 +108,24 @@ fun HomeDashboard(
 ) {
     val isDark = LocalIsDarkTheme.current
     var showCreateWorkspaceDialog by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
+
+    val displayWorkspaces = remember(workspaces, recentProjects) {
+        if (workspaces.isNotEmpty()) {
+            workspaces
+        } else {
+            recentProjects.map { project ->
+                SandboxWorkspace(
+                    id = project.name,
+                    name = project.name,
+                    directoryName = project.name,
+                    relativePath = "/workspaces/${project.name}",
+                    rootUri = project.uri,
+                    lastOpened = project.lastOpened
+                )
+            }
+        }
+    }
 
     Box(
         modifier = modifier
@@ -161,11 +179,20 @@ fun HomeDashboard(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            Text(
-                                text = "Hey, ${if (userName.isBlank()) "Prasanjit" else userName}",
-                                style = KlixTypography.screenTitle,
-                                color = KlixInkPrimary
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showEditNameDialog = true }
+                                    .pressEffect(0.95f)
+                            ) {
+                                Text(
+                                    text = if (userName.isNotBlank()) "Hey, $userName" else "Welcome back",
+                                    style = KlixTypography.screenTitle,
+                                    color = KlixInkPrimary
+                                )
+                            }
                             if (workspaces.isNotEmpty()) {
                                 WorkspaceDropdownSelector(
                                     activeWorkspace = activeWorkspace,
@@ -267,51 +294,19 @@ fun HomeDashboard(
                             }
                         }
 
-                        // Bottom row inside card: Two side-by-side pill chips
+                        // Bottom row inside card: Alpine Status Pill Chip
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            // Chip 1: [Vector CPU Icon] Thinking: 4K
                             Box(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(if (isDark) Color(0xFF1F2639) else Color(0xFFFFFFFF))
-                                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_icon_cpu),
-                                        contentDescription = "CPU Icon",
-                                        tint = if (isDark) Color(0xFFD5FB66) else Color(0xFF3B82F6),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Text(
-                                        text = activeModelName.ifEmpty { "Thinking: 4K" },
-                                        style = KlixTypography.bodySecondary,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = KlixInkPrimary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-
-                            // Chip 2: [Official Alpine Linux Hexagon Logo] Alpine: Ready
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(if (isDark) Color(0xFF1F2639) else Color(0xFFFFFFFF))
                                     .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
                                     .clickable(onClick = onConfigureSandbox)
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .pressEffect(0.96f)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(
@@ -370,53 +365,110 @@ fun HomeDashboard(
                 }
             }
 
-            // 3 stacked 56.dp height rounded cards
-            item {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Item 1: [Official Kotlin Logo] orbit-ui
-                    RecentWorkspaceRow(
-                        name = if (recentProjects.isNotEmpty()) recentProjects[0].name else "orbit-ui",
-                        logoRes = R.drawable.ic_logo_kotlin,
-                        onClick = {
-                            if (recentProjects.isNotEmpty()) {
-                                onSelectProject(recentProjects[0].uri, recentProjects[0].name)
-                            } else {
-                                onOpenSandboxWorkspace()
-                            }
+            // Realtime Recent Workspaces Section
+            if (displayWorkspaces.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(KlixSurfaceCardItem)
+                            .border(1.dp, KlixBorderHairline, RoundedCornerShape(16.dp))
+                            .padding(vertical = 24.dp, horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No recent workspaces yet",
+                            style = KlixTypography.bodySecondary,
+                            color = KlixInkSecondary
+                        )
+                    }
+                }
+            } else {
+                item {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        displayWorkspaces.forEach { ws ->
+                            val isActive = activeWorkspace?.id == ws.id || (activeWorkspace == null && ws.name == currentWorkspaceName)
+                            RecentWorkspaceRow(
+                                name = ws.name,
+                                logoRes = getWorkspaceIconRes(ws.name),
+                                isActive = isActive,
+                                onClick = {
+                                    val match = workspaces.find { it.id == ws.id }
+                                    if (match != null) {
+                                        onSelectWorkspace(match.id)
+                                    } else {
+                                        onSelectProject(ws.rootUri, ws.name)
+                                    }
+                                }
+                            )
                         }
-                    )
-
-                    // Item 2: [Official Python Logo] palindrome.py
-                    RecentWorkspaceRow(
-                        name = if (recentProjects.size > 1) recentProjects[1].name else "palindrome.py",
-                        logoRes = R.drawable.ic_logo_python,
-                        onClick = {
-                            if (recentProjects.size > 1) {
-                                onSelectProject(recentProjects[1].uri, recentProjects[1].name)
-                            } else {
-                                onOpenSandboxWorkspace()
-                            }
-                        }
-                    )
-
-                    // Item 3: [Official Node.js Hexagon Logo] study-buddy
-                    RecentWorkspaceRow(
-                        name = if (recentProjects.size > 2) recentProjects[2].name else "study-buddy",
-                        logoRes = R.drawable.ic_logo_nodejs,
-                        onClick = {
-                            if (recentProjects.size > 2) {
-                                onSelectProject(recentProjects[2].uri, recentProjects[2].name)
-                            } else {
-                                onOpenSandboxWorkspace()
-                            }
-                        }
-                    )
+                    }
                 }
             }
 
             item { Spacer(modifier = Modifier.height(90.dp)) }
+        }
+
+        // Dialog for setting user name
+        if (showEditNameDialog) {
+            var inputName by remember { mutableStateOf(userName) }
+            AlertDialog(
+                onDismissRequest = { showEditNameDialog = false },
+                title = {
+                    Text(
+                        text = "Your Name",
+                        style = KlixTypography.cardTitle,
+                        color = KlixInkPrimary
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Set your name to personalize your greeting.",
+                            style = KlixTypography.bodySecondary,
+                            color = KlixInkSecondary
+                        )
+                        OutlinedTextField(
+                            value = inputName,
+                            onValueChange = { inputName = it },
+                            placeholder = { Text("Enter your name", color = KlixInkSecondary) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F),
+                                unfocusedBorderColor = KlixBorderHairline,
+                                focusedTextColor = KlixInkPrimary,
+                                unfocusedTextColor = KlixInkPrimary,
+                                cursorColor = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onUpdateUserName(inputName.trim())
+                            showEditNameDialog = false
+                        }
+                    ) {
+                        Text(
+                            text = "Save",
+                            color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEditNameDialog = false }) {
+                        Text("Cancel", color = KlixInkSecondary)
+                    }
+                },
+                containerColor = if (isDark) Color(0xFF1E2638) else Color(0xFFFFFFFF),
+                shape = RoundedCornerShape(20.dp)
+            )
         }
 
         // Dialog for creating workspace
@@ -444,34 +496,99 @@ fun HomeDashboard(
 @Composable
 private fun RecentWorkspaceRow(
     name: String,
-    logoRes: Int,
+    logoRes: Int? = null,
+    isActive: Boolean = false,
     onClick: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(KlixSurfaceCardItem)
-            .border(1.dp, KlixBorderHairline, RoundedCornerShape(16.dp))
+            .border(
+                width = 1.dp,
+                color = if (isActive) {
+                    if (isDark) Color(0xFFD5FB66).copy(alpha = 0.5f) else Color(0xFF4D7C0F).copy(alpha = 0.4f)
+                } else KlixBorderHairline,
+                shape = RoundedCornerShape(16.dp)
+            )
             .clickable(onClick = onClick)
             .pressEffect(0.97f)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Image(
-            painter = painterResource(id = logoRes),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp)
-        )
+        if (logoRes != null) {
+            Image(
+                painter = painterResource(id = logoRes),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (isActive) {
+                            if (isDark) Color(0xFFD5FB66).copy(alpha = 0.15f) else Color(0xFF4D7C0F).copy(alpha = 0.15f)
+                        } else {
+                            if (isDark) Color(0xFF262C40) else Color(0xFFE2EDF7)
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Folder,
+                    contentDescription = null,
+                    tint = if (isActive) {
+                        if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
+                    } else {
+                        if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                    },
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
 
         Text(
             text = name,
             style = KlixTypography.cardTitle,
             color = KlixInkPrimary,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
+
+        if (isActive) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (isDark) Color(0xFFD5FB66).copy(alpha = 0.15f) else Color(0xFF4D7C0F).copy(alpha = 0.12f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = "Active",
+                    style = KlixTypography.bodySecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
+                )
+            }
+        }
+    }
+}
+
+private fun getWorkspaceIconRes(name: String): Int? {
+    val lower = name.lowercase()
+    return when {
+        lower.endsWith(".py") || lower.contains("python") -> R.drawable.ic_logo_python
+        lower.endsWith(".kt") || lower.endsWith(".kts") || lower.contains("kotlin") -> R.drawable.ic_logo_kotlin
+        lower.endsWith(".js") || lower.endsWith(".ts") || lower.endsWith(".jsx") || lower.endsWith(".tsx") || lower.contains("node") -> R.drawable.ic_logo_nodejs
+        lower.endsWith(".cpp") || lower.endsWith(".c") || lower.contains("cpp") -> R.drawable.ic_logo_cpp
+        lower.endsWith(".sh") || lower.endsWith(".bash") || lower.contains("alpine") -> R.drawable.ic_logo_alpine
+        else -> null
     }
 }

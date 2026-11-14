@@ -66,7 +66,9 @@ class SlashCommandRepositoryImpl(
     }
 
     override suspend fun getAllCommands(): List<SlashCommand> {
-        val custom = getCustomCommands()
+        val custom = getCustomCommands().filter { c ->
+            BuiltInSlashCommands.ALL.none { it.trigger.equals(c.trigger, ignoreCase = true) }
+        }
         return BuiltInSlashCommands.ALL + custom
     }
 

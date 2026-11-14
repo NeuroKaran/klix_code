@@ -102,4 +102,69 @@ class SandboxManagerTest {
         assertTrue(result.exceptionOrNull() is IllegalStateException)
         assertEquals("RootFS installation is already in progress", result.exceptionOrNull()?.message)
     }
+
+    @Test
+    fun testToolchainActionMapping() {
+        // Not installed: download icon and Tap to Install
+        assertEquals("Tap to Install", SandboxSetupUiHelper.getToolActionLabel(isInstalled = false))
+        assertEquals(Icons.Default.Download, SandboxSetupUiHelper.getToolActionIcon(isInstalled = false))
+
+        // Installed: refresh/buffer icon and Reinstall
+        assertEquals("Reinstall", SandboxSetupUiHelper.getToolActionLabel(isInstalled = true))
+        assertEquals(Icons.Default.Refresh, SandboxSetupUiHelper.getToolActionIcon(isInstalled = true))
+
+        // Installing in progress:
+        assertEquals("Installing...", SandboxSetupUiHelper.getToolActionLabel(isInstalled = false, isInstalling = true))
+        assertEquals("Installing...", SandboxSetupUiHelper.getToolActionLabel(isInstalled = true, isInstalling = true))
+    }
+
+    @Test
+    fun testToolInstallationDetectionAndStateFlow() {
+        // On clean sandbox (no rootfs), none of the tools are installed
+        assertEquals(false, sandboxManager.isToolInstalled("nodejs"))
+        assertEquals(false, sandboxManager.isToolInstalled("python3"))
+        assertEquals(false, sandboxManager.isToolInstalled("git"))
+        assertEquals(false, sandboxManager.isToolInstalled("c/c++"))
+
+        val toolsMap = sandboxManager.installedTools.value
+        assertEquals(false, toolsMap["nodejs"])
+        assertEquals(false, toolsMap["python3"])
+        assertEquals(false, toolsMap["git"])
+        assertEquals(false, toolsMap["c/c++"])
+
+        // Simulate installing nodejs binary in rootfs
+        val rootfs = sandboxManager.getRootfsDir()
+        val nodeBin = File(rootfs, "usr/bin/node")
+        nodeBin.parentFile?.mkdirs()
+        nodeBin.writeText("#!/bin/sh\necho v20.0.0")
+
+        // Simulate installing python3 via apk world file
+        val etcApk = File(rootfs, "etc/apk").apply { mkdirs() }
+        val worldFile = File(etcApk, "world")
+        worldFile.writeText("python3\n")
+
+        sandboxManager.refreshInstalledTools()
+
+        assertTrue(sandboxManager.isToolInstalled("nodejs"))
+        assertTrue(sandboxManager.isToolInstalled("python3"))
+        assertFalse(sandboxManager.isToolInstalled("git"))
+        assertFalse(sandboxManager.isToolInstalled("c/c++"))
+
+        val updatedMap = sandboxManager.installedTools.value
+        assertEquals(true, updatedMap["nodejs"])
+        assertEquals(true, updatedMap["python3"])
+        assertEquals(false, updatedMap["git"])
+        assertEquals(false, updatedMap["c/c++"])
+    }
+
+    @Test
+    fun testToolInstallingTracking() {
+        assertFalse(sandboxManager.installingTools.value.contains("nodejs"))
+
+        sandboxManager.setToolInstalling("nodejs", true)
+        assertTrue(sandboxManager.installingTools.value.contains("nodejs"))
+
+        sandboxManager.setToolInstalling("nodejs", false)
+        assertFalse(sandboxManager.installingTools.value.contains("nodejs"))
+    }
 }

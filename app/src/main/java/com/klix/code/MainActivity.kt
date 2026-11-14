@@ -285,6 +285,9 @@ class MainActivity : ComponentActivity() {
                 val isSandboxInstalled = sandboxStatus == SandboxStatus.READY && terminalViewModel.sandboxManager.isInstalled()
                 var showSandboxWarningDialog by rememberSaveable { mutableStateOf(false) }
 
+                val prefs = remember { getSharedPreferences("klix_prefs", Context.MODE_PRIVATE) }
+                var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
+
                 val streakState by StreakManager.streakState.collectAsState()
                 var showDailyStreakDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -340,7 +343,6 @@ class MainActivity : ComponentActivity() {
 
                 // Onboarding: Prompt sandbox setup warning card on launch if not configured
                 LaunchedEffect(isSandboxInstalled) {
-                    val prefs = getSharedPreferences("klix_prefs", Context.MODE_PRIVATE)
                     val hasShownSandboxOnboarding = prefs.getBoolean("has_shown_sandbox_onboarding", false)
                     if (!hasShownSandboxOnboarding && !isSandboxInstalled) {
                         prefs.edit().putBoolean("has_shown_sandbox_onboarding", true).apply()
@@ -905,8 +907,14 @@ class MainActivity : ComponentActivity() {
                                     KlixBuddyCompanionCard(
                                         activeFileName = activeTab.name,
                                         onTriggerCommand = { cmd ->
+                                            agentViewModel.updateWorkspaceContext(
+                                                workspaceUri = currentProject?.uri,
+                                                workspaceName = currentProject?.name ?: "Workspace",
+                                                activeFileName = activeTab.name,
+                                                activeFileContent = activeTab.content
+                                            )
                                             isAgentPanelOpen = true
-                                            agentPromptText = "$cmd ${activeTab.name}"
+                                            agentViewModel.sendPrompt(cmd)
                                         },
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
@@ -914,7 +922,11 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 // Modern Home Dashboard when no tabs are open (Gemini Mockup 0)
                                 HomeDashboard(
-                                    userName = "Prasanjit",
+                                    userName = userName,
+                                    onUpdateUserName = { newName ->
+                                        userName = newName
+                                        prefs.edit().putString("user_name", newName).apply()
+                                    },
                                     currentWorkspaceName = activeWorkspace?.name ?: currentProject?.name ?: "Default Workspace",
                                     activeWorkspace = activeWorkspace,
                                     workspaces = allWorkspaces,
@@ -930,7 +942,6 @@ class MainActivity : ComponentActivity() {
                                     onOpenStreak = { showDailyStreakDialog = true },
                                     onOpenDrawer = { scope.launch { drawerState.open() } },
                                     isSandboxInstalled = isSandboxInstalled,
-                                    activeModelName = agentSettings.activeModel.ifEmpty { "Thinking: 4K" },
                                     onOpenSandboxWorkspace = {
                                         if (!isSandboxInstalled) {
                                             terminalViewModel.openSetupDialog()

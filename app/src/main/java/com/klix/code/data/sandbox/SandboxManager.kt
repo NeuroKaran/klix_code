@@ -42,6 +42,47 @@ class SandboxManager(private val context: Context) {
     private val _progress = MutableStateFlow(0f)
     val progress: StateFlow<Float> = _progress.asStateFlow()
 
+    private val _installedTools = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val installedTools: StateFlow<Map<String, Boolean>> = _installedTools.asStateFlow()
+
+    private val _installingTools = MutableStateFlow<Set<String>>(emptySet())
+    val installingTools: StateFlow<Set<String>> = _installingTools.asStateFlow()
+
+    init {
+        refreshInstalledTools()
+    }
+
+    fun setToolInstalling(toolId: String, installing: Boolean) {
+        val current = _installingTools.value.toMutableSet()
+        if (installing) {
+            current.add(toolId.lowercase())
+        } else {
+            current.remove(toolId.lowercase())
+        }
+        _installingTools.value = current
+    }
+
+    fun refreshInstalledTools() {
+        val rootfs = getRootfsDir()
+        if (!rootfs.exists()) {
+            _installedTools.value = mapOf(
+                "nodejs" to false,
+                "python3" to false,
+                "git" to false,
+                "c/c++" to false
+            )
+            return
+        }
+
+        val map = mapOf(
+            "nodejs" to isToolInstalled("nodejs"),
+            "python3" to isToolInstalled("python3"),
+            "git" to isToolInstalled("git"),
+            "c/c++" to isToolInstalled("c/c++")
+        )
+        _installedTools.value = map
+    }
+
     fun getSandboxDir(): File = File(context.filesDir, "sandbox").apply { if (!exists()) mkdirs() }
     fun getRootfsDir(): File = File(getSandboxDir(), "rootfs")
     fun getBinDir(): File = File(getSandboxDir(), "bin").apply { if (!exists()) mkdirs() }
@@ -95,6 +136,7 @@ class SandboxManager(private val context: Context) {
             "python", "python3", "python 3 & pip" -> {
                 File(rootfs, "usr/bin/python3").exists() ||
                 File(rootfs, "bin/python3").exists() ||
+                File(rootfs, "usr/bin/python").exists() ||
                 installedPkgs.contains("python3")
             }
             "git" -> {
@@ -102,9 +144,11 @@ class SandboxManager(private val context: Context) {
                 File(rootfs, "bin/git").exists() ||
                 installedPkgs.contains("git")
             }
-            "build-base", "c/c++ build essentials", "c/c++" -> {
+            "build-base", "c/c++ build essentials", "c/c++", "cpp", "c++" -> {
                 File(rootfs, "usr/bin/gcc").exists() ||
+                File(rootfs, "usr/bin/g++").exists() ||
                 File(rootfs, "usr/bin/make").exists() ||
+                File(rootfs, "usr/bin/clang").exists() ||
                 installedPkgs.contains("build-base")
             }
             else -> {
@@ -204,6 +248,7 @@ class SandboxManager(private val context: Context) {
             _status.value = SandboxStatus.READY
             _progress.value = 1.0f
             _statusMessage.value = "Alpine Linux sandbox ready"
+            refreshInstalledTools()
             Result.success(Unit)
         } catch (e: Exception) {
             _status.value = SandboxStatus.ERROR
@@ -252,6 +297,26 @@ class SandboxManager(private val context: Context) {
             export PS1='\u@klix:\w\$ '
             """.trimIndent()
         )
+
+        // Setup apk wrapper in /usr/local/bin so 'apk get' maps to 'apk add'
+        try {
+            val localBinDir = File(rootfsDir, "usr/local/bin").apply { if (!exists()) mkdirs() }
+            val apkWrapper = File(localBinDir, "apk")
+            apkWrapper.writeText(
+                """
+                #!/bin/sh
+                if [ "$1" = "get" ]; then
+                    shift
+                    exec /sbin/apk add "$@"
+                else
+                    exec /sbin/apk "$@"
+                fi
+                """.trimIndent() + "\n"
+            )
+            apkWrapper.setReadable(true, false)
+            apkWrapper.setWritable(true, false)
+            apkWrapper.setExecutable(true, false)
+        } catch (_: Throwable) {}
     }
 
     private fun extractTarGz(tarGzFile: File, targetDir: File) {
@@ -403,6 +468,7 @@ class SandboxManager(private val context: Context) {
             _status.value = SandboxStatus.NOT_INSTALLED
             _statusMessage.value = "Sandbox not installed"
             _progress.value = 0f
+            refreshInstalledTools()
             true
         } catch (_: Exception) {
             false

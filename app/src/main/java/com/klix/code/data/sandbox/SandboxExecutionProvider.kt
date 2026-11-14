@@ -224,7 +224,12 @@ class SandboxExecutionProvider(
             val isSandboxReady = sandboxManager.isInstalled()
 
             val currentDir = if (!workingDir.isNullOrBlank()) workingDir else "/workspaces/default"
-            val wrappedCommand = "echo \"__KLIX_PID:\$\$\"; cd \"$currentDir\" 2>/dev/null; $command; __KLIX_STATUS=$?; echo \"__KLIX_PWD:\$(pwd):STATUS:\$__KLIX_STATUS\"; exit \$__KLIX_STATUS"
+            val effectiveCommand = if (command.trim().startsWith("apk get ") || command.trim() == "apk get") {
+                command.replaceFirst("apk get", "apk add")
+            } else {
+                command
+            }
+            val wrappedCommand = "echo \"__KLIX_PID:\$\$\"; cd \"$currentDir\" 2>/dev/null; $effectiveCommand; __KLIX_STATUS=$?; echo \"__KLIX_PWD:\$(pwd):STATUS:\$__KLIX_STATUS\"; exit \$__KLIX_STATUS"
 
             val effectiveWorkingDir = if (!workingDir.isNullOrBlank() && File(workingDir).exists()) {
                 File(workingDir)

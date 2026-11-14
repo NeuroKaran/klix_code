@@ -20,14 +20,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,13 +41,17 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import android.widget.Toast
 import com.klix.code.R
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.sandbox.SandboxStatus
@@ -87,9 +94,16 @@ fun SandboxSetupDialog(
     val status by sandboxManager.status.collectAsState()
     val statusMsg by sandboxManager.statusMessage.collectAsState()
     val progress by sandboxManager.progress.collectAsState()
+    val installedTools by sandboxManager.installedTools.collectAsState()
+    val installingTools by sandboxManager.installingTools.collectAsState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val isDark = LocalIsDarkTheme.current
     val dialogShape = RoundedCornerShape(26.dp)
+
+    LaunchedEffect(status) {
+        sandboxManager.refreshInstalledTools()
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -285,6 +299,21 @@ fun SandboxSetupDialog(
                     color = KlixInkPrimary
                 )
 
+                val isNodeInstalled = installedTools["nodejs"] == true
+                val isPythonInstalled = installedTools["python3"] == true
+                val isGitInstalled = installedTools["git"] == true
+                val isCppInstalled = installedTools["c/c++"] == true
+
+                fun handleToolClick(toolId: String, installCmd: String, reinstallCmd: String, isInstalled: Boolean) {
+                    if (status != SandboxStatus.READY) {
+                        Toast.makeText(context, "Please install Alpine Linux RootFS first", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+                    val cmd = if (isInstalled) reinstallCmd else installCmd
+                    onRunCommandInTerminal(cmd)
+                    onDismiss()
+                }
+
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -293,20 +322,30 @@ fun SandboxSetupDialog(
                         ToolchainCard(
                             name = "Node.js",
                             logoRes = R.drawable.ic_logo_nodejs,
-                            isInstalled = true,
+                            isInstalled = isNodeInstalled,
+                            isInstalling = installingTools.contains("nodejs"),
                             onClick = {
-                                onRunCommandInTerminal("apk add nodejs npm")
-                                onDismiss()
+                                handleToolClick(
+                                    toolId = "nodejs",
+                                    installCmd = "apk add nodejs npm",
+                                    reinstallCmd = "apk add --upgrade nodejs npm",
+                                    isInstalled = isNodeInstalled
+                                )
                             },
                             modifier = Modifier.weight(1f)
                         )
                         ToolchainCard(
                             name = "Python 3",
                             logoRes = R.drawable.ic_logo_python,
-                            isInstalled = true,
+                            isInstalled = isPythonInstalled,
+                            isInstalling = installingTools.contains("python3"),
                             onClick = {
-                                onRunCommandInTerminal("apk add python3 py3-pip")
-                                onDismiss()
+                                handleToolClick(
+                                    toolId = "python3",
+                                    installCmd = "apk add python3 py3-pip",
+                                    reinstallCmd = "apk add --upgrade python3 py3-pip",
+                                    isInstalled = isPythonInstalled
+                                )
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -318,29 +357,186 @@ fun SandboxSetupDialog(
                         ToolchainCard(
                             name = "Git",
                             logoRes = R.drawable.ic_logo_git,
-                            isInstalled = true,
+                            isInstalled = isGitInstalled,
+                            isInstalling = installingTools.contains("git"),
                             onClick = {
-                                onRunCommandInTerminal("apk add git")
-                                onDismiss()
+                                handleToolClick(
+                                    toolId = "git",
+                                    installCmd = "apk add git",
+                                    reinstallCmd = "apk add --upgrade git",
+                                    isInstalled = isGitInstalled
+                                )
                             },
                             modifier = Modifier.weight(1f)
                         )
                         ToolchainCard(
                             name = "C/C++",
                             logoRes = R.drawable.ic_logo_cpp,
-                            isInstalled = false,
+                            isInstalled = isCppInstalled,
+                            isInstalling = installingTools.contains("c/c++"),
                             onClick = {
-                                onRunCommandInTerminal("apk add build-base")
-                                onDismiss()
+                                handleToolClick(
+                                    toolId = "c/c++",
+                                    installCmd = "apk add build-base",
+                                    reinstallCmd = "apk add --upgrade build-base",
+                                    isInstalled = isCppInstalled
+                                )
                             },
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
 
+                // 4. Install Different Tools Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(KlixSurfaceCardItem)
+                        .border(1.dp, KlixBorderHairline, RoundedCornerShape(18.dp))
+                        .padding(14.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = "Install Different Tools",
+                                style = KlixTypography.cardTitle,
+                                color = KlixInkPrimary
+                            )
+                            Text(
+                                text = "Run in Linux terminal to install other Alpine packages:",
+                                style = KlixTypography.bodySecondary,
+                                color = KlixInkSecondary
+                            )
+                        }
+
+                        val clipboardManager = LocalClipboardManager.current
+                        val commandText = "apk add <package>"
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isDark) Color(0xFF0C0D14) else Color(0xFFF1F5F9))
+                                .border(1.dp, KlixBorderHairline, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "$",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = KlixInkSecondary
+                                    )
+                                    Text(
+                                        text = commandText,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isDark) Color(0xFFD5FB66) else Color(0xFF0D9488)
+                                    )
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    // Copy Button
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(KlixSurfaceCardItem)
+                                            .border(1.dp, KlixBorderHairline, RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                clipboardManager.setText(AnnotatedString(commandText))
+                                                Toast.makeText(context, "Copied: $commandText", Toast.LENGTH_SHORT).show()
+                                            }
+                                            .pressEffect(0.92f)
+                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ContentCopy,
+                                                contentDescription = "Copy Command",
+                                                tint = KlixInkPrimary,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Text(
+                                                text = "Copy",
+                                                style = KlixTypography.codePill,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = KlixInkPrimary
+                                            )
+                                        }
+                                    }
+
+                                    // Run in Terminal button
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(KlixSurfaceCardItem)
+                                            .border(1.dp, KlixBorderHairline, RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                if (status != SandboxStatus.READY) {
+                                                    Toast.makeText(context, "Please install Alpine Linux RootFS first", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    onRunCommandInTerminal("apk add ")
+                                                    onDismiss()
+                                                }
+                                            }
+                                            .pressEffect(0.92f)
+                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Terminal,
+                                                contentDescription = "Run in Terminal",
+                                                tint = KlixInkPrimary,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Text(
+                                                text = "Run",
+                                                style = KlixTypography.codePill,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = KlixInkPrimary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Helper note supporting both apk add and apk get
+                        Text(
+                            text = "Tip: You can also run \"apk get <package>\" directly in terminal.",
+                            style = KlixTypography.bodySecondary,
+                            color = KlixInkSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // 4. Primary CTA: [>_] Open Linux Terminal
+                // 5. Primary CTA: [>_] Open Linux Terminal
                 KlixPrimaryPillButton(
                     text = "Open Linux Terminal",
                     onClick = {
@@ -375,41 +571,88 @@ private fun ToolchainCard(
     name: String,
     logoRes: Int,
     isInstalled: Boolean,
+    isInstalling: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalIsDarkTheme.current
+    val actionLabel = SandboxSetupUiHelper.getToolActionLabel(isInstalled, isInstalling)
+    val actionIcon = SandboxSetupUiHelper.getToolActionIcon(isInstalled)
+
+    val activeColor = if (isDark) Color(0xFFD5FB66) else Color(0xFF15803D)
+    val inactiveColor = KlixInkSecondary
+
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
             .background(KlixSurfaceCardItem)
-            .border(1.dp, KlixBorderHairline, RoundedCornerShape(18.dp))
+            .border(
+                1.dp,
+                if (isInstalled) activeColor.copy(alpha = 0.35f) else KlixBorderHairline,
+                RoundedCornerShape(18.dp)
+            )
             .clickable(onClick = onClick)
             .pressEffect(0.95f)
             .padding(14.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Image(
-                    painter = painterResource(id = logoRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Image(
+                        painter = painterResource(id = logoRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = name,
+                        style = KlixTypography.cardTitle,
+                        color = KlixInkPrimary
+                    )
+                }
+
+                if (isInstalled) {
+                    Box(
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clip(CircleShape)
+                            .background(activeColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "✓",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = activeColor
+                        )
+                    }
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Icon(
+                    imageVector = actionIcon,
+                    contentDescription = actionLabel,
+                    modifier = Modifier.size(13.dp),
+                    tint = if (isInstalled) activeColor else inactiveColor
                 )
                 Text(
-                    text = name,
-                    style = KlixTypography.cardTitle,
-                    color = KlixInkPrimary
+                    text = actionLabel,
+                    style = KlixTypography.bodySecondary,
+                    fontWeight = if (isInstalled) FontWeight.SemiBold else FontWeight.Medium,
+                    color = if (isInstalled) activeColor else inactiveColor
                 )
             }
-            Text(
-                text = if (isInstalled) "Installed ✓" else "Tap to Install",
-                style = KlixTypography.bodySecondary,
-                fontWeight = if (isInstalled) FontWeight.Bold else FontWeight.Medium,
-                color = if (isInstalled) (if (isDark) Color(0xFFD5FB66) else Color(0xFF15803D)) else KlixInkSecondary
-            )
         }
     }
 }
@@ -423,4 +666,13 @@ internal object SandboxSetupUiHelper {
 
     fun getActionIcon(status: SandboxStatus): ImageVector =
         if (isReinstall(status)) Icons.Default.Refresh else Icons.Default.Download
+
+    fun getToolActionLabel(isInstalled: Boolean, isInstalling: Boolean = false): String = when {
+        isInstalling -> "Installing..."
+        isInstalled -> "Reinstall"
+        else -> "Tap to Install"
+    }
+
+    fun getToolActionIcon(isInstalled: Boolean): ImageVector =
+        if (isInstalled) Icons.Default.Refresh else Icons.Default.Download
 }

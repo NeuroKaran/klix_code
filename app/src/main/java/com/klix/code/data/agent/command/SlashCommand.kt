@@ -114,6 +114,15 @@ object BuiltInSlashCommands {
             iconName = "bolt"
         ),
         SlashCommand(
+            id = "builtin_optimize",
+            trigger = "optimize",
+            description = "Analyze Big-O complexity and optimize performance of active file",
+            template = "Analyze the algorithmic runtime and memory complexity of the code in {file} and provide high-performance alternatives:\n\n```\n{code}\n```\n\nKey areas: {input}",
+            actionType = SlashCommandActionType.PROMPT,
+            isBuiltIn = true,
+            iconName = "code"
+        ),
+        SlashCommand(
             id = "builtin_review",
             trigger = "review",
             description = "Perform a thorough code review for quality and edge cases",

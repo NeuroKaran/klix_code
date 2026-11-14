@@ -162,8 +162,7 @@ fun AgentSettingsDialog(
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
+            usePlatformDefaultWidth = false
         )
     ) {
         KlixPeekingMascotScaffold(
@@ -173,10 +172,15 @@ fun AgentSettingsDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Card 1: App Theme
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Card 1: App Theme
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -541,25 +545,26 @@ fun AgentSettingsDialog(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-
-                // Bottom CTA: Apply & Close
-                KlixPrimaryPillButton(
-                    text = "Apply & Close",
-                    onClick = {
-                        val updated = currentSettings.copy(
-                            activeProvider = selectedProvider,
-                            activeModel = selectedModel
-                        )
-                        onSaveSettings(updated)
-                        onDismiss()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(48.dp))
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Bottom CTA: Apply & Close
+            KlixPrimaryPillButton(
+                text = "Apply & Close",
+                onClick = {
+                    val updated = currentSettings.copy(
+                        activeProvider = selectedProvider,
+                        activeModel = selectedModel
+                    )
+                    onSaveSettings(updated)
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
+}
 }
 
 @Composable
