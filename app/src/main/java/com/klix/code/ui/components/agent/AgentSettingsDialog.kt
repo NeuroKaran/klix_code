@@ -161,14 +161,18 @@ fun AgentSettingsDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
         KlixPeekingMascotScaffold(
             title = "Settings"
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .weight(1f)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -536,7 +540,7 @@ fun AgentSettingsDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.weight(1f, fill = false))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Bottom CTA: Apply & Close
                 KlixPrimaryPillButton(
@@ -549,8 +553,10 @@ fun AgentSettingsDialog(
                         onSaveSettings(updated)
                         onDismiss()
                     },
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(48.dp))
             }
         }
     }

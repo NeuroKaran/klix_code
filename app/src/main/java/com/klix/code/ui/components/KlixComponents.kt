@@ -1,5 +1,7 @@
 package com.klix.code.ui.components
 
+import android.app.Activity
+import android.content.ContextWrapper
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -13,9 +15,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -43,11 +48,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.klix.code.R
 import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.KlixBgRootGradient
@@ -76,6 +86,20 @@ fun KlixPeekingMascotScaffold(
 ) {
     val isDark = LocalIsDarkTheme.current
     val sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    val density = LocalDensity.current
+    val context = LocalContext.current
+
+    val composeNavDp = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val safeBottomPadding = remember(density, context, composeNavDp) {
+        val activity = context as? Activity ?: (context as? ContextWrapper)?.baseContext as? Activity
+        val rootInsets = activity?.window?.decorView?.let { ViewCompat.getRootWindowInsets(it) }
+        val navInsetsPx = rootInsets?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
+        val navInsetsDp = if (navInsetsPx > 0) with(density) { navInsetsPx.toDp() } else 0.dp
+        val resId = context.resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        val resPx = if (resId > 0) context.resources.getDimensionPixelSize(resId) else 0
+        val resDp = if (resPx > 0) with(density) { resPx.toDp() } else 0.dp
+        maxOf(navInsetsDp, resDp, composeNavDp, 28.dp)
+    }
 
     Box(
         modifier = modifier
@@ -140,7 +164,12 @@ fun KlixPeekingMascotScaffold(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 18.dp, vertical = 10.dp)
+                        .padding(
+                            start = 18.dp,
+                            end = 18.dp,
+                            top = 10.dp,
+                            bottom = 100.dp
+                        )
                 ) {
                     // Centered 36.dp x 4.dp drag-handle pill
                     Box(
