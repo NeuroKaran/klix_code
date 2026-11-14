@@ -23,8 +23,25 @@
   <meta name="author" content="Klix Code" />
   <meta name="publisher" content="Klix Code" />
   <meta name="application-name" content="Klix Code" />
-  <meta name="theme-color" content="#07080c" />
-  <meta name="color-scheme" content="dark" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#d8eefe" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e1a" />
+  <!-- Inline FOUC Prevention Script (per modern-web-guidance dark-mode-toggle) -->
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem("color-scheme");
+        var meta = document.querySelector('meta[name="color-scheme"]');
+        if (stored === "light" || stored === "dark") {
+          document.documentElement.setAttribute("data-theme", stored);
+          if (meta) meta.content = stored;
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+          if (meta) meta.content = "light dark";
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- Apple & Mobile Web App Capabilities -->
   <meta name="apple-mobile-web-app-title" content="Klix Code" />
@@ -65,11 +82,11 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
   <link rel="shortcut icon" href="/favicon.ico?v=2" />
 
-  <!-- Google Fonts Preconnect & Stylesheets -->
+  <!-- Google Fonts Preconnect & Stylesheets (Plus Jakarta Sans & JetBrains Mono matching App KlixTypography) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&family=Pixelify+Sans:wght@500;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"
     rel="stylesheet" />
 
   <!-- Structured Data (JSON-LD) for Google Rich Snippets & Search Knowledge Graph -->
@@ -205,6 +222,24 @@
       </nav>
 
       <div class="nav-actions">
+        <!-- Dual-Theme Switcher (Light / Dark) -->
+        <button class="nav-theme-toggle" id="theme-toggle-btn" type="button" aria-label="Toggle light and dark theme" title="Toggle Theme (Light / Dark)">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
         <a href="https://github.com/NeuroKaran/klix_code" target="_blank" rel="noopener noreferrer" class="nav-icon-btn"
           id="nav-github-link" title="View KlixCode on GitHub" aria-label="GitHub Repository">
           <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="currentColor">
@@ -239,6 +274,12 @@
       <a href="#features" class="mobile-nav-link">Features</a>
       <a href="#download" class="mobile-nav-link">Download APK</a>
       <a href="#faq" class="mobile-nav-link">FAQ</a>
+      <div class="mobile-theme-row">
+        <span class="mobile-theme-label">Theme Mode</span>
+        <button class="mobile-theme-btn" id="mobile-theme-toggle" type="button">
+          <span id="mobile-theme-status">Auto</span> ▾
+        </button>
+      </div>
       <a href="https://github.com/NeuroKaran/klix_code" target="_blank" rel="noopener noreferrer"
         class="mobile-nav-link mobile-nav-github">
         GitHub Repository ↗
@@ -259,23 +300,32 @@
           <span class="badge-dot"></span>
           <span class="badge-tag">v0.4.4 Released</span>
           <span class="badge-separator">•</span>
-          <span class="badge-text">Factual Sandbox Readiness • Scoped Nav Dock • 48dp Touch Targets • Dual-Branch Workspaces</span>
+          <span class="badge-text">9-Screen Redesign • 2D Mascot • Frosted Aurora & Cosmic Obsidian</span>
         </div>
 
-        <!-- Pixelated Headline (Style from iii.dev reference) -->
+        <!-- Mascot Welcome Companion Pill -->
+        <div class="hero-mascot-pill hero-entry hero-entry-d1">
+          <img src="/mascots/mascot_coding_laptop.png" alt="Klix Bot Mascot" class="hero-mascot-img" />
+          <div class="hero-mascot-speech">
+            <span class="mascot-greeting font-pixel">"What shall we build today?"</span>
+            <span class="mascot-status-dot"></span>
+          </div>
+        </div>
+
+        <!-- Headline (Plus Jakarta Sans ExtraBold) -->
         <h1 class="hero-title font-pixel hero-entry hero-entry-d2">
-          <span class="title-line">Klix Code ⚡ Agentic AI IDE</span>
+          <span class="title-line">Autonomous AI Agent IDE</span>
           <span class="title-line hero-title-highlight">Built for your pocket.</span>
         </h1>
 
         <!-- Simple, clean subtitle -->
         <p class="hero-subtitle hero-entry hero-entry-d3">
-          Cursor & Claude Code for your pocket. Klix Code (Klix / KlixCode) brings autonomous multi-step coding agents,
+          Cursor & Claude Code for your pocket. Klix Code brings autonomous multi-step coding agents,
           interactive diff reviews, and an offline Alpine Linux sandbox directly to your Android device with 100% BYOK
           privacy.
         </p>
 
-        <!-- Single high-impact Lime CTA -->
+        <!-- Single high-impact Adaptive CTA (Inverted per Design Tokens) -->
         <div class="hero-cta-wrapper hero-entry hero-entry-d4">
           <a href="/klix-code-v0.4.4.apk" download="klix-code-v0.4.4.apk" class="btn-primary-lime btn-large"
             id="hero-download-btn" data-umami-event="apk_download" data-umami-event-source="hero"
@@ -290,7 +340,7 @@
             <span class="btn-badge-sub">v0.4.4 • 18.1 MB</span>
           </a>
           <a href="#demo" class="btn-ghost-simple">
-            Try Interactive Phone ↓
+            Explore Interactive App ↓
           </a>
         </div>
 
@@ -386,56 +436,158 @@
                   <img src="/app_logo.png" alt="Klix logo" class="app-logo-tiny" />
                   <div>
                     <div class="app-name-text font-pixel">Klix code</div>
-                    <div class="app-sub-text">IDE ANYWHERE</div>
+                    <div class="app-sub-text">IDE ANYWHERE • v0.4.4</div>
                   </div>
                 </div>
-                <span class="app-model-pill">● Claude 3.7</span>
+                <div class="app-header-right">
+                  <span class="app-streak-pill font-pixel" title="7 Days Active Streak">
+                    <img src="/mascots/mascot_streak_fire.png" alt="Klix Streak Flame" class="streak-mascot-img" />
+                    <span>7</span>
+                  </span>
+                </div>
               </div>
 
               <!-- Interactive Mode Switcher Tabs -->
               <div class="phone-tab-bar" role="tablist">
-                <button class="phone-tab-btn active" data-tab="agent" role="tab" aria-selected="true">
-                  Agent Loop
+                <button class="phone-tab-btn active" data-tab="home" role="tab" aria-selected="true">
+                  Home
                 </button>
-                <button class="phone-tab-btn" data-tab="diff" role="tab" aria-selected="false">
-                  Diff Review
+                <button class="phone-tab-btn" data-tab="agent" role="tab" aria-selected="false">
+                  Agent
                 </button>
                 <button class="phone-tab-btn" data-tab="terminal" role="tab" aria-selected="false">
-                  Alpine Sandbox
+                  Terminal
+                </button>
+                <button class="phone-tab-btn" data-tab="diff" role="tab" aria-selected="false">
+                  Diff
+                </button>
+                <button class="phone-tab-btn" data-tab="settings" role="tab" aria-selected="false">
+                  Settings
                 </button>
               </div>
 
-              <!-- Tab 1: Agent Loop -->
-              <div class="phone-tab-panel active" id="tab-agent">
-                <div class="chat-bubble user-bubble">
-                  "Implement biometrics fallback for Keystore credentials and run test suite."
+              <!-- Tab 1: Screen 1 - Home Dashboard -->
+              <div class="phone-tab-panel active" id="tab-home">
+                <div class="screen-home-header">
+                  <div>
+                    <h4 class="home-user-title font-pixel">Hey, Prasanjit</h4>
+                    <span class="home-user-sub">Sandbox Workspace</span>
+                  </div>
+                  <span class="home-status-badge">
+                    <span class="status-live-dot"></span>
+                    Ready
+                  </span>
+                </div>
+
+                <!-- Mascot Hero Bento Card (Screen 1 Signature) -->
+                <div class="mascot-hero-card">
+                  <div class="mascot-hero-top">
+                    <img src="/mascots/mascot_coding_laptop.png" alt="Klix Bot Typing" class="mascot-laptop-img" />
+                    <div class="mascot-speech-bubble font-pixel">
+                      "What shall we build today?"
+                    </div>
+                  </div>
+                  <div class="mascot-hero-chips">
+                    <span class="bento-chip">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <rect x="4" y="4" width="16" height="16" rx="2"/>
+                        <rect x="9" y="9" width="6" height="6"/>
+                        <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/>
+                      </svg>
+                      Thinking: 4K
+                    </span>
+                    <span class="bento-chip chip-alpine">
+                      <svg viewBox="0 0 24 24" class="chip-svg">
+                        <circle cx="12" cy="12" r="10" fill="#0D597F"/>
+                        <path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF"/>
+                      </svg>
+                      Alpine: Ready
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Primary Pill CTA -->
+                <button class="phone-primary-cta" id="phone-home-open-btn" type="button">
+                  <span>+ Open Sandbox Workspace</span>
+                </button>
+
+                <!-- Recent Workspaces -->
+                <div class="home-workspaces-box">
+                  <span class="workspaces-section-title font-pixel">Recent Workspaces</span>
+                  <div class="workspace-card-item">
+                    <div class="ws-icon ws-kotlin">
+                      <svg viewBox="0 0 24 24" fill="none"><path d="M2 2h20L12 12 2 22V2z" fill="#7F52FF"/><path d="M22 22H2L12 12l10 10z" fill="#C711E1"/></svg>
+                    </div>
+                    <div class="ws-meta">
+                      <span class="ws-name font-pixel">orbit-ui</span>
+                      <span class="ws-path">/workspace/orbit-ui • main</span>
+                    </div>
+                    <span class="ws-badge">Active</span>
+                  </div>
+                  <div class="workspace-card-item">
+                    <div class="ws-icon ws-python">
+                      <svg viewBox="0 0 24 24"><path fill="#3776AB" d="M11.9 2c-3.1 0-2.9 1.3-2.9 1.3l.1 1.4h3v.4H6.3S4 4.8 4 8c0 3.1 2 3 2 3l1.2-.1v-1.7s-.1-2 2-2h3.4s1.9 0 1.9-1.9V3.9S14.7 2 11.9 2z"/><path fill="#FFD43B" d="M12.1 22c3.1 0 2.9-1.3 2.9-1.3l-.1-1.4h-3v-.4h5.8s2.3.3 2.3-2.9c0-3.1-2-3-2-3l-1.2.1v1.7s.1 2-2 2h-3.4s-1.9 0-1.9 1.9v1.4s-.2 1.9 2.6 1.9z"/></svg>
+                    </div>
+                    <div class="ws-meta">
+                      <span class="ws-name font-pixel">palindrome.py</span>
+                      <span class="ws-path">/workspace/scripts</span>
+                    </div>
+                    <span class="ws-badge ws-badge-sub">2m ago</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab 2: Screen 3 - AI Agent -->
+              <div class="phone-tab-panel" id="tab-agent">
+                <!-- Peeking Mascot Header -->
+                <div class="agent-peeking-header">
+                  <img src="/mascots/mascot_peeking.png" alt="Klix Mascot Peeking" class="agent-peeking-img" />
+                  <div class="agent-header-row">
+                    <span class="agent-title-text font-pixel">Klix AI Agent</span>
+                    <span class="agent-chat-dropdown font-pixel">Chat 1 ▾</span>
+                  </div>
+                </div>
+
+                <!-- Quick Mentions & Model -->
+                <div class="agent-bento-group">
+                  <span class="bento-group-label font-pixel">Active AI Model & Mentions</span>
+                  <div class="agent-pill-row">
+                    <span class="model-active-chip">
+                      <svg viewBox="0 0 24 24" class="chip-svg"><path fill="#4E82EE" d="M12 2 C12.5 7.5 16.5 11.5 22 12 C16.5 12.5 12.5 16.5 12 22 C11.5 16.5 7.5 12.5 2 12 C7.5 11.5 11.5 7.5 12 2 Z"/></svg>
+                      gemini-3.1-flash
+                    </span>
+                    <span class="file-mention-chip">@palindrome.py</span>
+                  </div>
+                </div>
+
+                <!-- Action Suggestions Pills -->
+                <div class="agent-bento-group">
+                  <span class="bento-group-label font-pixel">What shall we do?</span>
+                  <div class="agent-action-pills">
+                    <button class="agent-action-pill" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                      <span>Summarize workspace architecture</span>
+                    </button>
+                    <button class="agent-action-pill" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="14" r="2"/></svg>
+                      <span>Write unit tests for palindrome.py</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="chat-bubble agent-card-bubble">
                   <div class="agent-plan-top">
-                    <span class="agent-plan-label">PLAN PROPOSAL</span>
-                    <span class="agent-plan-meta">3 steps</span>
+                    <span class="agent-plan-label font-pixel">AUTONOMOUS TOOL CALL</span>
+                    <span class="agent-plan-meta">Step 2/3</span>
                   </div>
-
-                  <div class="plan-item done">
-                    <span class="plan-check">✓</span>
-                    <span>Read <code>AuthManager.kt</code> & Keystore configs</span>
-                  </div>
-
                   <div class="plan-item current">
                     <span class="plan-check">●</span>
                     <span>Patch <code>AuthManager.kt</code> with BiometricPrompt</span>
                   </div>
-
-                  <div class="plan-item wait">
-                    <span class="plan-check">○</span>
-                    <span>Run <code>vitest run</code> in local Alpine sandbox</span>
-                  </div>
-
                   <div class="tool-call-box">
-                    <div class="tool-label">Tool Call: <code>edit_patch(AuthManager.kt)</code></div>
+                    <div class="tool-label">Tool: <code>edit_patch(AuthManager.kt)</code></div>
                     <div class="tool-btn-row">
-                      <button class="btn-approve" id="mock-approve-btn">
+                      <button class="btn-approve" id="mock-approve-btn" type="button">
                         Approve Tool Call ✓
                       </button>
                     </div>
@@ -443,79 +595,173 @@
                 </div>
               </div>
 
-              <!-- Tab 2: Unified Diff Review -->
+              <!-- Tab 3: Screen 5 - Linux Terminal -->
+              <div class="phone-tab-panel" id="tab-terminal">
+                <div class="term-tab-strip">
+                  <span class="term-tab-chip active">
+                    <svg viewBox="0 0 24 24" class="term-tab-svg"><circle cx="12" cy="12" r="10" fill="#0D597F"/><path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF"/></svg>
+                    Alpine v1
+                  </span>
+                  <span class="term-tab-chip">+ Terminal</span>
+                  <span class="term-tab-chip">palindrome.py</span>
+                </div>
+
+                <div class="term-box">
+                  <div class="term-top-bar">
+                    <span class="term-circle r"></span>
+                    <span class="term-circle y"></span>
+                    <span class="term-circle g"></span>
+                    <span class="term-session">alpine-proot /workspace$</span>
+                  </div>
+                  <pre class="term-screen"><code><span class="term-green">klix@mobile:/workspace$</span> python3 palindrome.py
+Testing 14 test cases in local Alpine sandbox...
+✓ test_empty_string: pass (0.01s)
+✓ test_unicode_casefold: pass (0.02s)
+✓ test_biometric_auth: pass (0.04s)
+
+<span class="term-pass">PASS</span> 14/14 tests verified in unrooted PRoot.
+<span class="term-green">klix@mobile:/workspace$</span> <span class="term-blink">█</span></code></pre>
+
+                  <!-- Mascot Waving inside Terminal -->
+                  <div class="term-mascot-overlay">
+                    <img src="/mascots/mascot_waving.png" alt="Klix Mascot Waving" class="term-mascot-img" />
+                    <span class="term-mascot-speech">"All green!"</span>
+                  </div>
+                </div>
+
+                <!-- Shortcuts Section -->
+                <div class="term-shortcuts-row">
+                  <span class="term-keycap keycap-lime">+ TERM</span>
+                  <span class="term-keycap">ESC</span>
+                  <span class="term-keycap">TAB</span>
+                  <span class="term-keycap">CTRL-C</span>
+                  <span class="term-keycap">↑</span>
+                  <span class="term-keycap">↓</span>
+                </div>
+              </div>
+
+              <!-- Tab 4: Screen 7 - Unified Diff Review -->
               <div class="phone-tab-panel" id="tab-diff">
                 <div class="diff-title-bar">
                   <span class="diff-file-tag">app/src/main/AuthManager.kt</span>
                   <span class="diff-count">+8 -2</span>
                 </div>
                 <div class="diff-code-body">
-                  <div class="diff-row"><span class="d-num">42</span><span class="d-txt">class AuthManager(val context:
-                      Context) {</span></div>
-                  <div class="diff-row"><span class="d-num">43</span><span class="d-txt"> val keyStore =
-                      KeyStore.getInstance(KEYSTORE)</span></div>
-                  <div class="diff-row d-del"><span class="d-num">44</span><span class="d-txt">- fun authenticate():
-                      Boolean = false</span></div>
-                  <div class="diff-row d-add"><span class="d-num">44</span><span class="d-txt">+ fun
-                      authenticateWithBiometrics(</span></div>
-                  <div class="diff-row d-add"><span class="d-num">45</span><span class="d-txt">+ activity:
-                      FragmentActivity,</span></div>
-                  <div class="diff-row d-add"><span class="d-num">46</span><span class="d-txt">+ onSuccess: () -&gt;
-                      Unit</span></div>
-                  <div class="diff-row d-add"><span class="d-num">47</span><span class="d-txt">+ ) {</span></div>
-                  <div class="diff-row d-add"><span class="d-num">48</span><span class="d-txt">+ val prompt =
-                      BiometricPrompt(...)</span></div>
-                  <div class="diff-row d-add"><span class="d-num">49</span><span class="d-txt">+
-                      prompt.authenticate(promptInfo)</span></div>
-                  <div class="diff-row d-add"><span class="d-num">50</span><span class="d-txt">+ }</span></div>
+                  <div class="diff-row"><span class="d-num">42</span><span class="d-txt">class AuthManager(val context: Context) {</span></div>
+                  <div class="diff-row"><span class="d-num">43</span><span class="d-txt">  val keyStore = KeyStore.getInstance(KEYSTORE)</span></div>
+                  <div class="diff-row d-del"><span class="d-num">44</span><span class="d-txt">-  fun authenticate(): Boolean = false</span></div>
+                  <div class="diff-row d-add"><span class="d-num">44</span><span class="d-txt">+  fun authenticateWithBiometrics(</span></div>
+                  <div class="diff-row d-add"><span class="d-num">45</span><span class="d-txt">+    activity: FragmentActivity,</span></div>
+                  <div class="diff-row d-add"><span class="d-num">46</span><span class="d-txt">+    onSuccess: () -&gt; Unit</span></div>
+                  <div class="diff-row d-add"><span class="d-num">47</span><span class="d-txt">+  ) {</span></div>
+                  <div class="diff-row d-add"><span class="d-num">48</span><span class="d-txt">+    val prompt = BiometricPrompt(...)</span></div>
+                  <div class="diff-row d-add"><span class="d-num">49</span><span class="d-txt">+    prompt.authenticate(promptInfo)</span></div>
+                  <div class="diff-row d-add"><span class="d-num">50</span><span class="d-txt">+  }</span></div>
                   <div class="diff-row"><span class="d-num">51</span><span class="d-txt">}</span></div>
                 </div>
               </div>
 
-              <!-- Tab 3: Alpine Sandbox Shell -->
-              <div class="phone-tab-panel" id="tab-terminal">
-                <div class="term-box">
-                  <div class="term-top-bar">
-                    <span class="term-circle r"></span>
-                    <span class="term-circle y"></span>
-                    <span class="term-circle g"></span>
-                    <span class="term-session">alpine-proot /root/project</span>
+              <!-- Tab 5: Screen 2 - Settings Modal -->
+              <div class="phone-tab-panel" id="tab-settings">
+                <div class="settings-peeking-header">
+                  <img src="/mascots/mascot_peeking.png" alt="Klix Mascot Peeking" class="settings-peeking-img" />
+                  <div class="settings-drag-pill"></div>
+                  <div class="settings-header-row">
+                    <span class="settings-title-text font-pixel">Settings</span>
+                    <span class="settings-version-pill font-pixel">v0.4.4</span>
                   </div>
-                  <pre class="term-screen"><code><span class="term-green">alpine:~#</span> uname -a
-Linux localhost 6.1.0-android14-arm64 (proot)
-<span class="term-green">alpine:~#</span> npm test
-
-✓ test/auth_keystore.test.ts (4 tests) 142ms
-✓ test/sandbox_runner.test.ts (6 tests) 289ms
-✓ test/agent_tools.test.ts (8 tests) 411ms
-
-<span class="term-pass">PASS</span> 18 tests verified in local sandbox.
-<span class="term-green">alpine:~#</span> <span class="term-blink">█</span></code></pre>
                 </div>
+
+                <!-- Card 1 — App Theme -->
+                <div class="settings-bento-group">
+                  <span class="bento-group-label font-pixel">App Theme</span>
+                  <div class="settings-theme-chips">
+                    <button class="settings-theme-chip" id="settings-theme-light" type="button" aria-label="Set Light Theme">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chip-svg">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                      </svg>
+                      Light
+                    </button>
+                    <button class="settings-theme-chip" id="settings-theme-dark" type="button" aria-label="Set Dark Theme">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chip-svg">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                      </svg>
+                      Dark
+                    </button>
+                    <button class="settings-theme-chip" id="settings-theme-system" type="button" aria-label="Set System Theme">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chip-svg">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                      </svg>
+                      System
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Card 2 — Active AI Provider -->
+                <div class="settings-bento-group">
+                  <span class="bento-group-label font-pixel">Active AI Provider</span>
+                  <div class="settings-providers-list">
+                    <div class="settings-provider-row active-gemini">
+                      <svg viewBox="0 0 24 24" class="chip-svg"><path fill="#4E82EE" d="M12 2 C12.5 7.5 16.5 11.5 22 12 C16.5 12.5 12.5 16.5 12 22 C11.5 16.5 7.5 12.5 2 12 C7.5 11.5 11.5 7.5 12 2 Z" /></svg>
+                      <span class="settings-provider-name">Google Gemini</span>
+                      <span class="settings-badge-pill">Ready</span>
+                    </div>
+                    <div class="settings-provider-row">
+                      <svg viewBox="0 0 24 24" class="chip-svg"><g fill="#CC785C"><path d="M11.2 2.5h1.6v5h-1.6zM11.2 16.5h1.6v5h-1.6zM2.5 11.2h5v1.6h-5zM16.5 11.2h5v1.6h-5zM5.1 6.2l3.5 3.5-1.1 1.1-3.5-3.5zM15.4 16.5l3.5 3.5 1.1-1.1-3.5-3.5zM18.9 4l1.1 1.1-3.5 3.5-1.1-1.1zM7.5 15.4l1.1 1.1-3.5 3.5-1.1-1.1z"/><circle cx="12" cy="12" r="3"/></g></svg>
+                      <span class="settings-provider-name">Anthropic Claude</span>
+                      <span class="settings-badge-sub">Add Key</span>
+                    </div>
+                    <div class="settings-provider-row">
+                      <svg viewBox="0 0 24 24" class="chip-svg" fill="none" stroke="#10A37F" stroke-width="1.6"><circle cx="12" cy="12" r="9"/></svg>
+                      <span class="settings-provider-name">OpenAI GPT-4o</span>
+                      <span class="settings-badge-sub">Add Key</span>
+                    </div>
+                    <div class="settings-provider-row">
+                      <svg viewBox="0 0 24 24" class="chip-svg"><circle cx="12" cy="12" r="10" fill="#0D597F"/><path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF"/><polygon points="12,8 13.5,10.7 10.5,10.7" fill="#28B8D5"/></svg>
+                      <span class="settings-provider-name">Alpine Linux</span>
+                      <span class="settings-badge-pill">Ready</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bottom CTA: Apply & Close -->
+                <button class="phone-primary-cta" id="settings-close-btn" type="button">
+                  <span>Apply &amp; Close</span>
+                </button>
               </div>
 
-              <!-- Phone Bottom Navigation Bar -->
+              <!-- KlixFloatingBottomDock (Signature App Pill Navigation) -->
               <div class="phone-dock">
-                <div class="dock-item active">
+                <button class="dock-item active" data-dock="home" type="button" aria-label="Home Dashboard">
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
                   </svg>
-                  <span>Editor</span>
-                </div>
-                <div class="dock-item">
+                  <span>Home</span>
+                </button>
+                <button class="dock-item" data-dock="agent" type="button" aria-label="AI Agent">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                   </svg>
                   <span>Agent</span>
-                </div>
-                <div class="dock-item">
+                </button>
+                <button class="dock-item" data-dock="terminal" type="button" aria-label="Linux Terminal">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="4 17 10 11 4 5"></polyline>
                     <line x1="12" y1="19" x2="20" y2="19"></line>
                   </svg>
                   <span>Terminal</span>
-                </div>
-                <div class="dock-item">
+                </button>
+                <button class="dock-item" data-dock="settings" type="button" aria-label="Settings">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path
@@ -523,7 +769,7 @@ Linux localhost 6.1.0-android14-arm64 (proot)
                     </path>
                   </svg>
                   <span>Settings</span>
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -541,24 +787,24 @@ Linux localhost 6.1.0-android14-arm64 (proot)
 
         <div class="providers-grid stagger-children">
           <div class="provider-pill-card reveal reveal-up">
-            <span class="provider-badge-dot dot-anthropic"></span>
-            <span class="provider-name">Claude 3.7 Sonnet</span>
+            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true"><g fill="#CC785C"><path d="M11.2 2.5h1.6v5h-1.6zM11.2 16.5h1.6v5h-1.6zM2.5 11.2h5v1.6h-5zM16.5 11.2h5v1.6h-5zM5.1 6.2l3.5 3.5-1.1 1.1-3.5-3.5zM15.4 16.5l3.5 3.5 1.1-1.1-3.5-3.5zM18.9 4l1.1 1.1-3.5 3.5-1.1-1.1zM7.5 15.4l1.1 1.1-3.5 3.5-1.1-1.1z"/><circle cx="12" cy="12" r="3"/></g></svg>
+            <span class="provider-name">Anthropic Claude</span>
           </div>
           <div class="provider-pill-card reveal reveal-up">
-            <span class="provider-badge-dot dot-openai"></span>
+            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true" fill="none" stroke="#10A37F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 9.6 C19.1 7.2 17.1 5.5 14.8 5.6 C14.3 5.6 13.9 5.7 13.5 5.9 C12.8 4.7 11.4 4 10 4 C7.8 4 6 5.8 6 8 C6 8.4 6.1 8.8 6.2 9.1 C5 9.7 4.1 11 4.1 12.5 C4.1 14.4 5.4 16 7.2 16.5 C7.2 16.9 7.3 17.3 7.5 17.7 C8.4 19.3 10.1 20.2 12 20 C12.5 20 13 19.8 13.4 19.6 C14.2 20.7 15.6 21.3 17 21.1 C19.2 20.8 20.7 18.8 20.4 16.6 C20.4 16.2 20.3 15.8 20.1 15.5 C21.1 14.7 21.7 13.4 21.5 12 C21.2 10.7 20.5 9.9 19.5 9.6 Z" /><path d="M12 8.5v7M8.5 10.2l6 3.6M8.5 13.8l6-3.6"/></svg>
             <span class="provider-name">OpenAI GPT-4o</span>
           </div>
           <div class="provider-pill-card reveal reveal-up">
-            <span class="provider-badge-dot dot-google"></span>
-            <span class="provider-name">Google Gemini 2.5</span>
+            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true"><path fill="#4E82EE" d="M12 2 C12.5 7.5 16.5 11.5 22 12 C16.5 12.5 12.5 16.5 12 22 C11.5 16.5 7.5 12.5 2 12 C7.5 11.5 11.5 7.5 12 2 Z" /></svg>
+            <span class="provider-name">Google Gemini</span>
           </div>
           <div class="provider-pill-card reveal reveal-up">
-            <span class="provider-badge-dot dot-deepseek"></span>
-            <span class="provider-name">DeepSeek R1</span>
+            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true"><path stroke="#6366F1" stroke-width="1.6" stroke-linecap="round" fill="none" d="M7 12L17 6M7 12L17 18M17 6v12"/><circle cx="7" cy="12" r="3" fill="#6366F1"/><circle cx="17" cy="6" r="2.5" fill="#6366F1"/><circle cx="17" cy="18" r="2.5" fill="#6366F1"/></svg>
+            <span class="provider-name">OpenRouter / Groq</span>
           </div>
           <div class="provider-pill-card reveal reveal-up">
-            <span class="provider-badge-dot dot-lime"></span>
-            <span class="provider-name">Local / Ollama</span>
+            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#0D597F"/><path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF"/><polygon points="12,8 13.5,10.7 10.5,10.7" fill="#28B8D5"/></svg>
+            <span class="provider-name">Alpine / Local</span>
           </div>
         </div>
       </div>
@@ -678,6 +924,9 @@ Linux localhost 6.1.0-android14-arm64 (proot)
     <section class="download-section" id="download">
       <div class="section-container">
         <div class="download-clean-card reveal reveal-blur reveal-slow">
+          <div class="download-mascot-row">
+            <img src="/mascots/mascot_running_terminal.png" alt="Klix Bot Running" class="download-mascot-img" />
+          </div>
           <div class="download-badge-tag font-pixel">OFFICIAL RELEASE</div>
           <h2 class="download-clean-title font-pixel">Download Klix Code APK</h2>
           <p class="download-clean-desc">

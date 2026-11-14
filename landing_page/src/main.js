@@ -1,60 +1,276 @@
 /**
  * KLIX CODE — LANDING PAGE ENGINE
+ * Dual-Theme System (Light Aurora & Cosmic Obsidian) + Interactive Phone Showcase
  */
 
 import { initDownloadTracking, trackEvent } from './tracker.js';
 
 // ==========================================================================
-// 1. PHONE SCREEN TABS TOGGLE (Agent Loop / Diff Review / Alpine Terminal)
+// 1. DUAL-THEME SWITCHER ENGINE (Following Modern Web Guidance)
 // ==========================================================================
+
+let currentTheme = 'system'; // 'system' | 'light' | 'dark'
+
+function getStoredTheme() {
+  try {
+    const val = localStorage.getItem('color-scheme');
+    if (val === 'light' || val === 'dark') return val;
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getSystemPreference() {
+  if (typeof window === 'undefined' || !window.matchMedia) return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function getEffectiveTheme() {
+  const stored = getStoredTheme();
+  if (stored) {
+    return stored;
+  }
+  return getSystemPreference();
+}
+
+let clearMatrixCanvasFn = null;
+
+function applyTheme(theme, isUserAction = false) {
+  const effective = theme === 'system' ? getSystemPreference() : theme;
+  currentTheme = theme;
+
+  const html = document.documentElement;
+  const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+
+  // Update DOM attributes
+  if (theme === 'system') {
+    html.removeAttribute('data-theme');
+    if (metaColorScheme) metaColorScheme.content = 'light dark';
+  } else {
+    html.setAttribute('data-theme', theme);
+    if (metaColorScheme) metaColorScheme.content = theme;
+  }
+
+  if (metaThemeColor) {
+    metaThemeColor.content = effective === 'light' ? '#d8eefe' : '#0b0e1a';
+  }
+
+  // Update Toggle Button accessibility states
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  if (toggleBtn) {
+    const isDark = effective === 'dark';
+    toggleBtn.setAttribute('aria-label', isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme');
+    toggleBtn.setAttribute('title', isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme');
+  }
+
+  // Update Mobile status badge
+  const mobileStatus = document.getElementById('mobile-theme-status');
+  if (mobileStatus) {
+    if (theme === 'system') {
+      mobileStatus.textContent = `Auto (${effective === 'dark' ? 'Dark' : 'Light'})`;
+    } else {
+      mobileStatus.textContent = theme === 'light' ? 'Light' : 'Dark';
+    }
+  }
+
+  // Update Phone Mockup In-App Settings Theme Chips
+  const chipLight = document.getElementById('settings-theme-light');
+  const chipDark = document.getElementById('settings-theme-dark');
+  const chipSystem = document.getElementById('settings-theme-system');
+
+  if (chipLight) chipLight.classList.toggle('active', theme === 'light');
+  if (chipDark) chipDark.classList.toggle('active', theme === 'dark');
+  if (chipSystem) chipSystem.classList.toggle('active', theme === 'system');
+
+  if (clearMatrixCanvasFn) {
+    clearMatrixCanvasFn();
+  }
+
+  if (isUserAction) {
+    try {
+      if (theme === 'system') {
+        localStorage.removeItem('color-scheme');
+      } else {
+        localStorage.setItem('color-scheme', theme);
+      }
+    } catch (e) {}
+
+    trackEvent('theme_change', { theme, effective });
+    const themeName = theme === 'system'
+      ? `System (${effective === 'light' ? 'Light Aurora' : 'Cosmic Obsidian'})`
+      : (theme === 'light' ? 'Light Aurora' : 'Cosmic Obsidian');
+    showToast(`Switched to ${themeName} theme`);
+  }
+}
+
+function initThemeSwitcher() {
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  const mobileToggle = document.getElementById('mobile-theme-toggle');
+
+  const stored = getStoredTheme();
+  if (stored) {
+    applyTheme(stored, false);
+  } else {
+    applyTheme('system', false);
+  }
+
+  // Follow modern-web-guidance for two-state toggles:
+  // Target is opposite of currently resolved theme.
+  // If target matches current system preference, remove stored override (revert to system).
+  // Otherwise, store override.
+  function handleToggleClick() {
+    const currentEffective = getEffectiveTheme();
+    const systemPref = getSystemPreference();
+    const targetScheme = currentEffective === 'dark' ? 'light' : 'dark';
+    const nextTheme = targetScheme === systemPref ? 'system' : targetScheme;
+    applyTheme(nextTheme, true);
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', handleToggleClick);
+  }
+
+  if (mobileToggle) {
+    mobileToggle.addEventListener('click', () => {
+      const stored = getStoredTheme();
+      // Cycle: Auto -> Dark -> Light -> Auto
+      let next;
+      if (!stored) {
+        next = 'dark';
+      } else if (stored === 'dark') {
+        next = 'light';
+      } else {
+        next = 'system';
+      }
+
+      applyTheme(next, true);
+    });
+  }
+
+  // Listen to OS system preference changes
+  if (window.matchMedia) {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', () => {
+      const stored = getStoredTheme();
+      if (!stored) {
+        applyTheme('system', false);
+      }
+    });
+  }
+
+  // Sync across tabs
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'color-scheme') {
+      applyTheme(e.newValue || 'system', false);
+    }
+  });
+}
+
+// ==========================================================================
+// 2. PHONE SCREEN TABS TOGGLE (Home / Agent / Terminal / Diff / Settings)
+// ==========================================================================
+
+function switchPhoneTab(target) {
+  const tabBtns = document.querySelectorAll('.phone-tab-btn');
+  const dockBtns = document.querySelectorAll('.dock-item');
+  const panels = {
+    home: document.getElementById('tab-home'),
+    agent: document.getElementById('tab-agent'),
+    terminal: document.getElementById('tab-terminal'),
+    diff: document.getElementById('tab-diff'),
+    settings: document.getElementById('tab-settings'),
+  };
+
+  // Sync tab buttons
+  tabBtns.forEach((btn) => {
+    const isTarget = btn.getAttribute('data-tab') === target;
+    btn.classList.toggle('active', isTarget);
+    btn.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+  });
+
+  // Sync dock items (Diff maps to Agent on the 4-destination dock)
+  dockBtns.forEach((btn) => {
+    const dockDest = btn.getAttribute('data-dock');
+    const isDockActive = (dockDest === target) || (target === 'diff' && dockDest === 'agent');
+    btn.classList.toggle('active', isDockActive);
+  });
+
+  // Toggle active panel
+  Object.keys(panels).forEach((key) => {
+    if (panels[key]) {
+      panels[key].classList.toggle('active', key === target);
+    }
+  });
+}
 
 function initPhoneMockupTabs() {
   const tabBtns = document.querySelectorAll('.phone-tab-btn');
-  const panels = {
-    agent: document.getElementById('tab-agent'),
-    diff: document.getElementById('tab-diff'),
-    terminal: document.getElementById('tab-terminal'),
-  };
+  const dockBtns = document.querySelectorAll('.dock-item');
 
   tabBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.getAttribute('data-tab');
-
-      tabBtns.forEach((b) => {
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
-      });
-      btn.classList.add('active');
-      btn.setAttribute('aria-selected', 'true');
-
-      Object.keys(panels).forEach((key) => {
-        if (panels[key]) {
-          if (key === target) {
-            panels[key].classList.add('active');
-          } else {
-            panels[key].classList.remove('active');
-          }
-        }
-      });
+      if (target) switchPhoneTab(target);
     });
   });
 
-  // Phone Mockup Approve Button Action
+  dockBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const dockDest = btn.getAttribute('data-dock');
+      if (dockDest) switchPhoneTab(dockDest);
+    });
+  });
+
+  // Home Screen Primary CTA
+  const homeOpenBtn = document.getElementById('phone-home-open-btn');
+  if (homeOpenBtn) {
+    homeOpenBtn.addEventListener('click', () => {
+      homeOpenBtn.textContent = 'Launching Terminal...';
+      setTimeout(() => {
+        switchPhoneTab('terminal');
+        homeOpenBtn.textContent = '+ Open Sandbox Workspace';
+      }, 350);
+    });
+  }
+
+  // Agent Tool Call Approval Action
   const approveBtn = document.getElementById('mock-approve-btn');
   if (approveBtn) {
     approveBtn.addEventListener('click', () => {
       approveBtn.textContent = 'Approved ✓ Applying Patch...';
       approveBtn.style.backgroundColor = '#34d399';
       setTimeout(() => {
-        const diffTab = document.querySelector('.phone-tab-btn[data-tab="diff"]');
-        if (diffTab) diffTab.click();
+        switchPhoneTab('diff');
+        approveBtn.textContent = 'Approve Tool Call ✓';
+        approveBtn.style.backgroundColor = '';
       }, 500);
     });
+  }
+
+  // In-Phone Settings Screen Theme Toggles
+  const chipLight = document.getElementById('settings-theme-light');
+  const chipDark = document.getElementById('settings-theme-dark');
+  const chipSystem = document.getElementById('settings-theme-system');
+  const closeSettingsBtn = document.getElementById('settings-close-btn');
+
+  if (chipLight) {
+    chipLight.addEventListener('click', () => applyTheme('light', true));
+  }
+  if (chipDark) {
+    chipDark.addEventListener('click', () => applyTheme('dark', true));
+  }
+  if (chipSystem) {
+    chipSystem.addEventListener('click', () => applyTheme('system', true));
+  }
+  if (closeSettingsBtn) {
+    closeSettingsBtn.addEventListener('click', () => switchPhoneTab('home'));
   }
 }
 
 // ==========================================================================
-// 2. SVG QR CODE GENERATOR (Scannable from Android Camera)
+// 3. SVG QR CODE GENERATOR (Scannable with Android Camera)
 // ==========================================================================
 
 function generateQrMatrixSvg() {
@@ -63,24 +279,24 @@ function generateQrMatrixSvg() {
 
   const svg = `
     <svg viewBox="0 0 100 100" class="qr-svg-matrix" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100" height="100" fill="#ffffff"/>
+      <rect width="100" height="100" fill="#ffffff" rx="4"/>
       <!-- Top-Left Corner -->
-      <rect x="8" y="8" width="24" height="24" fill="#000000" rx="2"/>
+      <rect x="8" y="8" width="24" height="24" fill="#0c0d14" rx="3"/>
       <rect x="12" y="12" width="16" height="16" fill="#ffffff" rx="1"/>
-      <rect x="16" y="16" width="8" height="8" fill="#000000"/>
+      <rect x="16" y="16" width="8" height="8" fill="#0c0d14"/>
 
       <!-- Top-Right Corner -->
-      <rect x="68" y="8" width="24" height="24" fill="#000000" rx="2"/>
+      <rect x="68" y="8" width="24" height="24" fill="#0c0d14" rx="3"/>
       <rect x="72" y="12" width="16" height="16" fill="#ffffff" rx="1"/>
-      <rect x="76" y="16" width="8" height="8" fill="#000000"/>
+      <rect x="76" y="16" width="8" height="8" fill="#0c0d14"/>
 
       <!-- Bottom-Left Corner -->
-      <rect x="8" y="68" width="24" height="24" fill="#000000" rx="2"/>
+      <rect x="8" y="68" width="24" height="24" fill="#0c0d14" rx="3"/>
       <rect x="12" y="72" width="16" height="16" fill="#ffffff" rx="1"/>
-      <rect x="16" y="76" width="8" height="8" fill="#000000"/>
+      <rect x="16" y="76" width="8" height="8" fill="#0c0d14"/>
 
       <!-- QR Data Grid -->
-      <g fill="#000000">
+      <g fill="#0c0d14">
         <rect x="36" y="10" width="4" height="4"/>
         <rect x="44" y="10" width="4" height="4"/>
         <rect x="52" y="10" width="4" height="4"/>
@@ -126,9 +342,9 @@ function generateQrMatrixSvg() {
         <rect x="78" y="82" width="4" height="6"/>
         <rect x="86" y="80" width="4" height="8"/>
 
-        <!-- Robot Center Mark -->
-        <circle cx="50" cy="50" r="6" fill="#d4ff32"/>
-        <rect x="48" y="48" width="4" height="4" fill="#000000"/>
+        <!-- Mascot Bot Center Mark in Electric Lime -->
+        <circle cx="50" cy="50" r="7" fill="#d5fb66"/>
+        <rect x="47" y="47" width="6" height="6" fill="#0c0d14" rx="1"/>
       </g>
     </svg>
   `;
@@ -137,7 +353,7 @@ function generateQrMatrixSvg() {
 }
 
 // ==========================================================================
-// 3. TOAST & DOWNLOAD HANDLERS
+// 4. TOAST & DOWNLOAD HANDLERS
 // ==========================================================================
 
 function showToast(message) {
@@ -150,7 +366,7 @@ function showToast(message) {
 
   setTimeout(() => {
     toast.classList.remove('show');
-  }, 4000);
+  }, 3500);
 }
 
 function initDownloadButtons() {
@@ -191,7 +407,7 @@ function initDownloadButtons() {
 }
 
 // ==========================================================================
-// 4. HEADER NAVBAR & MOBILE MENU
+// 5. NAVBAR & MOBILE MENU
 // ==========================================================================
 
 function initNavigation() {
@@ -205,7 +421,7 @@ function initNavigation() {
     } else {
       navbar?.classList.remove('scrolled');
     }
-  });
+  }, { passive: true });
 
   if (toggleBtn && mobileMenu) {
     toggleBtn.addEventListener('click', () => {
@@ -222,7 +438,7 @@ function initNavigation() {
 }
 
 // ==========================================================================
-// 5. DIGITAL CODE RAIN (ANIMATED MATRIX STREAM IN OUR BRAND GRADIENT)
+// 6. THEME-ADAPTIVE DIGITAL CODE RAIN
 // ==========================================================================
 
 function initMatrixRain() {
@@ -241,14 +457,11 @@ function initMatrixRain() {
     initColumns();
   });
 
-  // Character set: Authentic developer & matrix mix (katakana, code glyphs, hex, operators)
-  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF{}[]<>=/+-*~#$%&@';
+  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF{}[]<>=/+-*~#$%&@';
   const charArray = chars.split('');
 
   const fontSize = 16;
   let columns = Math.floor(width / fontSize);
-
-  // Each column has dynamic state for realistic cascading trails
   let drops = [];
 
   function initColumns() {
@@ -256,18 +469,22 @@ function initMatrixRain() {
     drops = [];
     for (let i = 0; i < columns; i++) {
       drops.push({
-        y: Math.random() * -100, // staggered start
-        speed: 1 + Math.random() * 1.6, // varied rainfall speed
-        length: 12 + Math.floor(Math.random() * 20), // trail length
-        intensity: Math.random(), // layer depth / opacity
+        y: Math.random() * -100,
+        speed: 1 + Math.random() * 1.5,
+        length: 12 + Math.floor(Math.random() * 18),
+        intensity: Math.random(),
       });
     }
   }
 
   initColumns();
 
+  clearMatrixCanvasFn = () => {
+    ctx.clearRect(0, 0, width, height);
+  };
+
   let lastTime = 0;
-  const fpsInterval = 1000 / 30; // smooth 30fps Matrix cadence
+  const fpsInterval = 1000 / 30; // 30fps
 
   function draw(currentTime) {
     requestAnimationFrame(draw);
@@ -276,8 +493,10 @@ function initMatrixRain() {
     if (elapsed < fpsInterval) return;
     lastTime = currentTime - (elapsed % fpsInterval);
 
-    // Subtle fade trail creating ethereal luminescence
-    ctx.fillStyle = 'rgba(7, 8, 12, 0.16)';
+    const isLight = getEffectiveTheme() === 'light';
+
+    // Background fade trail adapting to theme
+    ctx.fillStyle = isLight ? 'rgba(248, 250, 252, 0.18)' : 'rgba(11, 14, 26, 0.16)';
     ctx.fillRect(0, 0, width, height);
 
     ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
@@ -287,48 +506,58 @@ function initMatrixRain() {
       const x = i * fontSize;
       const currentHeadY = drop.y * fontSize;
 
-      // Draw trail characters upwards from the head
       for (let j = 0; j < drop.length; j++) {
         const charY = (drop.y - j) * fontSize;
         if (charY < -fontSize || charY > height + fontSize) continue;
 
         const randomChar = charArray[Math.floor(Math.random() * charArray.length)];
-        const progress = j / drop.length; // 0 at head, 1 at tail
+        const progress = j / drop.length;
 
-        if (j === 0) {
-          // The leading tip: Brilliant luminous white-hot glow
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = '#d4ff32';
-        } else if (j < 3) {
-          // Upper glow: Bright electric lime (Our primary brand color)
-          ctx.fillStyle = 'rgba(212, 255, 50, 0.95)';
-          ctx.shadowBlur = 6;
-          ctx.shadowColor = '#d4ff32';
-        } else if (j < 8) {
-          // Mid-gradient: Electric lime-emerald transition
-          ctx.fillStyle = `rgba(163, 230, 53, ${0.85 * (1 - progress)})`;
-          ctx.shadowBlur = 0;
+        if (isLight) {
+          // Light theme: Subtle deep slate & emerald drops
+          if (j === 0) {
+            ctx.fillStyle = '#0f172a';
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = '#84cc16';
+          } else if (j < 3) {
+            ctx.fillStyle = 'rgba(77, 124, 15, 0.75)';
+            ctx.shadowBlur = 0;
+          } else if (j < 8) {
+            ctx.fillStyle = `rgba(2, 132, 199, ${0.5 * (1 - progress)})`;
+            ctx.shadowBlur = 0;
+          } else {
+            ctx.fillStyle = `rgba(148, 163, 184, ${0.3 * (1 - progress)})`;
+            ctx.shadowBlur = 0;
+          }
         } else {
-          // Tail gradient: Soft cyan to deep obsidian fade
-          ctx.fillStyle = `rgba(56, 189, 248, ${0.5 * (1 - progress)})`;
-          ctx.shadowBlur = 0;
+          // Dark theme: Luminous neon lime & tech cyan drops
+          if (j === 0) {
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#d5fb66';
+          } else if (j < 3) {
+            ctx.fillStyle = 'rgba(213, 251, 102, 0.95)';
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = '#d5fb66';
+          } else if (j < 8) {
+            ctx.fillStyle = `rgba(163, 230, 53, ${0.85 * (1 - progress)})`;
+            ctx.shadowBlur = 0;
+          } else {
+            ctx.fillStyle = `rgba(56, 189, 248, ${0.45 * (1 - progress)})`;
+            ctx.shadowBlur = 0;
+          }
         }
 
         ctx.fillText(randomChar, x, charY);
       }
 
-      // Reset shadow for next render loop
       ctx.shadowBlur = 0;
-
-      // Advance droplet
       drop.y += drop.speed;
 
-      // Reset when droplet finishes screen travel
       if (currentHeadY > height + drop.length * fontSize && Math.random() > 0.96) {
         drop.y = Math.random() * -30;
-        drop.speed = 1 + Math.random() * 1.6;
-        drop.length = 12 + Math.floor(Math.random() * 20);
+        drop.speed = 1 + Math.random() * 1.5;
+        drop.length = 12 + Math.floor(Math.random() * 18);
       }
     }
   }
@@ -337,27 +566,23 @@ function initMatrixRain() {
 }
 
 // ==========================================================================
-// 6. SCROLL-TRIGGERED REVEAL ANIMATIONS (IntersectionObserver)
-//    Inspired by Motia-style smooth entrance transitions
+// 7. SCROLL-TRIGGERED REVEAL ANIMATIONS
 // ==========================================================================
 
 function initScrollReveal() {
   const revealElements = document.querySelectorAll('.reveal');
-
   if (!revealElements.length) return;
 
-  // Use IntersectionObserver for buttery-smooth, GPU-friendly reveals
   const observerOptions = {
-    root: null,          // viewport
-    rootMargin: '0px 0px -60px 0px', // trigger slightly before fully in view
-    threshold: 0.15,     // 15% of the element must be visible
+    root: null,
+    rootMargin: '0px 0px -50px 0px',
+    threshold: 0.12,
   };
 
   const revealObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.classList.add('is-visible');
-        // Once revealed, stop observing (one-shot animation)
         observer.unobserve(entry.target);
       }
     });
@@ -369,7 +594,7 @@ function initScrollReveal() {
 }
 
 // ==========================================================================
-// 7. LIGHTWEIGHT PARALLAX ON SCROLL (Phone Aura + Ambient Grid)
+// 8. SCROLL PARALLAX
 // ==========================================================================
 
 function initScrollParallax() {
@@ -380,34 +605,25 @@ function initScrollParallax() {
 
   let ticking = false;
 
-  function onScroll() {
+  window.addEventListener('scroll', () => {
     if (!ticking) {
       requestAnimationFrame(() => {
         const scrollY = window.scrollY;
-
-        // Subtle parallax: aura moves slower than scroll
         if (aura) {
-          const auraShift = scrollY * 0.15;
-          aura.style.transform = `translateX(-50%) translateY(${auraShift}px)`;
+          aura.style.transform = `translateX(-50%) translateY(${scrollY * 0.12}px)`;
         }
-
-        // Grid shifts very subtly for depth
         if (grid) {
-          const gridShift = scrollY * 0.03;
-          grid.style.transform = `translateY(${gridShift}px)`;
+          grid.style.transform = `translateY(${scrollY * 0.03}px)`;
         }
-
         ticking = false;
       });
       ticking = true;
     }
-  }
-
-  window.addEventListener('scroll', onScroll, { passive: true });
+  }, { passive: true });
 }
 
 // ==========================================================================
-// 8. CARDS FAN DECK INTERACTIVE BEHAVIOR
+// 9. CARDS FAN DECK INTERACTIVE BEHAVIOR
 // ==========================================================================
 
 function initCardsFanDeck() {
@@ -415,7 +631,6 @@ function initCardsFanDeck() {
   const phone = document.getElementById('phone-mockup');
 
   fanCards.forEach((card) => {
-    // Accessibility: Keyboard selection
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -423,28 +638,24 @@ function initCardsFanDeck() {
       }
     });
 
-    // Interactive card click connects to the phone mockup tabs
     card.addEventListener('click', () => {
       const screen = card.getAttribute('data-screen');
 
-      // Add a quick feedback pop
-      card.style.transform = `${card.style.transform || ''} scale(1.12)`;
+      card.style.transform = `${card.style.transform || ''} scale(1.10)`;
       setTimeout(() => {
         card.style.transform = '';
       }, 300);
 
       if (screen === 'shell-ps' || screen === 'node-server') {
-        const termTab = document.querySelector('.phone-tab-btn[data-tab="terminal"]');
-        if (termTab) termTab.click();
+        switchPhoneTab('terminal');
       } else if (screen === 'agent-claude') {
-        const agentTab = document.querySelector('.phone-tab-btn[data-tab="agent"]');
-        if (agentTab) agentTab.click();
-      } else if (screen === 'saf-storage' || screen === 'file-tree') {
-        const diffTab = document.querySelector('.phone-tab-btn[data-tab="diff"]');
-        if (diffTab) diffTab.click();
+        switchPhoneTab('agent');
+      } else if (screen === 'saf-storage') {
+        switchPhoneTab('home');
+      } else if (screen === 'file-tree') {
+        switchPhoneTab('diff');
       }
 
-      // Smooth scroll if needed
       phone?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   });
@@ -455,6 +666,7 @@ function initCardsFanDeck() {
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  initThemeSwitcher();
   initMatrixRain();
   initCardsFanDeck();
   initPhoneMockupTabs();
@@ -464,4 +676,3 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollReveal();
   initScrollParallax();
 });
-
