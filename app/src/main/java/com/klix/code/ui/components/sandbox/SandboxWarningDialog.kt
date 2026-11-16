@@ -34,6 +34,8 @@ import com.klix.code.ui.theme.OnAccentPrimaryColor
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import com.klix.code.R
 import com.klix.code.ui.theme.LocalIsDarkTheme
 
 @Composable
@@ -97,7 +99,7 @@ fun SandboxWarningDialog(
                 modifier = Modifier.pressEffect()
             ) {
                 Icon(
-                    imageVector = Icons.Default.Terminal,
+                    painter = painterResource(id = R.drawable.ic_icon_terminal_prompt),
                     contentDescription = null,
                     tint = OnAccentPrimaryColor,
                     modifier = Modifier.size(16.dp)

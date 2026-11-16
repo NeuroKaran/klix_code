@@ -15,13 +15,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.klix.code.R
 import com.klix.code.data.workspace.SandboxWorkspace
+import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.*
 
 @Composable
@@ -41,33 +44,35 @@ fun WorkspaceDropdownSelector(
         // Pill Button in TopAppBar
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(DarkSurfaceVariant)
-                .border(0.5.dp, DarkBorder, RoundedCornerShape(8.dp))
+                .height(34.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(KlixSurfaceCardItem)
+                .border(1.dp, KlixBorderHairline, RoundedCornerShape(10.dp))
                 .clickable { expanded = true }
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .pressEffect(0.92f)
+                .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.Folder,
+                painter = painterResource(id = R.drawable.ic_icon_folder),
                 contentDescription = null,
-                tint = AccentPrimary,
+                tint = LimeBrandColor,
                 modifier = Modifier.size(16.dp)
             )
             Text(
                 text = activeWorkspace?.name ?: "Select Workspace",
-                fontSize = 13.5.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = TextPrimary,
+                color = KlixInkPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 160.dp)
+                modifier = Modifier.widthIn(max = 140.dp)
             )
             Icon(
                 imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
                 contentDescription = "Dropdown",
-                tint = TextSecondary,
+                tint = KlixInkSecondary,
                 modifier = Modifier.size(18.dp)
             )
         }

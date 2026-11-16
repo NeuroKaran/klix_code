@@ -48,9 +48,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import com.klix.code.R
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -58,7 +59,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.klix.code.R
 import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.KlixBgRootGradient
 import com.klix.code.ui.theme.KlixBorderHairline
@@ -306,7 +306,7 @@ private fun DockItem(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    imageVector = tab.icon,
+                    painter = painterResource(id = tab.iconRes),
                     contentDescription = tab.label,
                     tint = Color(0xFF0C0D14),
                     modifier = Modifier.size(18.dp)
@@ -327,7 +327,7 @@ private fun DockItem(
                 modifier = Modifier.padding(horizontal = 4.dp)
             ) {
                 Icon(
-                    imageVector = tab.icon,
+                    painter = painterResource(id = tab.iconRes),
                     contentDescription = tab.label,
                     tint = Color(0xFF94A3B8),
                     modifier = Modifier.size(18.dp)

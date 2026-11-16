@@ -20,6 +20,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Arrangement
@@ -480,7 +481,7 @@ class MainActivity : ComponentActivity() {
                                     title = {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             WorkspaceDropdownSelector(
                                                 activeWorkspace = activeWorkspace,
@@ -498,10 +499,11 @@ class MainActivity : ComponentActivity() {
                                                     verticalAlignment = Alignment.CenterVertically,
                                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                                                     modifier = Modifier
-                                                        .clip(CircleShape)
+                                                        .height(34.dp)
+                                                        .clip(RoundedCornerShape(10.dp))
                                                         .background(KlixSurfaceCardItem)
-                                                        .border(1.dp, KlixBorderHairline, CircleShape)
-                                                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                                                        .border(1.dp, KlixBorderHairline, RoundedCornerShape(10.dp))
+                                                        .padding(horizontal = 10.dp)
                                                 ) {
                                                     if (logoRes != null) {
                                                         Image(
@@ -523,190 +525,214 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     navigationIcon = {
-                                        IconButton(
-                                            onClick = {
-                                                scope.launch {
-                                                    if (drawerState.isClosed) drawerState.open() else drawerState.close()
-                                                }
-                                            },
+                                        Box(
                                             modifier = Modifier
-                                                .minimumInteractiveComponentSize()
-                                                .pressEffect(0.92f)
+                                                .padding(start = 12.dp, end = 6.dp)
+                                                .size(34.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(KlixSurfaceCardItem)
+                                                .border(1.dp, KlixBorderHairline, RoundedCornerShape(10.dp))
+                                                .clickable {
+                                                    scope.launch {
+                                                        if (drawerState.isClosed) drawerState.open() else drawerState.close()
+                                                    }
+                                                }
+                                                .pressEffect(0.92f),
+                                            contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.Menu,
+                                                painter = painterResource(id = R.drawable.ic_icon_menu),
                                                 contentDescription = "Menu",
                                                 tint = KlixInkPrimary,
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
                                     },
                                     actions = {
-                                        // Streak Pill Button
-                                        StreakPillButton(
-                                            streakCount = streakState.streakCount,
-                                            isClaimedToday = streakState.isClaimedToday,
-                                            onClick = { showDailyStreakDialog = true }
-                                        )
-
-                                        // Primary Run Button (runs active file in terminal)
-                                        Button(
-                                            onClick = {
-                                                if (activeTab?.isModified == true) {
-                                                    viewModel.saveActiveTab()
-                                                }
-                                                activeTab?.let { tab ->
-                                                    val cmd = when (tab.extension.lowercase()) {
-                                                        "py" -> "python3 ${tab.name}"
-                                                        "js" -> "node ${tab.name}"
-                                                        "sh" -> "sh ${tab.name}"
-                                                        else -> "./${tab.name}"
-                                                    }
-                                                    terminalViewModel.executeCommand(cmd)
-                                                    isTerminalOpen = true
-                                                }
-                                            },
-                                            shape = CircleShape,
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = KlixPrimaryCtaBg,
-                                                contentColor = KlixPrimaryCtaText
-                                            ),
-                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp),
-                                            modifier = Modifier
-                                                .height(32.dp)
-                                                .pressEffect(0.92f)
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier.padding(end = 12.dp)
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.PlayArrow,
-                                                contentDescription = "Run",
-                                                modifier = Modifier.size(14.dp),
-                                                tint = KlixPrimaryCtaText
+                                            // Streak Pill Button
+                                            StreakPillButton(
+                                                streakCount = streakState.streakCount,
+                                                isClaimedToday = streakState.isClaimedToday,
+                                                onClick = { showDailyStreakDialog = true }
                                             )
-                                            Spacer(modifier = Modifier.width(3.dp))
-                                            Text(
-                                                text = "Run",
-                                                style = KlixTypography.codePill,
-                                                fontWeight = FontWeight.Bold,
-                                                color = KlixPrimaryCtaText
-                                            )
-                                        }
 
-                                        // Primary Save Button
-                                        IconButton(
-                                            onClick = { viewModel.saveActiveTab() },
-                                            enabled = activeTab?.isModified == true,
-                                            modifier = Modifier
-                                                .minimumInteractiveComponentSize()
-                                                .pressEffect(0.92f)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Save,
-                                                contentDescription = "Save",
-                                                tint = if (activeTab?.isModified == true) LimeBrandColor else TextMuted,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-
-                                        // State-Aware Overflow Menu
-                                        Box {
-                                            IconButton(
-                                                onClick = { isOverflowMenuExpanded = true },
+                                            // Primary Run Button (runs active file in terminal)
+                                            Box(
                                                 modifier = Modifier
-                                                    .minimumInteractiveComponentSize()
+                                                    .height(34.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(LimeBrandColor)
+                                                    .clickable {
+                                                        if (activeTab?.isModified == true) {
+                                                            viewModel.saveActiveTab()
+                                                        }
+                                                        activeTab?.let { tab ->
+                                                            val cmd = when (tab.extension.lowercase()) {
+                                                                "py" -> "python3 ${tab.name}"
+                                                                "js" -> "node ${tab.name}"
+                                                                "sh" -> "sh ${tab.name}"
+                                                                else -> "./${tab.name}"
+                                                            }
+                                                            terminalViewModel.executeCommand(cmd)
+                                                            isTerminalOpen = true
+                                                        }
+                                                    }
                                                     .pressEffect(0.92f)
+                                                    .padding(horizontal = 12.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.ic_icon_play),
+                                                        contentDescription = "Run",
+                                                        modifier = Modifier.size(13.dp),
+                                                        tint = Color(0xFF0C0D14)
+                                                    )
+                                                    Text(
+                                                        text = "Run",
+                                                        style = KlixTypography.codePill,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFF0C0D14)
+                                                    )
+                                                }
+                                            }
+
+                                            // Primary Save Button
+                                            val isModified = activeTab?.isModified == true
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(34.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(if (isModified) LimeBrandColor else KlixSurfaceCardItem)
+                                                    .border(
+                                                        width = 1.dp,
+                                                        color = if (isModified) Color.Transparent else KlixBorderHairline,
+                                                        shape = RoundedCornerShape(10.dp)
+                                                    )
+                                                    .clickable(enabled = isModified) { viewModel.saveActiveTab() }
+                                                    .pressEffect(0.92f),
+                                                contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.MoreVert,
-                                                    contentDescription = "More options",
-                                                    tint = TextPrimary,
-                                                    modifier = Modifier.size(20.dp)
+                                                    painter = painterResource(id = R.drawable.ic_icon_save),
+                                                    contentDescription = "Save",
+                                                    tint = if (isModified) Color(0xFF0C0D14) else TextMuted,
+                                                    modifier = Modifier.size(17.dp)
                                                 )
                                             }
 
-                                            DropdownMenu(
-                                                expanded = isOverflowMenuExpanded,
-                                                onDismissRequest = { isOverflowMenuExpanded = false },
-                                                modifier = Modifier.background(GlassSurfaceColor)
-                                            ) {
-                                                // AI Assistant
-                                                DropdownMenuItem(
-                                                    text = { Text("AI Assistant") },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            imageVector = Icons.Default.SmartToy,
-                                                            contentDescription = null,
-                                                            tint = if (isAgentPanelOpen) LimeBrandColor else TextSecondary,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    },
-                                                    onClick = {
-                                                        isOverflowMenuExpanded = false
-                                                        isAgentPanelOpen = !isAgentPanelOpen
-                                                    }
-                                                )
+                                            // State-Aware Overflow Menu
+                                            Box {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(34.dp)
+                                                        .clip(RoundedCornerShape(10.dp))
+                                                        .background(KlixSurfaceCardItem)
+                                                        .border(1.dp, KlixBorderHairline, RoundedCornerShape(10.dp))
+                                                        .clickable { isOverflowMenuExpanded = true }
+                                                        .pressEffect(0.92f),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.ic_icon_more_vert),
+                                                        contentDescription = "More options",
+                                                        tint = KlixInkPrimary,
+                                                        modifier = Modifier.size(17.dp)
+                                                    )
+                                                }
 
-                                                // Terminal
-                                                DropdownMenuItem(
-                                                    text = { Text("Terminal") },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Terminal,
-                                                            contentDescription = null,
-                                                            tint = if (isTerminalOpen) CyanBrandColor else TextSecondary,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    },
-                                                    onClick = {
-                                                        isOverflowMenuExpanded = false
-                                                        isTerminalOpen = !isTerminalOpen
-                                                    }
-                                                )
+                                                DropdownMenu(
+                                                    expanded = isOverflowMenuExpanded,
+                                                    onDismissRequest = { isOverflowMenuExpanded = false },
+                                                    modifier = Modifier.background(GlassSurfaceColor)
+                                                ) {
+                                                    // AI Assistant
+                                                    DropdownMenuItem(
+                                                        text = { Text("AI Assistant") },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                painter = painterResource(id = R.drawable.ic_icon_agent),
+                                                                contentDescription = null,
+                                                                tint = if (isAgentPanelOpen) LimeBrandColor else TextSecondary,
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        },
+                                                        onClick = {
+                                                            isOverflowMenuExpanded = false
+                                                            isAgentPanelOpen = !isAgentPanelOpen
+                                                        }
+                                                    )
 
-                                                // Find & Replace
-                                                DropdownMenuItem(
-                                                    text = { Text("Find & Replace") },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Search,
-                                                            contentDescription = null,
-                                                            tint = if (isSearchOpen) CyanBrandColor else TextSecondary,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    },
-                                                    onClick = {
-                                                        isOverflowMenuExpanded = false
-                                                        viewModel.toggleSearch()
-                                                    }
-                                                )
+                                                    // Terminal
+                                                    DropdownMenuItem(
+                                                        text = { Text("Terminal") },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                painter = painterResource(id = R.drawable.ic_icon_terminal_prompt),
+                                                                contentDescription = null,
+                                                                tint = if (isTerminalOpen) CyanBrandColor else TextSecondary,
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        },
+                                                        onClick = {
+                                                            isOverflowMenuExpanded = false
+                                                            isTerminalOpen = !isTerminalOpen
+                                                        }
+                                                    )
 
-                                                // Word Wrap
-                                                DropdownMenuItem(
-                                                    text = { Text("Word Wrap") },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            imageVector = Icons.AutoMirrored.Filled.WrapText,
-                                                            contentDescription = null,
-                                                            tint = if (isWordWrap) CyanBrandColor else TextSecondary,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    },
-                                                    onClick = {
-                                                        isOverflowMenuExpanded = false
-                                                        viewModel.toggleWordWrap()
-                                                    }
-                                                )
+                                                    // Find & Replace
+                                                    DropdownMenuItem(
+                                                        text = { Text("Find & Replace") },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Search,
+                                                                contentDescription = null,
+                                                                tint = if (isSearchOpen) CyanBrandColor else TextSecondary,
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        },
+                                                        onClick = {
+                                                            isOverflowMenuExpanded = false
+                                                            viewModel.toggleSearch()
+                                                        }
+                                                    )
 
-                                                // Settings
-                                                DropdownMenuItem(
-                                                    text = { Text("Settings") },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Settings,
-                                                            contentDescription = null,
-                                                            tint = if (isAgentSettingsOpen) LimeBrandColor else TextSecondary,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    },
+                                                    // Word Wrap
+                                                    DropdownMenuItem(
+                                                        text = { Text("Word Wrap") },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                imageVector = Icons.AutoMirrored.Filled.WrapText,
+                                                                contentDescription = null,
+                                                                tint = if (isWordWrap) CyanBrandColor else TextSecondary,
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        },
+                                                        onClick = {
+                                                            isOverflowMenuExpanded = false
+                                                            viewModel.toggleWordWrap()
+                                                        }
+                                                    )
+
+                                                    // Settings
+                                                    DropdownMenuItem(
+                                                        text = { Text("Settings") },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                painter = painterResource(id = R.drawable.ic_icon_settings),
+                                                                contentDescription = null,
+                                                                tint = if (isAgentSettingsOpen) LimeBrandColor else TextSecondary,
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        },
                                                     onClick = {
                                                         isOverflowMenuExpanded = false
                                                         agentViewModel.toggleSettings()
@@ -714,7 +740,8 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
                                         }
-                                    },
+                                    }
+                                },
                                 colors = TopAppBarDefaults.topAppBarColors(
                                     containerColor = KlixSurfaceSheet
                                 ),

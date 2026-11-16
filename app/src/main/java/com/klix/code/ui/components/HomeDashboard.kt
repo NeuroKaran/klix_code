@@ -168,10 +168,10 @@ fun HomeDashboard(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Menu,
+                                    painter = painterResource(id = R.drawable.ic_icon_menu),
                                     contentDescription = "Open Workspace Files",
                                     tint = KlixInkPrimary,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
@@ -227,7 +227,7 @@ fun HomeDashboard(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.LocalFireDepartment,
+                                painter = painterResource(id = R.drawable.ic_icon_flame),
                                 contentDescription = "Streak flame",
                                 tint = Color(0xFFFF9800),
                                 modifier = Modifier.size(18.dp)
@@ -541,7 +541,7 @@ private fun RecentWorkspaceRow(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Folder,
+                    painter = painterResource(id = R.drawable.ic_icon_folder),
                     contentDescription = null,
                     tint = if (isActive) {
                         if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)

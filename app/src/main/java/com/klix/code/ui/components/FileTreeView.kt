@@ -277,7 +277,7 @@ fun FileTreeView(
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
                     Icon(
-                        imageVector = if (isSandbox) Icons.Default.Terminal else Icons.Default.Folder,
+                        painter = painterResource(id = if (isSandbox) R.drawable.ic_icon_terminal_prompt else R.drawable.ic_icon_folder),
                         contentDescription = null,
                         tint = if (isSandbox) LimeBrandColor else CyanBrandColor,
                         modifier = Modifier.size(15.dp)
@@ -393,7 +393,7 @@ fun FileTreeView(
                                 shape = CircleShape
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Terminal,
+                                    painter = painterResource(id = R.drawable.ic_icon_terminal_prompt),
                                     contentDescription = null,
                                     tint = OnAccentPrimaryColor,
                                     modifier = Modifier.size(16.dp)
@@ -453,7 +453,7 @@ fun FileTreeView(
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Terminal,
+                                    painter = painterResource(id = R.drawable.ic_icon_terminal_prompt),
                                     contentDescription = null,
                                     tint = Color.White,
                                     modifier = Modifier.size(16.dp)

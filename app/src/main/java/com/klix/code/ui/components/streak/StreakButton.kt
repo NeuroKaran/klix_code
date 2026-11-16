@@ -50,6 +50,8 @@ import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
 import com.klix.code.ui.theme.GlassSurfaceColor
 import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.KlixInkPrimary
+import com.klix.code.ui.theme.KlixSurfaceCardItem
 import com.klix.code.ui.theme.LimeBrand
 import com.klix.code.ui.theme.LimeGlow
 import com.klix.code.ui.theme.LocalIsDarkTheme
@@ -99,20 +101,22 @@ fun StreakPillButton(
         label = "border_glow"
     )
 
+    val pillShape = RoundedCornerShape(10.dp)
     Box(
         modifier = modifier
-            .clip(CircleShape)
-            .background(GlassSurfaceColor)
+            .height(34.dp)
+            .clip(pillShape)
+            .background(KlixSurfaceCardItem)
             .then(
                 if (!isClaimedToday) {
-                    Modifier.tintedGlassBorder(FlameOrange, CircleShape, strokeWidth = 1.dp, highlightAlpha = borderGlow)
+                    Modifier.tintedGlassBorder(FlameOrange, pillShape, strokeWidth = 1.dp, highlightAlpha = borderGlow)
                 } else {
-                    Modifier.glassBorder(CircleShape, strokeWidth = 1.dp, highlightAlpha = 0.28f, midAlpha = 0.10f)
+                    Modifier.glassBorder(pillShape, strokeWidth = 1.dp, highlightAlpha = 0.28f, midAlpha = 0.10f)
                 }
             )
             .pressEffect(targetScale = 0.92f)
             .clickable(onClick = onClick)
-            .padding(horizontal = 9.dp, vertical = 4.dp),
+            .padding(horizontal = 9.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -120,7 +124,7 @@ fun StreakPillButton(
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.LocalFireDepartment,
+                painter = painterResource(id = R.drawable.ic_icon_flame),
                 contentDescription = "Streak Flame",
                 tint = FlameOrange,
                 modifier = Modifier
@@ -133,14 +137,14 @@ fun StreakPillButton(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace,
-                color = if (isClaimedToday) TextPrimary else FlameOrange
+                color = if (isClaimedToday) KlixInkPrimary else FlameOrange
             )
 
             if (!isClaimedToday) {
                 // Subtle glowing notification dot
                 Box(
                     modifier = Modifier
-                        .size(6.dp)
+                        .size(5.dp)
                         .clip(CircleShape)
                         .background(FlameOrange)
                 )

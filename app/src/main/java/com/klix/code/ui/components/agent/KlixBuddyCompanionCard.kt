@@ -103,7 +103,7 @@ fun KlixBuddyCompanionCard(
                         text = "/test",
                         icon = {
                             Icon(
-                                imageVector = Icons.Default.Terminal,
+                                painter = painterResource(id = R.drawable.ic_icon_terminal_prompt),
                                 contentDescription = null,
                                 tint = KlixInkPrimary,
                                 modifier = Modifier.size(13.dp)

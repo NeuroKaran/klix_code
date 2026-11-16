@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.painterResource
+import com.klix.code.R
 import com.klix.code.ui.components.glass.glassBorder
 import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.LimeBrandColor
@@ -45,11 +47,15 @@ import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.GlassSurfacePillColor
 import com.klix.code.ui.theme.LocalIsDarkTheme
 
-enum class NavTab(val label: String, val icon: ImageVector) {
-    HOME("Home", Icons.Default.Home),
-    AGENT("Agent", Icons.Default.SmartToy),
-    TERMINAL("Terminal", Icons.Default.Terminal),
-    SETTINGS("Settings", Icons.Default.Settings)
+enum class NavTab(
+    val label: String,
+    val iconRes: Int,
+    val icon: ImageVector = Icons.Default.Home
+) {
+    HOME("Home", R.drawable.ic_icon_home, Icons.Default.Home),
+    AGENT("Agent", R.drawable.ic_icon_agent, Icons.Default.SmartToy),
+    TERMINAL("Terminal", R.drawable.ic_icon_terminal_prompt, Icons.Default.Terminal),
+    SETTINGS("Settings", R.drawable.ic_icon_settings, Icons.Default.Settings)
 }
 
 /**
@@ -139,7 +145,7 @@ private fun NavDockItem(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    imageVector = tab.icon,
+                    painter = painterResource(id = tab.iconRes),
                     contentDescription = tab.label,
                     tint = contentColor,
                     modifier = Modifier.size(17.dp)
@@ -160,7 +166,7 @@ private fun NavDockItem(
                 modifier = Modifier.padding(horizontal = 4.dp)
             ) {
                 Icon(
-                    imageVector = tab.icon,
+                    painter = painterResource(id = tab.iconRes),
                     contentDescription = tab.label,
                     tint = contentColor,
                     modifier = Modifier.size(17.dp)

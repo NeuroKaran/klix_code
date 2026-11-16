@@ -1,9 +1,9 @@
 {
-  "versionCode": 18,
-  "versionName": "0.4.6",
+  "versionCode": 19,
+  "versionName": "0.4.7",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.6.apk",
-  "releaseNotes": "• Dynamic Sandbox Toolchain Detection: Toolchain cards now dynamically verify binary and package installation status without premature checkmarks\n• Download & Reinstall Action Transitions: Uninstalled tools show download action with Tap to Install; installed tools automatically flip to the circular buffer icon with Reinstall\n• Install Different Tools Guide: New terminal package card displaying 'apk add <package>' with one-click Copy and Run actions, plus 'apk get' syntax support\n• Line Numbers & Gutter Pinning: Fixed editor line numbers from scrolling off-screen and aligned gutter typography\n• Companion Card Mascot: Integrated 2D coding mascot avatar with automated /test and /optimize slash command orchestration",
-  "releaseDate": "2026-11-14",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.7.apk",
+  "releaseNotes": "• Editor Swipe Gesture Isolation: Swiping right while viewing or editing code now traverses code smoothly without inadvertently pulling out the workspace panel; edge swipe is preserved on the home dashboard\n• Conversation Clear & Management: Added quick conversation clearing with confirmation dialog and corrected chat session pluralization\n• Alpine Linux Sandbox Stability: Ensured seamless tool execution and workspace synchronization",
+  "releaseDate": "2026-11-16",
   "forceUpdate": false
 }

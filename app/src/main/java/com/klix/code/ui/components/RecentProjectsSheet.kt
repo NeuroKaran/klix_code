@@ -31,9 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.klix.code.R
 import com.klix.code.data.model.ProjectItem
 import com.klix.code.ui.components.glass.GlassButton
 import com.klix.code.ui.components.glass.glassBorder
@@ -97,7 +99,7 @@ fun RecentProjectsDialog(
                     shape = CircleShape
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Terminal,
+                        painter = painterResource(id = R.drawable.ic_icon_terminal_prompt),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                         tint = OnAccentPrimaryColor

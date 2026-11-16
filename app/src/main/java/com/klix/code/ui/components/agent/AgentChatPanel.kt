@@ -593,7 +593,7 @@ fun AgentChatPanel(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Terminal,
+                                painter = painterResource(id = R.drawable.ic_icon_terminal_prompt),
                                 contentDescription = null,
                                 tint = AccentPrimary,
                                 modifier = Modifier.size(13.dp)
