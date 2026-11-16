@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -53,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -290,11 +292,11 @@ fun TerminalView(
             }
         }
 
-        // 3. Terminal Viewport Card (RoundedCornerShape(24.dp), height = 290.dp)
+        // 3. Terminal Viewport Card (RoundedCornerShape(24.dp), flexible weight)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(290.dp)
+                .weight(1f)
                 .clip(RoundedCornerShape(24.dp))
                 .background(if (isDark) Color(0xFF0C0F1A) else Color(0xFF121622))
                 .border(1.dp, if (isDark) Color(0xFF2E364F) else Color(0xFF475569), RoundedCornerShape(24.dp))
@@ -476,8 +478,6 @@ fun TerminalView(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f, fill = false))
-
         // 5. Bottom Command Input Bar: "$ Run a command..." with circular send button
         Row(
             modifier = Modifier
@@ -498,26 +498,23 @@ fun TerminalView(
                 color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
             )
 
-            OutlinedTextField(
+            BasicTextField(
                 value = inputCommand,
                 onValueChange = {
                     inputCommand = it
                     viewModel.setInputDraft(it, activeTabId)
                 },
-                placeholder = {
-                    Text(
-                        text = "Run a command...",
-                        style = KlixTypography.codeEditor,
-                        color = KlixInkSecondary
-                    )
-                },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 4.dp),
                 singleLine = true,
                 textStyle = TextStyle(
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 13.sp,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Medium,
                     color = KlixInkPrimary
                 ),
+                cursorBrush = SolidColor(if (isDark) Color(0xFFD5FB66) else Color(0xFF0C0D14)),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = {
                     if (inputCommand.isNotBlank()) {
@@ -530,14 +527,23 @@ fun TerminalView(
                         viewModel.setInputDraft("", activeTabId)
                     }
                 }),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedTextColor = KlixInkPrimary,
-                    unfocusedTextColor = KlixInkPrimary
-                )
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (inputCommand.isEmpty()) {
+                            Text(
+                                text = "Run a command...",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 13.5.sp,
+                                color = KlixInkSecondary,
+                                maxLines = 1
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
             )
 
             if (isExecuting) {
