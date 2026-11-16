@@ -273,4 +273,65 @@ class ChatSessionTest {
         assertEquals("s_fall_1", retrieved[0].id)
         assertTrue(File(wsDir, ".klix/chat_sessions.json").exists())
     }
+
+    @Test
+    fun testChatSessionDeleteAndPreviewText() {
+        runBlocking {
+            val mockContext = mock(Context::class.java)
+            val tempDir = File(System.getProperty("java.io.tmpdir"), "klix_test_delete_preview_${System.currentTimeMillis()}")
+            tempDir.mkdirs()
+            `when`(mockContext.filesDir).thenReturn(tempDir)
+
+            val wsDir = File(tempDir, "sandbox/rootfs/workspaces/test-slug").apply { mkdirs() }
+            val registryFile = File(tempDir, "sandbox_workspaces_registry.json")
+            registryFile.writeText("""
+                [
+                    {
+                        "id": "ws_del",
+                        "name": "Test Delete",
+                        "directoryName": "test-slug",
+                        "relativePath": "/workspaces/test-slug",
+                        "rootUri": "file://${wsDir.absolutePath.replace('\\', '/')}",
+                        "createdAt": 1000,
+                        "lastOpened": 1000
+                    }
+                ]
+            """.trimIndent())
+
+            val repo = ChatSessionRepositoryImpl(mockContext, null)
+
+            val session1 = ChatSession(
+                id = "s_1",
+                title = "Chat 1",
+                messages = listOf(ChatMessage(id = "m1", role = MessageRole.USER, content = "Hello world from user"))
+            )
+            val session2 = ChatSession(
+                id = "s_2",
+                title = "Chat 2",
+                messages = listOf(ChatMessage(id = "m2", role = MessageRole.USER, content = "Second session message"))
+            )
+
+            assertEquals("Hello world from user", session1.previewText)
+            assertEquals("Second session message", session2.previewText)
+
+            val emptySession = ChatSession(id = "s_empty", title = "Empty")
+            assertEquals("Empty conversation", emptySession.previewText)
+
+            repo.saveSession("ws_del", session1)
+            repo.saveSession("ws_del", session2)
+            assertEquals(2, repo.getSessions("ws_del").size)
+
+            // Delete session 1
+            repo.deleteSession("ws_del", "s_1")
+            val remaining = repo.getSessions("ws_del")
+            assertEquals(1, remaining.size)
+            assertEquals("s_2", remaining[0].id)
+
+            // Delete session 2
+            repo.deleteSession("ws_del", "s_2")
+            assertTrue(repo.getSessions("ws_del").isEmpty())
+
+            tempDir.deleteRecursively()
+        }
+    }
 }

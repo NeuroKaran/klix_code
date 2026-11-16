@@ -133,7 +133,7 @@ fun WorkspaceDropdownSelector(
                                 )
                             }
 
-                            if (!isActive && workspaces.size > 1) {
+                            if (workspaces.size > 1) {
                                 IconButton(
                                     onClick = {
                                         expanded = false
