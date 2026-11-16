@@ -196,6 +196,8 @@ fun AgentChatPanel(
 
     var showSessionSheet by remember { mutableStateOf(false) }
     var sessionToRename by remember { mutableStateOf<ChatSession?>(null) }
+    var sessionToDelete by remember { mutableStateOf<ChatSession?>(null) }
+    var showClearChatDialog by remember { mutableStateOf(false) }
     var renameTitleInput by remember { mutableStateOf("") }
 
     val activeSession = sessions.find { it.id == activeSessionId } ?: sessions.firstOrNull()
@@ -298,6 +300,20 @@ fun AgentChatPanel(
                             contentDescription = "Switch Chat",
                             tint = KlixInkSecondary,
                             modifier = Modifier.size(15.dp)
+                        )
+                    }
+                }
+
+                if (messages.isNotEmpty()) {
+                    IconButton(
+                        onClick = { showClearChatDialog = true },
+                        modifier = Modifier.size(32.dp).pressEffect(0.9f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = "Clear Conversation",
+                            tint = AccentError,
+                            modifier = Modifier.size(19.dp)
                         )
                     }
                 }
@@ -890,7 +906,7 @@ fun AgentChatPanel(
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Text(
-                                        text = "${sessions.size.coerceAtLeast(3)} Chats",
+                                        text = "${sessions.size} Chat${if (sessions.size == 1) "" else "s"}",
                                         style = KlixTypography.codePill,
                                         color = KlixInkPrimary
                                     )
@@ -982,88 +998,51 @@ fun AgentChatPanel(
                             }
                         }
 
-                        // 3 Stacked Session Cards
+                        // Stacked Session Cards
                         Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            // Card 1: Chat 1 • palindrome.py
-                            SessionHistoryCard(
-                                title = if (sessions.isNotEmpty()) sessions[0].title else "Chat 1 • palindrome.py",
-                                subtitle = "Python",
-                                langLogoRes = R.drawable.ic_logo_python,
-                                modelLogoRes = R.drawable.ic_logo_gemini,
-                                isHighlighted = false,
-                                onClick = {
-                                    if (sessions.isNotEmpty()) onSwitchSession(sessions[0].id)
-                                    showSessionSheet = false
-                                },
-                                onRename = {
-                                    if (sessions.isNotEmpty()) {
-                                        sessionToRename = sessions[0]
-                                        renameTitleInput = sessions[0].title
-                                    }
-                                },
-                                onDelete = {
-                                    if (sessions.isNotEmpty()) onDeleteSession(sessions[0].id)
+                            if (sessions.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No previous chats found",
+                                        style = KlixTypography.bodySecondary,
+                                        color = KlixInkSecondary
+                                    )
                                 }
-                            )
-
-                            // Card 2: Chat 2 • orbit-ui (Soft Lavender-Indigo Tint)
-                            SessionHistoryCard(
-                                title = if (sessions.size > 1) sessions[1].title else "Chat 2 • orbit-ui",
-                                subtitle = "Anthropic and Kotlin",
-                                langLogoRes = R.drawable.ic_logo_kotlin,
-                                modelLogoRes = R.drawable.ic_logo_claude,
-                                isHighlighted = true,
-                                onClick = {
-                                    if (sessions.size > 1) onSwitchSession(sessions[1].id)
-                                    showSessionSheet = false
-                                },
-                                onRename = {
-                                    if (sessions.size > 1) {
-                                        sessionToRename = sessions[1]
-                                        renameTitleInput = sessions[1].title
+                            } else {
+                                sessions.forEachIndexed { index, s ->
+                                    val langLogoRes = when {
+                                        s.title.contains("python", ignoreCase = true) || s.title.endsWith(".py") -> R.drawable.ic_logo_python
+                                        s.title.contains("kotlin", ignoreCase = true) || s.title.endsWith(".kt") -> R.drawable.ic_logo_kotlin
+                                        s.title.contains("node", ignoreCase = true) || s.title.endsWith(".js") || s.title.endsWith(".ts") -> R.drawable.ic_logo_nodejs
+                                        index % 3 == 0 -> R.drawable.ic_logo_python
+                                        index % 3 == 1 -> R.drawable.ic_logo_kotlin
+                                        else -> R.drawable.ic_logo_nodejs
                                     }
-                                },
-                                onDelete = {
-                                    if (sessions.size > 1) onDeleteSession(sessions[1].id)
-                                }
-                            )
-
-                            // Card 3: Chat 3 • study-buddy
-                            SessionHistoryCard(
-                                title = if (sessions.size > 2) sessions[2].title else "Chat 3 • study-buddy",
-                                subtitle = "Node.js",
-                                langLogoRes = R.drawable.ic_logo_nodejs,
-                                modelLogoRes = R.drawable.ic_logo_openai,
-                                isHighlighted = false,
-                                onClick = {
-                                    if (sessions.size > 2) onSwitchSession(sessions[2].id)
-                                    showSessionSheet = false
-                                },
-                                onRename = {
-                                    if (sessions.size > 2) {
-                                        sessionToRename = sessions[2]
-                                        renameTitleInput = sessions[2].title
+                                    val modelLogoRes = when {
+                                        index % 3 == 0 -> R.drawable.ic_logo_gemini
+                                        index % 3 == 1 -> R.drawable.ic_logo_claude
+                                        else -> R.drawable.ic_logo_openai
                                     }
-                                },
-                                onDelete = {
-                                    if (sessions.size > 2) onDeleteSession(sessions[2].id)
-                                }
-                            )
+                                    val subtitle = if (s.previewText.isNotBlank()) s.previewText else "Chat Session"
+                                    val isHighlighted = (s.id == activeSessionId)
 
-                            // Any additional user sessions beyond 3
-                            if (sessions.size > 3) {
-                                sessions.drop(3).forEach { s ->
                                     SessionHistoryCard(
                                         title = s.title,
-                                        subtitle = s.previewText.ifEmpty { "Chat Session" },
-                                        langLogoRes = R.drawable.ic_logo_python,
-                                        modelLogoRes = R.drawable.ic_logo_gemini,
-                                        isHighlighted = s.id == activeSessionId,
+                                        subtitle = subtitle,
+                                        langLogoRes = langLogoRes,
+                                        modelLogoRes = modelLogoRes,
+                                        isHighlighted = isHighlighted,
+                                        isActive = (s.id == activeSessionId),
                                         onClick = {
                                             onSwitchSession(s.id)
                                             showSessionSheet = false
@@ -1073,7 +1052,7 @@ fun AgentChatPanel(
                                             renameTitleInput = s.title
                                         },
                                         onDelete = {
-                                            onDeleteSession(s.id)
+                                            sessionToDelete = s
                                         }
                                     )
                                 }
@@ -1131,6 +1110,88 @@ fun AgentChatPanel(
                 }
             },
             containerColor = DarkSurface
+        )
+    }
+
+    // Delete Session Confirmation Dialog
+    sessionToDelete?.let { session ->
+        AlertDialog(
+            onDismissRequest = { sessionToDelete = null },
+            title = {
+                Text(
+                    text = "Delete Chat?",
+                    style = KlixTypography.sectionHeader,
+                    color = AccentError,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete \"${session.title}\"? This will permanently remove its message history and cannot be undone.",
+                    style = KlixTypography.bodySecondary,
+                    color = KlixInkSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteSession(session.id)
+                        sessionToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentError),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Delete", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { sessionToDelete = null }) {
+                    Text("Cancel", color = KlixInkSecondary)
+                }
+            },
+            containerColor = KlixSurfaceSheet,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    // Clear Chat Confirmation Dialog
+    if (showClearChatDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearChatDialog = false },
+            title = {
+                Text(
+                    text = "Clear Conversation?",
+                    style = KlixTypography.sectionHeader,
+                    color = AccentError,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to clear all messages in this conversation? This action cannot be undone.",
+                    style = KlixTypography.bodySecondary,
+                    color = KlixInkSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onClearChat()
+                        showClearChatDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentError),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Clear", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearChatDialog = false }) {
+                    Text("Cancel", color = KlixInkSecondary)
+                }
+            },
+            containerColor = KlixSurfaceSheet,
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }
@@ -2003,6 +2064,7 @@ private fun SessionHistoryCard(
     langLogoRes: Int,
     modelLogoRes: Int,
     isHighlighted: Boolean,
+    isActive: Boolean = false,
     onClick: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit
@@ -2020,23 +2082,46 @@ private fun SessionHistoryCard(
             .clip(RoundedCornerShape(20.dp))
             .background(cardBg)
             .border(1.dp, if (isHighlighted) Color(0xFFB594EB) else KlixBorderHairline, RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
-            .pressEffect(0.97f)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        // Main Clickable Area to switch chat
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onClick)
+                .padding(vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = title,
-                style = KlixTypography.cardTitle,
-                color = KlixInkPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = KlixTypography.cardTitle,
+                    color = KlixInkPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (isActive) {
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Color(0xFFD5FB66))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "ACTIVE",
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF0C0D14)
+                        )
+                    }
+                }
+            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -2057,11 +2142,43 @@ private fun SessionHistoryCard(
             }
         }
 
-        Image(
-            painter = painterResource(id = modelLogoRes),
-            contentDescription = null,
-            modifier = Modifier.size(22.dp)
-        )
+        // Action Buttons Row (Model Logo, Rename, Delete)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Image(
+                painter = painterResource(id = modelLogoRes),
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .size(20.dp)
+            )
+
+            IconButton(
+                onClick = onRename,
+                modifier = Modifier.size(34.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Rename Chat",
+                    tint = KlixInkSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(34.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeleteOutline,
+                    contentDescription = "Delete Chat",
+                    tint = AccentError,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
     }
 }
 
