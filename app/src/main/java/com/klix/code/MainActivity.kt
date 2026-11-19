@@ -439,9 +439,17 @@ class MainActivity : ComponentActivity() {
                             agentViewModel.closeReviewDiff()
                         }
                         isTerminalOpen -> {
+                            KlixTelemetry.recordBreadcrumb(
+                                category = "ui.navigation",
+                                message = "Back pressed: closed terminal bottom sheet"
+                            )
                             isTerminalOpen = false
                         }
                         isAgentPanelOpen -> {
+                            KlixTelemetry.recordBreadcrumb(
+                                category = "ui.navigation",
+                                message = "Back pressed: closed agent bottom sheet"
+                            )
                             isAgentPanelOpen = false
                         }
                         isSearchOpen -> {
@@ -455,8 +463,18 @@ class MainActivity : ComponentActivity() {
                             val activeTab = openTabs.find { it.uri == activeTabUri } ?: openTabs.lastOrNull()
                             if (activeTab != null) {
                                 if (activeTab.isModified) {
+                                    KlixTelemetry.recordBreadcrumb(
+                                        category = "ui.navigation",
+                                        message = "Back pressed: prompted unsaved changes",
+                                        data = mapOf("file" to activeTab.name)
+                                    )
                                     pendingUnsavedTabToClose = activeTab
                                 } else {
+                                    KlixTelemetry.recordBreadcrumb(
+                                        category = "ui.navigation",
+                                        message = "Back pressed: closed active tab",
+                                        data = mapOf("file" to activeTab.name)
+                                    )
                                     viewModel.closeTab(activeTab.uri)
                                 }
                             }
@@ -1330,14 +1348,29 @@ class MainActivity : ComponentActivity() {
                     UnsavedChangesDialog(
                         tab = tab,
                         onSaveAndClose = {
+                            KlixTelemetry.recordBreadcrumb(
+                                category = "editor.lifecycle",
+                                message = "Unsaved changes: Save & Close",
+                                data = mapOf("file" to tab.name)
+                            )
                             viewModel.saveAndCloseTab(tab.uri)
                             pendingUnsavedTabToClose = null
                         },
                         onCloseWithoutSaving = {
+                            KlixTelemetry.recordBreadcrumb(
+                                category = "editor.lifecycle",
+                                message = "Unsaved changes: Close without saving",
+                                data = mapOf("file" to tab.name)
+                            )
                             viewModel.closeTab(tab.uri)
                             pendingUnsavedTabToClose = null
                         },
                         onCancel = {
+                            KlixTelemetry.recordBreadcrumb(
+                                category = "editor.lifecycle",
+                                message = "Unsaved changes: Keep editing",
+                                data = mapOf("file" to tab.name)
+                            )
                             pendingUnsavedTabToClose = null
                         }
                     )

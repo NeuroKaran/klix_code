@@ -14,6 +14,7 @@ import com.klix.code.data.repository.WorkspaceRepositoryImpl
 import com.klix.code.data.workspace.SandboxWorkspace
 import com.klix.code.data.workspace.SandboxWorkspaceManager
 import com.klix.code.data.workspace.SandboxWorkspaceManagerImpl
+import com.klix.code.data.telemetry.KlixTelemetry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -282,8 +283,14 @@ class EditorViewModel @JvmOverloads constructor(
                     if (it.uri == uri) it.copy(isModified = false, originalContent = it.content) else it
                 }
                 _statusMessage.value = "Saved ${tab.name}"
+                KlixTelemetry.recordBreadcrumb(
+                    category = "editor.file",
+                    message = "Saved tab ${tab.name}",
+                    data = mapOf("file" to tab.name)
+                )
             } catch (e: Exception) {
                 _statusMessage.value = "Error saving file: ${e.message}"
+                KlixTelemetry.recordError(e, "Error saving file ${tab.name}", mapOf("file" to tab.name))
             } finally {
                 onComplete?.invoke()
             }
