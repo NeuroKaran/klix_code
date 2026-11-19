@@ -15,6 +15,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
@@ -120,6 +121,7 @@ import com.klix.code.ui.theme.KlixSurfaceBentoGroup
 import com.klix.code.ui.theme.KlixSurfaceCardItem
 import com.klix.code.ui.theme.KlixSurfaceSheet
 import com.klix.code.ui.theme.KlixTypography
+import com.klix.code.data.model.EditorTab
 import com.klix.code.ui.components.DiffViewerDialog
 import com.klix.code.ui.components.EditorAccessoryBar
 import com.klix.code.ui.components.EditorTabBar
@@ -127,6 +129,7 @@ import com.klix.code.ui.components.FileTreeView
 import com.klix.code.ui.components.FindReplaceBar
 import com.klix.code.ui.components.RecentProjectsDialog
 import com.klix.code.ui.components.SoraEditorView
+import com.klix.code.ui.components.UnsavedChangesDialog
 import com.klix.code.ui.components.rememberEditorController
 import com.klix.code.ui.theme.AccentPrimary
 import com.klix.code.ui.theme.AccentSecondary
@@ -265,6 +268,7 @@ class MainActivity : ComponentActivity() {
                 var isAgentPanelOpen by remember { mutableStateOf(false) }
                 var isTerminalOpen by remember { mutableStateOf(false) }
                 var isOverflowMenuExpanded by rememberSaveable { mutableStateOf(false) }
+                var pendingUnsavedTabToClose by remember { mutableStateOf<EditorTab?>(null) }
 
                 val agentMessages by agentViewModel.messages.collectAsState()
                 val agentStatus by agentViewModel.status.collectAsState()
@@ -382,6 +386,83 @@ class MainActivity : ComponentActivity() {
 
                 val agentSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 val terminalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+                // Central System Back & Edge Gesture Navigation Handler
+                val hasActiveOverlay = pendingUnsavedTabToClose != null ||
+                    showAgentPromptDialog ||
+                    showRecentProjectsDialog ||
+                    showDailyStreakDialog ||
+                    showSandboxWarningDialog ||
+                    showSandboxSetup ||
+                    isSlashCommandManagerOpen ||
+                    isAgentSettingsOpen ||
+                    activeDiff != null ||
+                    agentDiffToReview != null ||
+                    isTerminalOpen ||
+                    isAgentPanelOpen ||
+                    isSearchOpen ||
+                    drawerState.isOpen
+
+                val isInsideFile = openTabs.isNotEmpty()
+                val shouldHandleBack = hasActiveOverlay || isInsideFile
+
+                BackHandler(enabled = shouldHandleBack) {
+                    when {
+                        pendingUnsavedTabToClose != null -> {
+                            pendingUnsavedTabToClose = null
+                        }
+                        showAgentPromptDialog -> {
+                            showAgentPromptDialog = false
+                        }
+                        showRecentProjectsDialog -> {
+                            showRecentProjectsDialog = false
+                        }
+                        showDailyStreakDialog -> {
+                            showDailyStreakDialog = false
+                        }
+                        showSandboxWarningDialog -> {
+                            showSandboxWarningDialog = false
+                        }
+                        showSandboxSetup -> {
+                            terminalViewModel.closeSetupDialog()
+                        }
+                        isSlashCommandManagerOpen -> {
+                            agentViewModel.toggleSlashCommandManager(false)
+                        }
+                        isAgentSettingsOpen -> {
+                            agentViewModel.toggleSettings()
+                        }
+                        activeDiff != null -> {
+                            viewModel.discardActiveDiff()
+                        }
+                        agentDiffToReview != null -> {
+                            agentViewModel.closeReviewDiff()
+                        }
+                        isTerminalOpen -> {
+                            isTerminalOpen = false
+                        }
+                        isAgentPanelOpen -> {
+                            isAgentPanelOpen = false
+                        }
+                        isSearchOpen -> {
+                            editorController.stopSearch()
+                            viewModel.toggleSearch()
+                        }
+                        drawerState.isOpen -> {
+                            scope.launch { drawerState.close() }
+                        }
+                        isInsideFile -> {
+                            val activeTab = openTabs.find { it.uri == activeTabUri } ?: openTabs.lastOrNull()
+                            if (activeTab != null) {
+                                if (activeTab.isModified) {
+                                    pendingUnsavedTabToClose = activeTab
+                                } else {
+                                    viewModel.closeTab(activeTab.uri)
+                                }
+                            }
+                        }
+                    }
+                }
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     ModalNavigationDrawer(
@@ -872,7 +953,14 @@ class MainActivity : ComponentActivity() {
                                     tabs = openTabs,
                                     activeTabUri = activeTabUri,
                                     onSelectTab = { uri -> viewModel.selectTab(uri) },
-                                    onCloseTab = { uri -> viewModel.closeTab(uri) }
+                                    onCloseTab = { uri ->
+                                        val tab = openTabs.find { it.uri == uri }
+                                        if (tab?.isModified == true) {
+                                            pendingUnsavedTabToClose = tab
+                                        } else {
+                                            viewModel.closeTab(uri)
+                                        }
+                                    }
                                 )
 
                                 if (isSearchOpen) {
@@ -1162,6 +1250,11 @@ class MainActivity : ComponentActivity() {
                         onSaveApiKey = { provider, key -> agentViewModel.saveApiKey(provider, key) },
                         onSaveSettings = { updated -> agentViewModel.updateSettings(updated) },
                         onRefreshModels = { provider, key, forceRefresh -> agentViewModel.fetchModelsForProvider(provider, key, forceRefresh = forceRefresh) },
+                        sandboxManager = terminalViewModel.sandboxManager,
+                        onRunCommandInTerminal = { cmd ->
+                            isTerminalOpen = true
+                            terminalViewModel.executeCommand(cmd)
+                        },
                         onDismiss = { agentViewModel.toggleSettings() }
                     )
                 }
@@ -1229,6 +1322,24 @@ class MainActivity : ComponentActivity() {
                 if (showDailyStreakDialog) {
                     DailyStreakDialog(
                         onDismiss = { showDailyStreakDialog = false }
+                    )
+                }
+
+                // Unsaved Changes Confirmation Dialog
+                pendingUnsavedTabToClose?.let { tab ->
+                    UnsavedChangesDialog(
+                        tab = tab,
+                        onSaveAndClose = {
+                            viewModel.saveAndCloseTab(tab.uri)
+                            pendingUnsavedTabToClose = null
+                        },
+                        onCloseWithoutSaving = {
+                            viewModel.closeTab(tab.uri)
+                            pendingUnsavedTabToClose = null
+                        },
+                        onCancel = {
+                            pendingUnsavedTabToClose = null
+                        }
                     )
                 }
             }

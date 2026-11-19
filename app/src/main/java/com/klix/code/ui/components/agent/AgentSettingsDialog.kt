@@ -63,9 +63,11 @@ import com.klix.code.data.agent.model.DiscoveredModel
 import com.klix.code.data.agent.model.ModelDiscoveryRepository
 import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.agent.model.ProviderSettings
+import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.ui.components.KlixPeekingMascotScaffold
 import com.klix.code.ui.components.KlixPrimaryPillButton
 import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.components.sandbox.SandboxConfigurationCard
 import com.klix.code.ui.theme.KlixBorderHairline
 import com.klix.code.ui.theme.KlixInkPrimary
 import com.klix.code.ui.theme.KlixInkSecondary
@@ -111,6 +113,8 @@ fun AgentSettingsDialog(
     onSaveApiKey: (ModelProvider, String?) -> Unit,
     onSaveSettings: (ProviderSettings) -> Unit,
     onRefreshModels: (ModelProvider, String?, Boolean) -> Unit = { _, _, _ -> },
+    sandboxManager: SandboxManager? = null,
+    onRunCommandInTerminal: ((String) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -545,6 +549,18 @@ fun AgentSettingsDialog(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
+
+                // Card 4: Local Sandbox & Package Installation
+                if (sandboxManager != null && onRunCommandInTerminal != null) {
+                    SandboxConfigurationCard(
+                        sandboxManager = sandboxManager,
+                        onRunCommandInTerminal = onRunCommandInTerminal,
+                        onOpenTerminal = {
+                            onRunCommandInTerminal("clear")
+                        },
+                        isBentoCard = true
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

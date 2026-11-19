@@ -73,7 +73,7 @@ import com.klix.code.ui.theme.LocalIsDarkTheme
  *   - Soft sky-to-mint gradient fill (Light) / dark indigo-to-olive glow fill with 1.dp neon-lime border (Dark).
  *   - Left side: R.drawable.mascot_coding_laptop (2D Klix Bot typing on laptop).
  *   - Top-right speech bubble: "What shall we build today?".
- *   - Bottom row inside card: Alpine Status Pill Chip: [Official Alpine Linux Hexagon Logo] Alpine: Ready
+ *   - Bottom row inside card: Alpine Status Pill Chip: [Official Alpine Linux Hexagon Logo] Alpine: Ready (Non-clickable status indicator)
  * - Primary CTA: KlixPrimaryPillButton(text = "+ Open Sandbox Workspace").
  * - Recent Workspaces Section:
  *   - Section title "Recent Workspaces" with "+ New" button.
@@ -294,7 +294,7 @@ fun HomeDashboard(
                             }
                         }
 
-                        // Bottom row inside card: Alpine Status Pill Chip
+                        // Bottom row inside card: Alpine Status Pill Chip (Non-clickable status indicator)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.Center
@@ -304,8 +304,6 @@ fun HomeDashboard(
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(if (isDark) Color(0xFF1F2639) else Color(0xFFFFFFFF))
                                     .border(1.dp, KlixBorderHairline, RoundedCornerShape(20.dp))
-                                    .clickable(onClick = onConfigureSandbox)
-                                    .pressEffect(0.96f)
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {

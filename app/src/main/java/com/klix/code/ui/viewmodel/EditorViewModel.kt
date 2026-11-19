@@ -257,21 +257,47 @@ class EditorViewModel @JvmOverloads constructor(
         }
     }
 
-    fun saveActiveTab() {
-        val activeUri = _activeTabUri.value ?: return
-        val tab = _openTabs.value.find { it.uri == activeUri } ?: return
-        if (!tab.isModified) return
+    fun saveActiveTab(onComplete: (() -> Unit)? = null) {
+        val activeUri = _activeTabUri.value ?: run {
+            onComplete?.invoke()
+            return
+        }
+        saveTab(activeUri, onComplete)
+    }
+
+    fun saveTab(uri: Uri, onComplete: (() -> Unit)? = null) {
+        val tab = _openTabs.value.find { it.uri == uri } ?: run {
+            onComplete?.invoke()
+            return
+        }
+        if (!tab.isModified) {
+            onComplete?.invoke()
+            return
+        }
 
         viewModelScope.launch {
             try {
                 repository.writeFile(tab.uri, tab.content)
                 _openTabs.value = _openTabs.value.map {
-                    if (it.uri == activeUri) it.copy(isModified = false, originalContent = it.content) else it
+                    if (it.uri == uri) it.copy(isModified = false, originalContent = it.content) else it
                 }
                 _statusMessage.value = "Saved ${tab.name}"
             } catch (e: Exception) {
                 _statusMessage.value = "Error saving file: ${e.message}"
+            } finally {
+                onComplete?.invoke()
             }
+        }
+    }
+
+    fun saveAndCloseTab(uri: Uri) {
+        val tab = _openTabs.value.find { it.uri == uri }
+        if (tab != null && tab.isModified) {
+            saveTab(uri) {
+                closeTab(uri)
+            }
+        } else {
+            closeTab(uri)
         }
     }
 
