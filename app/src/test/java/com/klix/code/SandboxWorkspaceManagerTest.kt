@@ -5,12 +5,14 @@ import android.net.Uri
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.workspace.SandboxWorkspaceManagerImpl
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import java.io.File
+import java.util.UUID
 
 class SandboxWorkspaceManagerTest {
 
@@ -22,12 +24,17 @@ class SandboxWorkspaceManagerTest {
     @Before
     fun setup() {
         mockContext = mock(Context::class.java)
-        tempDir = File(System.getProperty("java.io.tmpdir"), "klix_test_ws_mgr_${System.currentTimeMillis()}")
+        tempDir = File(System.getProperty("java.io.tmpdir"), "klix_test_ws_mgr_${UUID.randomUUID()}")
         tempDir.mkdirs()
         `when`(mockContext.filesDir).thenReturn(tempDir)
 
         sandboxManager = SandboxManager(mockContext)
         workspaceManager = SandboxWorkspaceManagerImpl(mockContext, sandboxManager)
+    }
+
+    @After
+    fun tearDown() {
+        tempDir.deleteRecursively()
     }
 
     @Test
