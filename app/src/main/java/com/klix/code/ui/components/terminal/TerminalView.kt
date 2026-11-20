@@ -98,7 +98,6 @@ import com.klix.code.ui.theme.LocalIsDarkTheme
  *     klix@mobile:/workspace$
  *     python3 palindrome.py
  *     ✓ Server & checks passed in 0.4s
- *   - Bottom-right overlay inside card: R.drawable.mascot_waving with speech bubble "All green!".
  * - Shortcuts Section:
  *   - Label "Shortcuts".
  *   - Row of pill keycaps: + TERM (filled with #D5FB66 lime), ESC, TAB, CTRL-C, ↑, ↓.
@@ -370,36 +369,6 @@ fun TerminalView(
                         }
                     }
                 }
-            }
-
-            // Bottom-right overlay inside card: R.drawable.mascot_waving with speech bubble "All green!"
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF1E2638))
-                        .border(1.dp, Color(0xFF333F58), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "All green!",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF8FAFC)
-                    )
-                }
-
-                Image(
-                    painter = painterResource(id = R.drawable.mascot_waving),
-                    contentDescription = "Klix Bot Waving",
-                    modifier = Modifier.size(46.dp)
-                )
             }
         }
 

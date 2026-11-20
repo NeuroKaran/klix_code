@@ -133,7 +133,7 @@ Bundle all three **SIL Open Font License 1.1** font families in `app/src/main/re
 - **Screen 2 — Settings Modal**: `KlixPeekingMascotScaffold(title = "Settings")`, `App Theme` (`Light`, `Dark`, `System`), `Active AI Provider` (`Google Gemini`, `Anthropic Claude`, `OpenAI`, `OpenRouter / Groq`), `Apply & Close`.
 - **Screen 3 — Klix AI Agent**: `KlixPeekingMascotScaffold`, `Chat 1 ▾`, `Quick Mentions & Model`, `What shall we do?` prompt pills, floating composer with `/` and `@`.
 - **Screen 4 — Local Sandbox & Toolchains**: `Alpine Linux Active` hero card (`mascot_running_terminal`), 2x2 toolchain grid (`Node.js`, `Python 3`, `Git`, `C/C++`), `Open Linux Terminal` CTA.
-- **Screen 5 — Linux Terminal**: Pill tab strip (`Alpine v1`, `+ Terminal`), `JetBrains Mono` terminal viewport with `mascot_waving` (`"All green!"`), `+ TERM` / `ESC` / `TAB` / `CTRL-C` shortcuts, command input bar.
+- **Screen 5 — Linux Terminal**: Pill tab strip (`Alpine v1`, `+ Terminal`), `JetBrains Mono` terminal viewport, `+ TERM` / `ESC` / `TAB` / `CTRL-C` shortcuts, command input bar.
 - **Screen 6 — Slash Commands Studio**: `KlixPeekingMascotScaffold`, `Built-in Quick Commands` (`/refactor`, `/fix`, `/test`, `/explain`), `Custom Macros (2)` (`surfaceMacroTint`), `+ Create Custom Command`.
 - **Screen 7 — Code Editor**: File tabs (`palindrome.py`, `MainActivity.kt`), `🔥 7`, `▶ Run`, `JetBrains Mono` editor, `Klix Buddy says:` inline card (`/test`, `/optimize`), unified bottom symbol + status bar.
 - **Screen 8 — Workspace Drawer & Daily Streak**: `KLIX CODE` + `v0.4.0` pill, `streakCardGradient` card (`mascot_streak_fire`, `7 Days Streak`, `M T W T F S S` checks), `Workspace Files`, floating theme & settings pill bar.
