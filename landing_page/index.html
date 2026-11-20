@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Primary Page Title & Meta Description -->
-  <title>Klix Code — Autonomous AI Agent IDE for Android | KlixCode</title>
+  <title>Klix Code — Autonomous AI Agent IDE for Android | Cursor &amp; Claude Code in your pocket</title>
   <meta name="description"
-    content="Klix Code (Klix) is the autonomous AI agent coding IDE for Android. Run multi-step Claude & Cursor agentic workflows directly on your phone with local Alpine Linux sandbox, Sora editor, diff reviews, and 100% BYOK privacy." />
+    content="Klix Code is the autonomous AI agent IDE for Android. Run multi-turn Claude &amp; Cursor agentic workflows directly on your phone with local Alpine Linux sandbox, Sora editor, diff reviews, and 100% BYOK privacy." />
   <link rel="canonical" href="https://klixcode.vercel.app/" />
 
   <!-- Google Search Console Verification -->
@@ -17,18 +17,17 @@
   <!-- Crawlers, Indexing & Robots -->
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="keywords"
-    content="Klix, klix, Klix Code, klix code, KlixCode, klixcode, klix-code, klix android, klix code apk, klix code download, mobile AI IDE, Cursor for Android, Claude Code Android, autonomous coding agent, AI code editor Android, Alpine Linux Android, proot IDE, BYOK AI coding, Sora editor Android, mobile development environment" />
+    content="Klix, Klix Code, KlixCode, klix android, klix code apk, mobile AI IDE, Cursor for Android, Claude Code Android, autonomous coding agent, AI code editor Android, Alpine Linux Android, proot IDE, BYOK AI coding, Sora editor Android, mobile development environment" />
   <meta name="author" content="Klix Code" />
-  <meta name="publisher" content="Klix Code" />
   <meta name="application-name" content="Klix Code" />
   <meta name="color-scheme" content="light dark" />
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#d8eefe" />
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e1a" />
-  <!-- Inline FOUC Prevention Script (per modern-web-guidance dark-mode-toggle) -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafc" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#090d16" />
+
+  <!-- Inline FOUC Prevention Script -->
   <script>
-    (function() {
+    (function () {
       try {
         var stored = localStorage.getItem("color-scheme");
         var meta = document.querySelector('meta[name="color-scheme"]');
@@ -39,26 +38,24 @@
           document.documentElement.removeAttribute("data-theme");
           if (meta) meta.content = "light dark";
         }
-      } catch (e) {}
+      } catch (e) { }
     })();
   </script>
 
-  <!-- Apple & Mobile Web App Capabilities -->
+  <!-- Mobile Web App Capabilities -->
   <meta name="apple-mobile-web-app-title" content="Klix Code" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="format-detection" content="telephone=no" />
 
-  <!-- Open Graph (Facebook, LinkedIn, Discord, Slack) -->
+  <!-- Open Graph -->
   <meta property="og:site_name" content="Klix Code" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://klixcode.vercel.app/" />
-  <meta property="og:title" content="Klix Code (Klix) — Autonomous AI Agent IDE for Android" />
+  <meta property="og:title" content="Klix Code — Autonomous AI Agent IDE for Android" />
   <meta property="og:description"
-    content="Klix Code (Klix) brings Cursor & Claude Code to your Android phone with an offline Alpine Linux sandbox, Sora editor, unified diffs, and 100% BYOK privacy." />
+    content="Cursor &amp; Claude Code for your pocket. Autonomous multi-step agent coding, local Alpine Linux sandbox, and 100% BYOK privacy on Android." />
   <meta property="og:image" content="https://klixcode.vercel.app/og-image.png" />
-  <meta property="og:image:secure_url" content="https://klixcode.vercel.app/og-image.png" />
-  <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Klix Code — Autonomous AI Agent IDE for Android" />
@@ -67,9 +64,9 @@
   <!-- Twitter / X Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://klixcode.vercel.app/" />
-  <meta name="twitter:title" content="Klix Code (Klix) — Autonomous AI Agent IDE for Android" />
+  <meta name="twitter:title" content="Klix Code — Autonomous AI Agent IDE for Android" />
   <meta name="twitter:description"
-    content="Cursor & Claude Code for your pocket. Klix Code delivers autonomous multi-step agent coding, local Alpine Linux sandbox, and 100% BYOK privacy on Android." />
+    content="Cursor &amp; Claude Code for your pocket. Autonomous multi-step agent coding, local Alpine Linux sandbox, and 100% BYOK privacy on Android." />
   <meta name="twitter:image" content="https://klixcode.vercel.app/og-image.png" />
   <meta name="twitter:image:alt" content="Klix Code — Autonomous AI Agent IDE for Android" />
 
@@ -82,14 +79,14 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
   <link rel="shortcut icon" href="/favicon.ico?v=2" />
 
-  <!-- Google Fonts Preconnect & Stylesheets (Plus Jakarta Sans & JetBrains Mono matching App KlixTypography) -->
+  <!-- Google Fonts: Strict 3-Font SIL System (Bricolage Grotesque, Plus Jakarta Sans, JetBrains Mono) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet" />
 
-  <!-- Structured Data (JSON-LD) for Google Rich Snippets & Search Knowledge Graph -->
+  <!-- Structured Data (JSON-LD) -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -98,15 +95,15 @@
           "@type": ["SoftwareApplication", "MobileApplication"],
           "@id": "https://klixcode.vercel.app/#software",
           "name": "Klix Code",
-          "alternateName": ["Klix", "KlixCode", "klix", "klix code", "klixcode", "klix-code"],
+          "alternateName": ["Klix", "KlixCode", "klix-code"],
           "applicationCategory": "DeveloperApplication",
           "operatingSystem": "Android 8.0+",
           "softwareVersion": "0.4.8",
-          "fileSize": "18.1 MB",
+          "fileSize": "19.0 MB",
           "downloadUrl": "https://klixcode.vercel.app/klix-code-v0.4.8.apk",
           "url": "https://klixcode.vercel.app/",
           "image": "https://klixcode.vercel.app/og-image.png",
-          "description": "Klix Code (Klix) is the autonomous AI agent IDE for Android. Code anywhere with an unrooted Alpine Linux sandbox, Sora editor, unified diffs, and 100% BYOK privacy.",
+          "description": "Klix Code is the autonomous AI agent IDE for Android. Code anywhere with an unrooted Alpine Linux sandbox, Sora editor, unified diffs, and 100% BYOK privacy.",
           "offers": {
             "@type": "Offer",
             "price": "0",
@@ -116,115 +113,68 @@
           "aggregateRating": {
             "@type": "AggregateRating",
             "ratingValue": "4.9",
-            "ratingCount": "128",
+            "ratingCount": "134",
             "bestRating": "5",
             "worstRating": "1"
-          },
-          "featureList": [
-            "Autonomous multi-step AI agent loop",
-            "Offline unrooted Alpine Linux sandbox via PRoot",
-            "Native Sora code editor with syntax highlighting",
-            "Unified diff review with selective chunk staging",
-            "Background execution service with Android notification",
-            "100% BYOK privacy with Android Keystore vault"
-          ]
+          }
         },
         {
           "@type": "WebSite",
           "@id": "https://klixcode.vercel.app/#website",
           "url": "https://klixcode.vercel.app/",
           "name": "Klix Code",
-          "alternateName": ["Klix", "KlixCode", "klix", "klix code", "klixcode"],
-          "description": "Klix Code (Klix) — Autonomous AI Agent IDE for Android",
+          "description": "Klix Code — Autonomous AI Agent IDE for Android",
           "inLanguage": "en-US"
-        },
-        {
-          "@type": "FAQPage",
-          "@id": "https://klixcode.vercel.app/#faq",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "What is Klix Code (Klix / KlixCode)?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Klix Code (also known simply as Klix or KlixCode) is a mobile-first autonomous AI coding environment for Android. It combines an autonomous multi-step agent loop, an offline unrooted Alpine Linux sandbox via PRoot, the native Sora code editor, unified diffs, and 100% BYOK (Bring Your Own Key) privacy directly on your smartphone."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Do I need root access on my phone to use Klix Code?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "No root access is required. Klix Code uses proot to run an unrooted Alpine Linux userland inside the app's sandboxed storage. You can run Node.js, Python, Git, and shell tools safely without touching the Android OS."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Are my API keys sent to any Klix server?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "No. Klix Code does not operate an intermediate relay server. Your API keys are encrypted at rest with Android Keystore, and model calls travel directly from your device to the model provider (Anthropic, OpenAI, or Gemini) over TLS."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Can I open project folders on my phone's storage in Klix Code?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes. Klix Code integrates with Android's Storage Access Framework (SAF). You select your project directory once, and persistent URI permission allows you to work across app restarts without re-prompting."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Will long Klix Code agent tasks get paused when my screen turns off?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "No. Klix Code runs multi-turn agent execution inside an Android Foreground Service with a persistent status notification, preventing Android Doze from pausing execution."
-              }
-            }
-          ]
         }
       ]
     }
-    </script>
+  </script>
 
-  <!-- Umami Privacy-Preserving Analytics (Visits & Unique Downloads) -->
+  <!-- Umami Analytics -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="a5179337-9c61-4599-bc16-a0c16b892859"
-    data-auto-track="true"></script>
+    data-domains="klixcode.vercel.app,klix-code.vercel.app"></script>
 
+  <!-- Stylesheet -->
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 
 <body>
-  <!-- Matrix Digital Code Rain Background Canvas -->
-  <canvas id="matrix-rain-canvas" aria-hidden="true"></canvas>
-  <div class="matrix-rain-overlay" aria-hidden="true"></div>
-  <div class="ambient-grid" aria-hidden="true"></div>
+  <!-- Ambient Atmospheric Drifting Orbs -->
+  <div class="ambient-orbs-container" aria-hidden="true">
+    <div class="ambient-orb ambient-orb-1"></div>
+    <div class="ambient-orb ambient-orb-2"></div>
+  </div>
 
   <!-- Header / Navigation -->
   <header class="site-header" id="navbar">
     <div class="nav-container">
       <a href="#" class="brand-link" id="brand-logo" aria-label="Klix Code Home">
         <div class="brand-icon-wrapper">
-          <img src="/app_logo.png" alt="Klix Code Logo" class="brand-icon" />
+          <img src="/app_logo.png" alt="Klix Code Logo" class="brand-icon" width="26" height="26" />
         </div>
         <div class="brand-text-group">
-          <span class="brand-name font-pixel">Klix <span class="brand-accent">Code</span></span>
-          <span class="brand-tag">v0.4.8</span>
+          <div class="brand-name-stack">
+            <span class="brand-name-line">Klix</span>
+            <span class="brand-accent-line">Code</span>
+          </div>
+          <span class="brand-version-pill">v0.4.8</span>
         </div>
       </a>
 
       <nav class="nav-links" id="desktop-nav" aria-label="Main Navigation">
-        <a href="#demo" class="nav-link">Interactive App</a>
-        <a href="#features" class="nav-link">Features</a>
+        <a href="#hero" class="nav-link">Overview</a>
+        <a href="#compilers" class="nav-link">Compilers</a>
+        <a href="#privacy" class="nav-link">Privacy</a>
         <a href="#download" class="nav-link">Download</a>
         <a href="#faq" class="nav-link">FAQ</a>
       </nav>
 
       <div class="nav-actions">
-        <!-- Dual-Theme Switcher (Light / Dark) -->
-        <button class="nav-theme-toggle" id="theme-toggle-btn" type="button" aria-label="Toggle light and dark theme" title="Toggle Theme (Light / Dark)">
-          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Dual-Theme Switcher -->
+        <button class="nav-theme-toggle" id="theme-toggle-btn" type="button" aria-label="Toggle light and dark theme"
+          title="Toggle Theme">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="5"></circle>
             <line x1="12" y1="1" x2="12" y2="3"></line>
             <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -235,29 +185,28 @@
             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
-          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
 
         <a href="https://github.com/NeuroKaran/klix_code" target="_blank" rel="noopener noreferrer" class="nav-icon-btn"
-          id="nav-github-link" title="View KlixCode on GitHub" aria-label="GitHub Repository">
+          id="nav-github-link" title="View Klix Code on GitHub" aria-label="GitHub Repository">
           <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
           </svg>
-          <span class="github-badge">GitHub</span>
         </a>
 
-        <a href="#download" class="btn-primary-lime nav-download-btn" id="nav-download-btn">
+        <a href="#download" class="btn-primary-pill nav-download-btn" id="nav-download-btn">
           <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span class="nav-dl-text">Download APK</span>
-          <span class="nav-dl-short">APK</span>
+          <span>Download</span>
         </a>
 
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
@@ -270,9 +219,10 @@
 
     <!-- Mobile Dropdown Menu -->
     <div class="mobile-menu" id="mobile-menu">
-      <a href="#demo" class="mobile-nav-link">Interactive App</a>
-      <a href="#features" class="mobile-nav-link">Features</a>
-      <a href="#download" class="mobile-nav-link">Download APK</a>
+      <a href="#hero" class="mobile-nav-link">Overview</a>
+      <a href="#compilers" class="mobile-nav-link">Compilers</a>
+      <a href="#privacy" class="mobile-nav-link">Privacy</a>
+      <a href="#download" class="mobile-nav-link">Download</a>
       <a href="#faq" class="mobile-nav-link">FAQ</a>
       <div class="mobile-theme-row">
         <span class="mobile-theme-label">Theme Mode</span>
@@ -284,906 +234,732 @@
         class="mobile-nav-link mobile-nav-github">
         GitHub Repository ↗
       </a>
-      <a href="/klix-code-v0.4.8.apk" download="klix-code-v0.4.8.apk" class="btn-primary-lime mobile-download-btn"
+      <a href="/klix-code-v0.4.8.apk" download="klix-code-v0.4.8.apk" class="btn-primary-pill mobile-download-btn"
         data-umami-event="apk_download" data-umami-event-source="mobile_nav" data-umami-event-version="v0.4.8">
-        Download APK (18.1 MB)
+        Download APK (v0.4.8 • 19.0 MB)
       </a>
     </div>
   </header>
 
   <main>
-    <!-- Hero Section (Clean & Simple, Pixelated Headline) -->
+    <!-- ==========================================================================
+         CHAPTER 1: THE BRICK (HERO — HOOK & PARADIGM SHIFT)
+         ========================================================================== -->
     <section class="hero-section" id="hero">
       <div class="hero-container">
-        <!-- Clean Announcement Pill -->
-        <div class="pill-badge hero-entry hero-entry-d1" id="hero-badge">
-          <span class="badge-dot"></span>
-          <span class="badge-tag">v0.4.8 Released</span>
-          <span class="badge-separator">•</span>
-          <span class="badge-text">Hierarchical Back Gestures • Unsaved Changes Dialog • Settings Sandbox</span>
+
+        <!-- Top Announcement Tag -->
+        <div class="hero-eyebrow-pill reveal">
+          <img src="/mascots/mascot_typing.png" alt="Klix Bot Typing" class="eyebrow-mascot" width="22" height="22" />
+          <span class="eyebrow-tag">v0.4.8 Release</span>
+          <span class="eyebrow-sep">•</span>
+          <span class="eyebrow-desc">Unrooted Alpine Linux + Sora Editor</span>
         </div>
 
-        <!-- Mascot Welcome Companion Pill -->
-        <div class="hero-mascot-pill hero-entry hero-entry-d1">
-          <img src="/mascots/mascot_coding_laptop.png" alt="Klix Bot Mascot" class="hero-mascot-img" />
-          <div class="hero-mascot-speech">
-            <span class="mascot-greeting font-pixel">"What shall we build today?"</span>
-            <span class="mascot-status-dot"></span>
-          </div>
-        </div>
-
-        <!-- Headline (Plus Jakarta Sans ExtraBold) -->
-        <h1 class="hero-title font-pixel hero-entry hero-entry-d2">
-          <span class="title-line">Autonomous AI Agent IDE</span>
-          <span class="title-line hero-title-highlight">Built for your pocket.</span>
+        <!-- Headline: Tight & Punchy -->
+        <h1 class="hero-title reveal">
+          Still Carrying
+          <span class="headline-inline-pill">
+            <span class="headline-pill-badge">&lt;/&gt;</span>
+            A Brick?
+          </span>
+          <span class="hero-title-punch">Just To Code?</span>
         </h1>
 
-        <!-- Simple, clean subtitle -->
-        <p class="hero-subtitle hero-entry hero-entry-d3">
-          Cursor & Claude Code for your pocket. Klix Code brings autonomous multi-step coding agents,
-          interactive diff reviews, and an offline Alpine Linux sandbox directly to your Android device with 100% BYOK
-          privacy.
+        <!-- Subtitle: Max 2 Sentences (OpenRouter/DeepSeek Standard) -->
+        <p class="hero-subtitle reveal">
+          Your laptop is still booting. Your pocket already runs real Linux and autonomous AI. Build, compile, and
+          review surgical git diffs on Android with 100% BYOK privacy.
         </p>
 
-        <!-- Single high-impact Adaptive CTA (Inverted per Design Tokens) -->
-        <div class="hero-cta-wrapper hero-entry hero-entry-d4">
-          <a href="/klix-code-v0.4.8.apk" download="klix-code-v0.4.8.apk" class="btn-primary-lime btn-large"
+        <!-- CTA Action Bar -->
+        <div class="hero-cta-group reveal">
+          <a href="/klix-code-v0.4.8.apk" download="klix-code-v0.4.8.apk" class="btn-primary-pill btn-large"
             id="hero-download-btn" data-umami-event="apk_download" data-umami-event-source="hero"
             data-umami-event-version="v0.4.8">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
+            <svg class="btn-download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span>Download APK</span>
-            <span class="btn-badge-sub">v0.4.8 • 18.1 MB</span>
+            <span class="btn-text">Download APK</span>
+            <span class="btn-sub-tag">19.0 MB &raquo;</span>
           </a>
-          <a href="#demo" class="btn-ghost-simple">
-            Explore Interactive App ↓
+
+          <a href="#compilers" class="btn-secondary-pill btn-large">
+            <span>Explore Architecture &darr;</span>
           </a>
         </div>
 
-        <!-- Phone Mockup with Radiant Gradient Aura (Inspired by Reference Image 1) -->
-        <div class="device-showcase-container hero-entry hero-entry-d5" id="demo">
-          <!-- Radiant Background Gradient Aura (Electric Lime & Cyan backlight) -->
-          <div class="phone-aura-backdrop aura-animate" aria-hidden="true"></div>
+        <!-- Direct TLS Provider Strip -->
+        <div class="provider-sync-bar reveal">
+          <span class="sync-caption">Direct Client TLS:</span>
+          <div class="sync-pill-list">
+            <span class="sync-chip" title="Anthropic Claude 3.7">
+              <svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true">
+                <g fill="#CC785C">
+                  <path
+                    d="M11.2 2.5h1.6v5h-1.6zM11.2 16.5h1.6v5h-1.6zM2.5 11.2h5v1.6h-5zM16.5 11.2h5v1.6h-5zM5.1 6.2l3.5 3.5-1.1 1.1-3.5-3.5zM15.4 16.5l3.5 3.5 1.1-1.1-3.5-3.5zM18.9 4l1.1 1.1-3.5 3.5-1.1-1.1zM7.5 15.4l1.1 1.1-3.5 3.5-1.1-1.1z" />
+                  <circle cx="12" cy="12" r="3" />
+                </g>
+              </svg>
+              Claude 3.7
+            </span>
+            <span class="sync-chip" title="Google Gemini 2.5">
+              <svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true">
+                <path fill="#4E82EE"
+                  d="M12 2 C12.5 7.5 16.5 11.5 22 12 C16.5 12.5 12.5 16.5 12 22 C11.5 16.5 7.5 12.5 2 12 C7.5 11.5 11.5 7.5 12 2 Z" />
+              </svg>
+              Gemini 2.5
+            </span>
+            <span class="sync-chip" title="OpenAI GPT-4o">
+              <svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true" fill="none" stroke="#10A37F"
+                stroke-width="1.8">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8.5v7M8.5 10.2l6 3.6M8.5 13.8l6-3.6" />
+              </svg>
+              GPT-4o
+            </span>
+            <span class="sync-chip chip-alpine" title="Unrooted Local Alpine Linux">
+              <svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" fill="#0D597F" />
+                <path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF" />
+                <polygon points="12,8 13.5,10.7 10.5,10.7" fill="#28B8D5" />
+              </svg>
+              Alpine Linux
+            </span>
+          </div>
+          <span class="privacy-badge">100% BYOK &bull; Zero Server Relay</span>
+        </div>
 
-          <!-- Fanned Out Cards Deck (Peeking & Glowing Behind Phone Mockup) -->
-          <div class="cards-fan-deck" id="cards-fan-deck" aria-label="Klix Android App Screenshots">
-            <!-- Card 1: Far Left - Alpine Shell Processes -->
-            <div class="fan-card fan-card-1" data-screen="shell-ps" tabindex="0" role="button"
-              aria-label="Alpine Sandbox Shell Processes">
-              <div class="fan-card-glass">
-                <img src="/screenshots/app-screen-1.jpg" alt="Alpine Sandbox Shell Processes" class="fan-card-img"
-                  loading="lazy" />
-                <div class="fan-card-glow-overlay"></div>
-                <div class="fan-card-badge font-pixel">Sandbox Proot</div>
-              </div>
+        <!-- HERO SHOWCASE: STREAMLINED SMARTPHONE FRAME -->
+        <div class="hero-showcase-canvas reveal" id="interactive-demo">
+          <div class="canvas-ambient-aura" aria-hidden="true"></div>
+
+          <!-- Status Meta Header -->
+          <div class="showcase-status-bar">
+            <div class="status-pill-badge">
+              <span class="pulse-dot"></span>
+              <span class="status-badge-title">Local Alpine Linux Sandbox</span>
+              <span class="status-badge-ver">v0.4.8</span>
             </div>
-
-            <!-- Card 2: Mid Left - Local Node Server -->
-            <div class="fan-card fan-card-2" data-screen="node-server" tabindex="0" role="button"
-              aria-label="Local Node.js Server Running">
-              <div class="fan-card-glass">
-                <img src="/screenshots/app-screen-2.jpg" alt="Local Node.js Server Running" class="fan-card-img"
-                  loading="lazy" />
-                <div class="fan-card-glow-overlay"></div>
-                <div class="fan-card-badge font-pixel">Node.js :3001</div>
-              </div>
-            </div>
-
-            <!-- Card 3: Center Peak - AI Agent Mode -->
-            <div class="fan-card fan-card-3" data-screen="agent-claude" tabindex="0" role="button"
-              aria-label="Klix AI Agent Claude 3.7">
-              <div class="fan-card-glass">
-                <img src="/screenshots/app-screen-3.jpg" alt="Klix AI Agent Claude 3.7" class="fan-card-img"
-                  loading="lazy" />
-                <div class="fan-card-glow-overlay"></div>
-                <div class="fan-card-badge font-pixel">Agent Claude 3.7</div>
-              </div>
-            </div>
-
-            <!-- Card 4: Mid Right - Workspace Launcher -->
-            <div class="fan-card fan-card-4" data-screen="saf-storage" tabindex="0" role="button"
-              aria-label="Project Workspace Picker">
-              <div class="fan-card-glass">
-                <img src="/screenshots/app-screen-4.jpg" alt="Project Workspace Picker" class="fan-card-img"
-                  loading="lazy" />
-                <div class="fan-card-glow-overlay"></div>
-                <div class="fan-card-badge font-pixel">Sandbox Workspace</div>
-              </div>
-            </div>
-
-            <!-- Card 5: Far Right - File Tree Sidebar -->
-            <div class="fan-card fan-card-5" data-screen="file-tree" tabindex="0" role="button"
-              aria-label="File Tree & Project Explorer">
-              <div class="fan-card-glass">
-                <img src="/screenshots/app-screen-5.jpg" alt="File Tree & Project Explorer" class="fan-card-img"
-                  loading="lazy" />
-                <div class="fan-card-glow-overlay"></div>
-                <div class="fan-card-badge font-pixel">File Explorer</div>
-              </div>
+            <div class="status-meta-features">
+              <span class="meta-tag">100% BYOK</span>
+              <span class="meta-sep">&bull;</span>
+              <span class="meta-tag">PRoot Isolated</span>
             </div>
           </div>
 
-          <!-- Clearly Visible Flagship Smartphone Mockup (Center Foreground) -->
-          <div class="phone-frame" id="phone-mockup">
-            <!-- Metallic Rim Highlight & Speaker Grill -->
-            <div class="phone-speaker-bar"></div>
-            <div class="phone-camera-lens"></div>
+          <!-- Phone Mockup Stage -->
+          <div class="phone-stage">
+            <div class="smartphone-frame" id="phone-mockup">
+              <div class="phone-speaker-earpiece"></div>
 
-            <!-- Phone Screen -->
-            <div class="phone-screen">
-              <!-- Status Bar -->
-              <div class="phone-status-bar">
-                <span class="phone-time">9:41</span>
-                <div class="phone-island-pill">
-                  <span class="island-dot"></span>
-                  <span>Klix Agent Active</span>
-                </div>
-                <div class="phone-status-right">
-                  <span class="phone-net">5G</span>
-                  <div class="battery-icon">
-                    <div class="battery-fill"></div>
+              <!-- Phone Viewport Screen (Authentic 19.5:9 Smartphone Display) -->
+              <div class="phone-screen-viewport">
+                <!-- Android Status Bar -->
+                <div class="phone-status-strip">
+                  <span class="status-time">9:41</span>
+                  <div class="phone-camera-punchhole" aria-hidden="true"></div>
+                  <div class="status-dynamic-island">
+                    <span class="island-pulse-dot"></span>
+                    <span>Klix Active</span>
                   </div>
-                </div>
-              </div>
-
-              <!-- App Header -->
-              <div class="app-header-strip">
-                <div class="app-header-left">
-                  <img src="/app_logo.png" alt="Klix logo" class="app-logo-tiny" />
-                  <div>
-                    <div class="app-name-text font-pixel">Klix code</div>
-                    <div class="app-sub-text">IDE ANYWHERE • v0.4.8</div>
-                  </div>
-                </div>
-                <div class="app-header-right">
-                  <span class="app-streak-pill font-pixel" title="7 Days Active Streak">
-                    <img src="/mascots/mascot_streak_fire.png" alt="Klix Streak Flame" class="streak-mascot-img" />
-                    <span>7</span>
-                  </span>
-                </div>
-              </div>
-
-              <!-- Interactive Mode Switcher Tabs -->
-              <div class="phone-tab-bar" role="tablist">
-                <button class="phone-tab-btn active" data-tab="home" role="tab" aria-selected="true">
-                  Home
-                </button>
-                <button class="phone-tab-btn" data-tab="agent" role="tab" aria-selected="false">
-                  Agent
-                </button>
-                <button class="phone-tab-btn" data-tab="terminal" role="tab" aria-selected="false">
-                  Terminal
-                </button>
-                <button class="phone-tab-btn" data-tab="diff" role="tab" aria-selected="false">
-                  Diff
-                </button>
-                <button class="phone-tab-btn" data-tab="settings" role="tab" aria-selected="false">
-                  Settings
-                </button>
-              </div>
-
-              <!-- Tab 1: Screen 1 - Home Dashboard -->
-              <div class="phone-tab-panel active" id="tab-home">
-                <div class="screen-home-header">
-                  <div>
-                    <h4 class="home-user-title font-pixel">Hey, Prasanjit</h4>
-                    <span class="home-user-sub">Sandbox Workspace</span>
-                  </div>
-                  <span class="home-status-badge">
-                    <span class="status-live-dot"></span>
-                    Ready
-                  </span>
-                </div>
-
-                <!-- Mascot Hero Bento Card (Screen 1 Signature) -->
-                <div class="mascot-hero-card">
-                  <div class="mascot-hero-top">
-                    <img src="/mascots/mascot_coding_laptop.png" alt="Klix Bot Typing" class="mascot-laptop-img" />
-                    <div class="mascot-speech-bubble font-pixel">
-                      "What shall we build today?"
-                    </div>
-                  </div>
-                  <div class="mascot-hero-chips">
-                    <span class="bento-chip">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <rect x="4" y="4" width="16" height="16" rx="2"/>
-                        <rect x="9" y="9" width="6" height="6"/>
-                        <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/>
-                      </svg>
-                      Thinking: 4K
-                    </span>
-                    <span class="bento-chip chip-alpine">
-                      <svg viewBox="0 0 24 24" class="chip-svg">
-                        <circle cx="12" cy="12" r="10" fill="#0D597F"/>
-                        <path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF"/>
-                      </svg>
-                      Alpine: Ready
-                    </span>
-                  </div>
-                </div>
-
-
-                <!-- Recent Workspaces -->
-                <div class="home-workspaces-box">
-                  <span class="workspaces-section-title font-pixel">Recent Workspaces</span>
-                  <div class="workspace-card-item">
-                    <div class="ws-icon ws-kotlin">
-                      <svg viewBox="0 0 24 24" fill="none"><path d="M2 2h20L12 12 2 22V2z" fill="#7F52FF"/><path d="M22 22H2L12 12l10 10z" fill="#C711E1"/></svg>
-                    </div>
-                    <div class="ws-meta">
-                      <span class="ws-name font-pixel">orbit-ui</span>
-                      <span class="ws-path">/workspace/orbit-ui • main</span>
-                    </div>
-                    <span class="ws-badge">Active</span>
-                  </div>
-                  <div class="workspace-card-item">
-                    <div class="ws-icon ws-python">
-                      <svg viewBox="0 0 24 24"><path fill="#3776AB" d="M11.9 2c-3.1 0-2.9 1.3-2.9 1.3l.1 1.4h3v.4H6.3S4 4.8 4 8c0 3.1 2 3 2 3l1.2-.1v-1.7s-.1-2 2-2h3.4s1.9 0 1.9-1.9V3.9S14.7 2 11.9 2z"/><path fill="#FFD43B" d="M12.1 22c3.1 0 2.9-1.3 2.9-1.3l-.1-1.4h-3v-.4h5.8s2.3.3 2.3-2.9c0-3.1-2-3-2-3l-1.2.1v1.7s.1 2-2 2h-3.4s-1.9 0-1.9 1.9v1.4s-.2 1.9 2.6 1.9z"/></svg>
-                    </div>
-                    <div class="ws-meta">
-                      <span class="ws-name font-pixel">palindrome.py</span>
-                      <span class="ws-path">/workspace/scripts</span>
-                    </div>
-                    <span class="ws-badge ws-badge-sub">2m ago</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tab 2: Screen 3 - AI Agent -->
-              <div class="phone-tab-panel" id="tab-agent">
-                <!-- Peeking Mascot Header -->
-                <div class="agent-peeking-header">
-                  <img src="/mascots/mascot_peeking.png" alt="Klix Mascot Peeking" class="agent-peeking-img" />
-                  <div class="agent-header-row">
-                    <span class="agent-title-text font-pixel">Klix AI Agent</span>
-                    <span class="agent-chat-dropdown font-pixel">Chat 1 ▾</span>
-                  </div>
-                </div>
-
-                <!-- Quick Mentions & Model -->
-                <div class="agent-bento-group">
-                  <span class="bento-group-label font-pixel">Active AI Model & Mentions</span>
-                  <div class="agent-pill-row">
-                    <span class="model-active-chip">
-                      <svg viewBox="0 0 24 24" class="chip-svg"><path fill="#4E82EE" d="M12 2 C12.5 7.5 16.5 11.5 22 12 C16.5 12.5 12.5 16.5 12 22 C11.5 16.5 7.5 12.5 2 12 C7.5 11.5 11.5 7.5 12 2 Z"/></svg>
-                      gemini-3.1-flash
-                    </span>
-                    <span class="file-mention-chip">@palindrome.py</span>
-                  </div>
-                </div>
-
-                <!-- Action Suggestions Pills -->
-                <div class="agent-bento-group">
-                  <span class="bento-group-label font-pixel">What shall we do?</span>
-                  <div class="agent-action-pills">
-                    <button class="agent-action-pill" type="button">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                      <span>Summarize workspace architecture</span>
-                    </button>
-                    <button class="agent-action-pill" type="button">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="14" r="2"/></svg>
-                      <span>Write unit tests for palindrome.py</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="chat-bubble agent-card-bubble">
-                  <div class="agent-plan-top">
-                    <span class="agent-plan-label font-pixel">AUTONOMOUS TOOL CALL</span>
-                    <span class="agent-plan-meta">Step 2/3</span>
-                  </div>
-                  <div class="plan-item current">
-                    <span class="plan-check">●</span>
-                    <span>Patch <code>AuthManager.kt</code> with BiometricPrompt</span>
-                  </div>
-                  <div class="tool-call-box">
-                    <div class="tool-label">Tool: <code>edit_patch(AuthManager.kt)</code></div>
-                    <div class="tool-btn-row">
-                      <button class="btn-approve" id="mock-approve-btn" type="button">
-                        Approve Tool Call ✓
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tab 3: Screen 5 - Linux Terminal -->
-              <div class="phone-tab-panel" id="tab-terminal">
-                <div class="term-tab-strip">
-                  <span class="term-tab-chip active">
-                    <svg viewBox="0 0 24 24" class="term-tab-svg"><circle cx="12" cy="12" r="10" fill="#0D597F"/><path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF"/></svg>
-                    Alpine v1
-                  </span>
-                  <span class="term-tab-chip">+ Terminal</span>
-                  <span class="term-tab-chip">palindrome.py</span>
-                </div>
-
-                <div class="term-box">
-                  <div class="term-top-bar">
-                    <span class="term-circle r"></span>
-                    <span class="term-circle y"></span>
-                    <span class="term-circle g"></span>
-                    <span class="term-session">alpine-proot /workspace$</span>
-                  </div>
-                  <pre class="term-screen"><code><span class="term-green">klix@mobile:/workspace$</span> python3 palindrome.py
-Testing 14 test cases in local Alpine sandbox...
-✓ test_empty_string: pass (0.01s)
-✓ test_unicode_casefold: pass (0.02s)
-✓ test_biometric_auth: pass (0.04s)
-
-<span class="term-pass">PASS</span> 14/14 tests verified in unrooted PRoot.
-<span class="term-green">klix@mobile:/workspace$</span> <span class="term-blink">█</span></code></pre>
-
-                  <!-- Mascot Waving inside Terminal -->
-                  <div class="term-mascot-overlay">
-                    <img src="/mascots/mascot_waving.png" alt="Klix Mascot Waving" class="term-mascot-img" />
-                    <span class="term-mascot-speech">"All green!"</span>
-                  </div>
-                </div>
-
-                <!-- Shortcuts Section -->
-                <div class="term-shortcuts-row">
-                  <span class="term-keycap keycap-lime">+ TERM</span>
-                  <span class="term-keycap">ESC</span>
-                  <span class="term-keycap">TAB</span>
-                  <span class="term-keycap">CTRL-C</span>
-                  <span class="term-keycap">↑</span>
-                  <span class="term-keycap">↓</span>
-                </div>
-              </div>
-
-              <!-- Tab 4: Screen 7 - Unified Diff Review -->
-              <div class="phone-tab-panel" id="tab-diff">
-                <div class="diff-title-bar">
-                  <span class="diff-file-tag">app/src/main/AuthManager.kt</span>
-                  <span class="diff-count">+8 -2</span>
-                </div>
-                <div class="diff-code-body">
-                  <div class="diff-row"><span class="d-num">42</span><span class="d-txt">class AuthManager(val context: Context) {</span></div>
-                  <div class="diff-row"><span class="d-num">43</span><span class="d-txt">  val keyStore = KeyStore.getInstance(KEYSTORE)</span></div>
-                  <div class="diff-row d-del"><span class="d-num">44</span><span class="d-txt">-  fun authenticate(): Boolean = false</span></div>
-                  <div class="diff-row d-add"><span class="d-num">44</span><span class="d-txt">+  fun authenticateWithBiometrics(</span></div>
-                  <div class="diff-row d-add"><span class="d-num">45</span><span class="d-txt">+    activity: FragmentActivity,</span></div>
-                  <div class="diff-row d-add"><span class="d-num">46</span><span class="d-txt">+    onSuccess: () -&gt; Unit</span></div>
-                  <div class="diff-row d-add"><span class="d-num">47</span><span class="d-txt">+  ) {</span></div>
-                  <div class="diff-row d-add"><span class="d-num">48</span><span class="d-txt">+    val prompt = BiometricPrompt(...)</span></div>
-                  <div class="diff-row d-add"><span class="d-num">49</span><span class="d-txt">+    prompt.authenticate(promptInfo)</span></div>
-                  <div class="diff-row d-add"><span class="d-num">50</span><span class="d-txt">+  }</span></div>
-                  <div class="diff-row"><span class="d-num">51</span><span class="d-txt">}</span></div>
-                </div>
-              </div>
-
-              <!-- Tab 5: Screen 2 - Settings Modal -->
-              <div class="phone-tab-panel" id="tab-settings">
-                <div class="settings-peeking-header">
-                  <img src="/mascots/mascot_peeking.png" alt="Klix Mascot Peeking" class="settings-peeking-img" />
-                  <div class="settings-drag-pill"></div>
-                  <div class="settings-header-row">
-                    <span class="settings-title-text font-pixel">Settings</span>
-                    <span class="settings-version-pill font-pixel">v0.4.8</span>
-                  </div>
-                </div>
-
-                <!-- Card 1 — App Theme -->
-                <div class="settings-bento-group">
-                  <span class="bento-group-label font-pixel">App Theme</span>
-                  <div class="settings-theme-chips">
-                    <button class="settings-theme-chip" id="settings-theme-light" type="button" aria-label="Set Light Theme">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chip-svg">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                      </svg>
-                      Light
-                    </button>
-                    <button class="settings-theme-chip" id="settings-theme-dark" type="button" aria-label="Set Dark Theme">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chip-svg">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                      </svg>
-                      Dark
-                    </button>
-                    <button class="settings-theme-chip" id="settings-theme-system" type="button" aria-label="Set System Theme">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chip-svg">
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                        <line x1="8" y1="21" x2="16" y2="21"></line>
-                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                      </svg>
-                      System
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Card 2 — Active AI Provider -->
-                <div class="settings-bento-group">
-                  <span class="bento-group-label font-pixel">Active AI Provider</span>
-                  <div class="settings-providers-list">
-                    <div class="settings-provider-row active-gemini">
-                      <svg viewBox="0 0 24 24" class="chip-svg"><path fill="#4E82EE" d="M12 2 C12.5 7.5 16.5 11.5 22 12 C16.5 12.5 12.5 16.5 12 22 C11.5 16.5 7.5 12.5 2 12 C7.5 11.5 11.5 7.5 12 2 Z" /></svg>
-                      <span class="settings-provider-name">Google Gemini</span>
-                      <span class="settings-badge-pill">Ready</span>
-                    </div>
-                    <div class="settings-provider-row">
-                      <svg viewBox="0 0 24 24" class="chip-svg"><g fill="#CC785C"><path d="M11.2 2.5h1.6v5h-1.6zM11.2 16.5h1.6v5h-1.6zM2.5 11.2h5v1.6h-5zM16.5 11.2h5v1.6h-5zM5.1 6.2l3.5 3.5-1.1 1.1-3.5-3.5zM15.4 16.5l3.5 3.5 1.1-1.1-3.5-3.5zM18.9 4l1.1 1.1-3.5 3.5-1.1-1.1zM7.5 15.4l1.1 1.1-3.5 3.5-1.1-1.1z"/><circle cx="12" cy="12" r="3"/></g></svg>
-                      <span class="settings-provider-name">Anthropic Claude</span>
-                      <span class="settings-badge-sub">Add Key</span>
-                    </div>
-                    <div class="settings-provider-row">
-                      <svg viewBox="0 0 24 24" class="chip-svg" fill="none" stroke="#10A37F" stroke-width="1.6"><circle cx="12" cy="12" r="9"/></svg>
-                      <span class="settings-provider-name">OpenAI GPT-4o</span>
-                      <span class="settings-badge-sub">Add Key</span>
-                    </div>
-                    <div class="settings-provider-row">
-                      <svg viewBox="0 0 24 24" class="chip-svg"><circle cx="12" cy="12" r="10" fill="#0D597F"/><path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF"/><polygon points="12,8 13.5,10.7 10.5,10.7" fill="#28B8D5"/></svg>
-                      <span class="settings-provider-name">Alpine Linux</span>
-                      <span class="settings-badge-pill">Ready</span>
+                  <div class="status-icons-right">
+                    <span class="status-5g">5G</span>
+                    <div class="battery-pill">
+                      <div class="battery-level"></div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Bottom CTA: Apply & Close -->
-                <button class="phone-primary-cta" id="settings-close-btn" type="button">
-                  <span>Apply &amp; Close</span>
-                </button>
-              </div>
+                <!-- App Header Bar -->
+                <div class="app-header-bar">
+                  <div class="app-brand-badge">
+                    <img src="/app_logo.png" alt="Klix Logo" class="app-logo-mini" width="20" height="20" />
+                    <div>
+                      <div class="app-title-line">Klix Code</div>
+                      <div class="app-sub-line">IDE ANYWHERE &bull; v0.4.8</div>
+                    </div>
+                  </div>
+                  <div class="app-header-actions">
+                    <span class="app-chip-model">claude-3-7</span>
+                    <span class="app-chip-sandbox">Ready</span>
+                  </div>
+                </div>
 
-              <!-- KlixFloatingBottomDock (Signature App Pill Navigation) -->
-              <div class="phone-dock">
-                <button class="dock-item active" data-dock="home" type="button" aria-label="Home Dashboard">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                  </svg>
-                  <span>Home</span>
-                </button>
-                <button class="dock-item" data-dock="agent" type="button" aria-label="AI Agent">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                  <span>Agent</span>
-                </button>
-                <button class="dock-item" data-dock="terminal" type="button" aria-label="Linux Terminal">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="4 17 10 11 4 5"></polyline>
-                    <line x1="12" y1="19" x2="20" y2="19"></line>
-                  </svg>
-                  <span>Terminal</span>
-                </button>
-                <button class="dock-item" data-dock="settings" type="button" aria-label="Settings">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path
-                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                    </path>
-                  </svg>
-                  <span>Settings</span>
-                </button>
+                <!-- Sora Editor Viewport -->
+                <div class="phone-editor-workspace">
+                  <!-- File Tabs -->
+                  <div class="editor-tabs-bar">
+                    <div class="editor-tab-item active">
+                      <span class="tab-dot modified"></span>
+                      <span class="tab-filename">agent_loop.py</span>
+                    </div>
+                    <div class="editor-tab-item">
+                      <span class="tab-filename">test_suite.py</span>
+                    </div>
+                  </div>
+
+                  <!-- Code Viewport -->
+                  <div class="editor-code-body">
+                    <div class="code-line"><span class="line-no">1</span><span class="code-kw">import</span> asyncio
+                    </div>
+                    <div class="code-line"><span class="line-no">2</span><span class="code-kw">from</span> klix.sandbox
+                      <span class="code-kw">import</span> AlpineLinux</div>
+                    <div class="code-line"><span class="line-no">3</span></div>
+                    <div class="code-line"><span class="line-no">4</span><span class="code-cmt"># Local Alpine Linux
+                        PRoot Sandbox</span></div>
+                    <div class="code-line"><span class="line-no">5</span><span class="code-kw">async def</span> <span
+                        class="code-fn">execute_tool_call</span>(cmd: str):</div>
+                    <div class="code-line"><span class="line-no">6</span> sandbox = <span class="code-kw">await</span>
+                      AlpineLinux.attach()</div>
+                    <div class="code-line"><span class="line-no">7</span> res = <span class="code-kw">await</span>
+                      sandbox.exec(cmd)</div>
+                    <div class="code-line"><span class="line-no">8</span> <span class="code-kw">if not</span> res.ok:
+                    </div>
+                    <div class="code-line"><span class="line-no">9</span> <span class="code-kw">return</span> {<span
+                        class="code-str">"err"</span>: res.stderr}</div>
+                    <div class="code-line"><span class="line-no">10</span> <span class="code-kw">return</span> {<span
+                        class="code-str">"code"</span>: res.exit_code, <span class="code-str">"ok"</span>: <span
+                        class="code-kw">True</span>}</div>
+                    <div class="code-line"><span class="line-no">11</span></div>
+                    <div class="code-line"><span class="line-no">12</span><span class="code-cmt"># Multi-turn Autonomous
+                        Loop</span></div>
+                    <div class="code-line"><span class="line-no">13</span><span class="code-kw">async def</span> <span
+                        class="code-fn">run_agent</span>(task: str):</div>
+                    <div class="code-line"><span class="line-no">14</span> agent = KlixAgent(model=<span
+                        class="code-str">"claude-3-7"</span>)</div>
+                    <div class="code-line"><span class="line-no">15</span> <span class="code-kw">await</span>
+                      agent.solve(task)</div>
+                  </div>
+
+                  <!-- Floating Klix Agent Reaction Card -->
+                  <div class="editor-agent-pill-card">
+                    <img src="/mascots/mascot_coding_laptop.png" alt="Klix Mascot" class="pill-mascot-icon" width="26"
+                      height="26" />
+                    <div class="pill-card-text">
+                      <div class="pill-card-title">Klix Agent (Claude 3.7)</div>
+                      <div class="pill-card-sub">pytest: 14 passed in 0.04s. Hunk staged.</div>
+                    </div>
+                    <span class="pill-card-btn">Apply Diff ✓</span>
+                  </div>
+                </div>
+
+                <!-- App Bottom Dock -->
+                <div class="phone-bottom-dock">
+                  <div class="dock-item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    </svg><span>Home</span></div>
+                  <div class="dock-item active"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="3" />
+                      <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg><span>Agent</span></div>
+                  <div class="dock-item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <polyline points="4 17 10 11 4 5" />
+                      <line x1="12" y1="19" x2="20" y2="19" />
+                    </svg><span>Terminal</span></div>
+                  <div class="dock-item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="3" />
+                      <path
+                        d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+                    </svg><span>Settings</span></div>
+                </div>
+
+                <!-- Android Gesture Navigation Home Indicator -->
+                <div class="phone-home-indicator" aria-hidden="true"></div>
               </div>
             </div>
           </div>
         </div>
+
       </div>
     </section>
 
-    <!-- Model Compatibility Section -->
-    <section class="providers-section" aria-label="Model Providers">
+    <!-- ==========================================================================
+         CHAPTER 2: COMPILERS (LOCAL RUNTIMES & COMPUTING REALITY)
+         ========================================================================== -->
+    <section class="chapter-section compilers-section" id="compilers">
       <div class="section-container">
-        <div class="providers-header reveal reveal-up">
-          <span class="section-eyebrow font-pixel">BRING YOUR OWN KEY • ZERO MIDDLEMAN</span>
-          <p class="providers-caption">Direct client-to-provider TLS calls. Keys encrypted in Android Keystore.</p>
+
+        <div class="section-header-centered reveal">
+          <div class="peeking-eyebrow-wrapper">
+            <img src="/mascots/mascot_peeking.png" alt="Klix Mascot Peeking" class="peeking-mascot-img" width="86"
+              height="42" aria-hidden="true" />
+            <span class="section-eyebrow-pill">LOCAL COMPILERS &bull; 0MS CLOUD LAG</span>
+          </div>
+          <h2 class="section-headline">
+            Phones Can't Compile? <span class="headline-punch">Cute assumption.</span>
+          </h2>
+          <p class="section-subheadline">
+            Pre-configured unrooted Alpine Linux userland executing offline on your phone CPU via PRoot. Zero root
+            required.
+          </p>
         </div>
 
-        <div class="providers-grid stagger-children">
-          <div class="provider-pill-card reveal reveal-up">
-            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true"><g fill="#CC785C"><path d="M11.2 2.5h1.6v5h-1.6zM11.2 16.5h1.6v5h-1.6zM2.5 11.2h5v1.6h-5zM16.5 11.2h5v1.6h-5zM5.1 6.2l3.5 3.5-1.1 1.1-3.5-3.5zM15.4 16.5l3.5 3.5 1.1-1.1-3.5-3.5zM18.9 4l1.1 1.1-3.5 3.5-1.1-1.1zM7.5 15.4l1.1 1.1-3.5 3.5-1.1-1.1z"/><circle cx="12" cy="12" r="3"/></g></svg>
-            <span class="provider-name">Anthropic Claude</span>
+        <!-- 2x2 Bento Toolchain Grid: High Signal, Low Text -->
+        <div class="bento-grid-2x2">
+
+          <!-- Card 1: Web & APIs -->
+          <article class="bento-toolchain-card reveal">
+            <div class="toolchain-top-row">
+              <div class="toolchain-logos">
+                <svg viewBox="0 0 24 24" class="tech-icon" width="26" height="26" aria-hidden="true">
+                  <path fill="#3776AB"
+                    d="M11.9,2 C8.4,2 8.7,3.5 8.7,3.5 L8.7,5.1 L12.1,5.1 L12.1,5.6 L5.7,5.6 C5.7,5.6 2.3,5.2 2.3,10.2 C2.3,15.2 5.3,15 5.3,15 L6.8,15 L6.8,12.9 C6.8,10.5 8.9,10.5 8.9,10.5 L12.3,10.5 C12.3,10.5 14.1,10.5 14.1,8.7 L14.1,3.8 C14.1,3.8 14.4,2 11.9,2 Z" />
+                  <path fill="#FFF" d="M7.4,4 A0.8,0.8 0 1,1 7.39,4 Z" />
+                  <path fill="#FFD438"
+                    d="M12.1,22 C15.6,22 15.3,20.5 15.3,20.5 L15.3,18.9 L11.9,18.9 L11.9,18.4 L18.3,18.4 C18.3,18.4 21.7,18.8 21.7,13.8 C21.7,8.8 18.7,9 18.7,9 L17.2,9 L17.2,11.1 C17.2,13.5 15.1,13.5 15.1,13.5 L11.7,13.5 C11.7,13.5 9.9,13.5 9.9,15.3 L9.9,20.2 C9.9,20.2 9.6,22 12.1,22 Z" />
+                  <path fill="#3776AB" d="M16.6,20 A0.8,0.8 0 1,1 16.59,20 Z" />
+                </svg>
+                <svg viewBox="0 0 24 24" class="tech-icon" width="26" height="26" aria-hidden="true">
+                  <path fill="#539E43" d="M12,2.2 L20.5,7.1 L20.5,16.9 L12,21.8 L3.5,16.9 L3.5,7.1 Z" />
+                  <path stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"
+                    d="M9,9 L9,15 M9,12 L15,12 M15,9 L15,15" />
+                </svg>
+              </div>
+              <span class="benchmark-pill">pytest &bull; 0.04s</span>
+            </div>
+            <h3 class="bento-card-title">Python 3 &amp; Node.js</h3>
+            <p class="bento-card-desc">
+              FastAPI, Express, Pip, and npm executing with native ARM64 speed and sub-second test feedback.
+            </p>
+          </article>
+
+          <!-- Card 2: Android & Native -->
+          <article class="bento-toolchain-card reveal">
+            <div class="toolchain-top-row">
+              <div class="toolchain-logos">
+                <svg viewBox="0 0 24 24" class="tech-icon" width="26" height="26" aria-hidden="true">
+                  <path fill="#7F52FF" d="M2,2 L12,2 L2,12 Z" />
+                  <path fill="#C711E1" d="M12,2 L22,2 L2,22 L2,12 Z" />
+                  <path fill="#F88909" d="M12,12 L22,2 L22,22 L2,22 Z" />
+                </svg>
+                <svg viewBox="0 0 24 24" class="tech-icon" width="26" height="26" aria-hidden="true">
+                  <path fill="#00599C" d="M12,2.2 L20.5,7.1 L20.5,16.9 L12,21.8 L3.5,16.9 L3.5,7.1 Z" />
+                  <path stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" fill="none"
+                    d="M11,9 C8.5,9 7.5,10.2 7.5,12 C7.5,13.8 8.5,15 11,15" />
+                  <path stroke="#00B4D8" stroke-width="1.3" stroke-linecap="round" fill="none"
+                    d="M13.5,12 L15.5,12 M14.5,11 L14.5,13 M16.5,12 L18.5,12 M17.5,11 L17.5,13" />
+                </svg>
+              </div>
+              <span class="benchmark-pill">gcc -O2 &bull; offline</span>
+            </div>
+            <h3 class="bento-card-title">Kotlin &amp; C/C++ Native</h3>
+            <p class="bento-card-desc">
+              Compile native algorithms and test routines offline via gcc and clang. Zero cloud round-trips.
+            </p>
+          </article>
+
+          <!-- Card 3: PRoot Sandbox & Git Engine -->
+          <article class="bento-toolchain-card reveal">
+            <div class="toolchain-top-row">
+              <div class="toolchain-logos">
+                <svg viewBox="0 0 24 24" class="tech-icon" width="26" height="26" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" fill="#0D597F" />
+                  <path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF" />
+                  <polygon points="12,8 13.5,10.7 10.5,10.7" fill="#28B8D5" />
+                </svg>
+                <svg viewBox="0 0 24 24" class="tech-icon" width="26" height="26" aria-hidden="true">
+                  <path fill="#F05032"
+                    d="M13.2,2.3 C12.5,1.7 11.5,1.7 10.8,2.3 L2.3,10.8 C1.7,11.5 1.7,12.5 2.3,13.2 L10.8,21.7 C11.5,22.3 12.5,22.3 13.2,21.7 L21.7,13.2 C22.3,12.5 22.3,11.5 21.7,10.8 Z" />
+                  <path stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" fill="none"
+                    d="M9,8 L9,16 M9,12 L15,8" />
+                  <circle cx="9" cy="8" r="1.5" fill="#FFF" />
+                  <circle cx="9" cy="16" r="1.5" fill="#FFF" />
+                  <circle cx="15" cy="8" r="1.5" fill="#FFF" />
+                </svg>
+              </div>
+              <span class="benchmark-pill">/data/data isolated</span>
+            </div>
+            <h3 class="bento-card-title">PRoot Sandbox &amp; Git Engine</h3>
+            <p class="bento-card-desc">
+              Multi-turn agent executes bash commands, searches AST symbols, and stages commits in app storage.
+            </p>
+          </article>
+
+          <!-- Card 4: Surgical Diff Reviews -->
+          <article class="bento-toolchain-card reveal">
+            <div class="toolchain-top-row">
+              <div class="toolchain-logos">
+                <img src="/mascots/mascot_streak_fire.png" alt="Klix Diff Fire" class="tech-icon-img" width="28"
+                  height="24" />
+              </div>
+              <span class="benchmark-pill">+18 &minus;2 staged</span>
+            </div>
+            <h3 class="bento-card-title">Chunk-Level Unified Diffs</h3>
+            <p class="bento-card-desc">
+              Review modifications line by line. Accept, reject, or stage surgical hunks before disk commit.
+            </p>
+          </article>
+
+        </div>
+
+        <!-- Terminal Proof Box (OpenRouter / DeepSeek Standard Header & Padding) -->
+        <div class="terminal-proof-card reveal">
+          <div class="terminal-bar-top">
+            <div class="term-left-group">
+              <div class="term-dots">
+                <span class="tdot red"></span>
+                <span class="tdot yellow"></span>
+                <span class="tdot green"></span>
+              </div>
+              <span class="term-title">alpine-v3.20 &bull; aarch64 &bull; unrooted</span>
+            </div>
+            <div class="term-shortcuts">
+              <span class="term-chip">ESC</span>
+              <span class="term-chip">TAB</span>
+              <span class="term-chip">CTRL-C</span>
+            </div>
           </div>
-          <div class="provider-pill-card reveal reveal-up">
-            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true" fill="none" stroke="#10A37F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 9.6 C19.1 7.2 17.1 5.5 14.8 5.6 C14.3 5.6 13.9 5.7 13.5 5.9 C12.8 4.7 11.4 4 10 4 C7.8 4 6 5.8 6 8 C6 8.4 6.1 8.8 6.2 9.1 C5 9.7 4.1 11 4.1 12.5 C4.1 14.4 5.4 16 7.2 16.5 C7.2 16.9 7.3 17.3 7.5 17.7 C8.4 19.3 10.1 20.2 12 20 C12.5 20 13 19.8 13.4 19.6 C14.2 20.7 15.6 21.3 17 21.1 C19.2 20.8 20.7 18.8 20.4 16.6 C20.4 16.2 20.3 15.8 20.1 15.5 C21.1 14.7 21.7 13.4 21.5 12 C21.2 10.7 20.5 9.9 19.5 9.6 Z" /><path d="M12 8.5v7M8.5 10.2l6 3.6M8.5 13.8l6-3.6"/></svg>
-            <span class="provider-name">OpenAI GPT-4o</span>
+          <div class="terminal-viewport">
+            <div class="t-line"><span class="t-prompt">klix@alpine:~$</span> <span class="t-cmd">apk add python3 py3-pip
+                nodejs git gcc</span></div>
+            <div class="t-line t-muted">fetch https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64/APKINDEX.tar.gz
+            </div>
+            <div class="t-line t-success">OK: 142 MiB in 48 packages and 524 directories</div>
+            <div class="t-line"><span class="t-prompt">klix@alpine:~$</span> <span class="t-cmd">pytest
+                tests/test_agent.py -v</span></div>
+            <div class="t-line">tests/test_agent.py::<span class="t-test">test_proot_isolation</span> <span
+                class="t-success">PASSED [ 50%]</span></div>
+            <div class="t-line">tests/test_agent.py::<span class="t-test">test_ast_diff_review</span> <span
+                class="t-success">PASSED [100%]</span></div>
+            <div class="t-line t-highlight">==================== 2 passed in 0.03s ====================</div>
           </div>
-          <div class="provider-pill-card reveal reveal-up">
-            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true"><path fill="#4E82EE" d="M12 2 C12.5 7.5 16.5 11.5 22 12 C16.5 12.5 12.5 16.5 12 22 C11.5 16.5 7.5 12.5 2 12 C7.5 11.5 11.5 7.5 12 2 Z" /></svg>
-            <span class="provider-name">Google Gemini</span>
-          </div>
-          <div class="provider-pill-card reveal reveal-up">
-            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true"><path stroke="#6366F1" stroke-width="1.6" stroke-linecap="round" fill="none" d="M7 12L17 6M7 12L17 18M17 6v12"/><circle cx="7" cy="12" r="3" fill="#6366F1"/><circle cx="17" cy="6" r="2.5" fill="#6366F1"/><circle cx="17" cy="18" r="2.5" fill="#6366F1"/></svg>
-            <span class="provider-name">OpenRouter / Groq</span>
-          </div>
-          <div class="provider-pill-card reveal reveal-up">
-            <svg viewBox="0 0 24 24" class="provider-logo-svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#0D597F"/><path d="M7 17l5-9 5 9h-3l-2-3.5L10 17z" fill="#FFF"/><polygon points="12,8 13.5,10.7 10.5,10.7" fill="#28B8D5"/></svg>
-            <span class="provider-name">Alpine / Local</span>
+          <div class="terminal-footer-badge">
+            <img src="/mascots/mascot_waving.png" alt="Klix Bot Waving" class="terminal-mascot-img" width="24"
+              height="24" />
+            <span>All tests green. Unrooted local execution.</span>
           </div>
         </div>
+
       </div>
     </section>
 
-    <!-- Clean Features Bento Grid -->
-    <section class="features-section" id="features">
+    <!-- ==========================================================================
+         CHAPTER 3: PRIVACY VAULT (ZERO MIDDLEMAN TAX)
+         ========================================================================== -->
+    <section class="chapter-section privacy-section" id="privacy">
       <div class="section-container">
-        <div class="section-badge-center reveal reveal-blur">
-          <span class="badge-dot"></span>
-          <span>Core Architecture</span>
+
+        <div class="section-header-centered reveal">
+          <span class="section-eyebrow-pill trust-pill">100% HARDWARE ENCRYPTED &bull; BYOK</span>
+          <h2 class="section-headline">
+            Paying Rent For Your Own AI? <span class="headline-punch">Zero middleman tax.</span>
+          </h2>
+          <p class="section-subheadline">
+            Zero telemetry proxies. Hardware-backed Android Keystore AES-256 GCM encryption with direct client TLS 1.3
+            straight to Anthropic, OpenAI, and Google.
+          </p>
         </div>
-        <h2 class="section-title text-center font-pixel reveal reveal-up delay-100">
-          Engineered Mobile-First
-        </h2>
-        <p class="section-subtitle text-center reveal reveal-up delay-200">
-          A native Kotlin client with an offline Linux sandbox, Sora editor, and hardware-backed credential encryption.
-        </p>
 
-        <div class="bento-grid-clean stagger-children">
-          <!-- Feature 1 -->
-          <div class="bento-clean-card reveal reveal-scale">
-            <div class="bento-icon-wrapper lime-glow">
+        <!-- Stepped Architectural Flow -->
+        <div class="security-diagram-card reveal">
+          <div class="diagram-flow-row">
+            <div class="flow-node">
+              <div class="node-icon-wrap lime-glow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <div class="node-title">Android Keystore</div>
+              <div class="node-sub">Hardware AES-256 GCM</div>
+            </div>
+
+            <div class="flow-arrow">
+              <span class="arrow-label">Direct Socket</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
               </svg>
             </div>
-            <h3 class="bento-clean-title font-pixel">100% BYOK & Keystore Vault</h3>
-            <p class="bento-clean-desc">
-              Your API keys never pass through any intermediate server. Stored in hardware-backed Android Keystore with
-              direct TLS connections to Anthropic, OpenAI, or Gemini.
-            </p>
-          </div>
 
-          <!-- Feature 2 -->
-          <div class="bento-clean-card reveal reveal-scale">
-            <div class="bento-icon-wrapper cyan-glow">
+            <div class="flow-node">
+              <div class="node-icon-wrap cyan-glow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <div class="node-title">Zero Relay Proxy</div>
+              <div class="node-sub">Direct Client Socket</div>
+            </div>
+
+            <div class="flow-arrow">
+              <span class="arrow-label">TLS 1.3</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="4 17 10 11 4 5"></polyline>
-                <line x1="12" y1="19" x2="20" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
               </svg>
             </div>
-            <h3 class="bento-clean-title font-pixel">Local Alpine Linux Sandbox</h3>
-            <p class="bento-clean-desc">
-              Unrooted userland powered by <code>proot</code> with a native <code>/workspace</code> directory. Run
-              Node.js, Python, Git, and bash scripts directly on your phone with zero network dependency.
-            </p>
-          </div>
 
-          <!-- Feature 3 -->
-          <div class="bento-clean-card reveal reveal-scale">
-            <div class="bento-icon-wrapper lime-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="16 18 22 12 16 6"></polyline>
-                <polyline points="8 6 2 12 8 18"></polyline>
-              </svg>
+            <div class="flow-node">
+              <div class="node-icon-wrap emerald-glow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                  <path d="M2 12h20" />
+                </svg>
+              </div>
+              <div class="node-title">AI Provider APIs</div>
+              <div class="node-sub">Anthropic &bull; OpenAI &bull; Google</div>
             </div>
-            <h3 class="bento-clean-title font-pixel">Enhanced Sora Code Editor</h3>
-            <p class="bento-clean-desc">
-              Desktop-grade mobile code editor with TextMate grammar syntax highlighting, smooth spacebar cursor
-              sliding, and fully responsive gesture-driven key handling.
-            </p>
-          </div>
-
-          <!-- Feature 4 -->
-          <div class="bento-clean-card reveal reveal-scale">
-            <div class="bento-icon-wrapper cyan-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path
-                  d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-                </path>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                <line x1="12" y1="22.08" x2="12" y2="12"></line>
-              </svg>
-            </div>
-            <h3 class="bento-clean-title font-pixel">Pre-Configured Toolchains</h3>
-            <p class="bento-clean-desc">
-              One-tap installation for Node.js, npm, Python 3, pip, Git, and C/C++ build essentials in Sandbox Settings
-              with real-time package installation status indicators.
-            </p>
-          </div>
-
-          <!-- Feature 5 -->
-          <div class="bento-clean-card reveal reveal-scale">
-            <div class="bento-icon-wrapper lime-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-            </div>
-            <h3 class="bento-clean-title font-pixel">Background Execution Service</h3>
-            <p class="bento-clean-desc">
-              Multi-step agent tasks continue safely even when you lock your screen, powered by an Android Foreground
-              Service with live status notifications.
-            </p>
-          </div>
-
-          <!-- Feature 6 -->
-          <div class="bento-clean-card reveal reveal-scale">
-            <div class="bento-icon-wrapper cyan-glow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              </svg>
-            </div>
-            <h3 class="bento-clean-title font-pixel">Sentry Diagnostics & Zero-Lag</h3>
-            <p class="bento-clean-desc">
-              Production-grade observability with real-time crash capture, ANR freeze detection, and frame jitter
-              telemetry to guarantee smooth coding on all device tiers.
-            </p>
           </div>
         </div>
+
+        <!-- Clean Reality Comparison Grid -->
+        <div class="bento-grid-2x2 comparison-grid">
+          <!-- Cloud SaaS Card -->
+          <article class="bento-comparison-card cloud-saas reveal">
+            <span class="compare-badge saas-tax">Cloud SaaS Wrappers</span>
+            <div class="compare-price">$20 <span class="price-sub">/ month ($240/yr)</span></div>
+            <ul class="compare-list">
+              <li>&times; Proprietary code routes through third-party proxy relays</li>
+              <li>&times; Artificial daily rate limits and vendor server downtime</li>
+              <li>&times; 3x to 5x markup on raw LLM token costs</li>
+            </ul>
+          </article>
+
+          <!-- Klix Code Card -->
+          <article class="bento-comparison-card klix-byok reveal">
+            <span class="compare-badge klix-free">100% BYOK Freedom</span>
+            <div class="compare-price">₹29<span class="price-sub">/month (pay for what you use)</span></div>
+            <ul class="compare-list">
+              <li>&check; Direct client-to-model TLS 1.3 straight to providers</li>
+              <li>&check; Hardware AES-256 GCM Android Keystore key sealing</li>
+              <li>&check; Switch instantly between Claude, Gemini, &amp; GPT</li>
+            </ul>
+          </article>
+        </div>
+
       </div>
     </section>
 
-    <!-- Download Center Section -->
-    <section class="download-section" id="download">
+    <!-- ==========================================================================
+         CHAPTER 4: SIDELOAD & ACTION (OFFICIAL APK RELEASE)
+         ========================================================================== -->
+    <section class="chapter-section download-section" id="download">
       <div class="section-container">
-        <div class="download-clean-card reveal reveal-blur reveal-slow">
-          <div class="download-mascot-row">
-            <img src="/mascots/mascot_running_terminal.png" alt="Klix Bot Running" class="download-mascot-img" />
+
+        <div class="download-card-wrapper reveal">
+          <div class="download-mascot-anchor">
+            <img src="/mascots/mascot_celebration.png" alt="Klix Bot Celebration" class="download-mascot-img" width="80"
+              height="100" />
           </div>
-          <div class="download-badge-tag font-pixel">OFFICIAL RELEASE</div>
-          <h2 class="download-clean-title font-pixel">Download Klix Code APK</h2>
-          <p class="download-clean-desc">
-            Sideload the APK directly onto your Android device. 100% free, private, and open.
+
+          <span class="download-badge-tag">OFFICIAL APK RELEASE</span>
+          <h2 class="download-title">Excuses Deleted. <span class="headline-punch">Your pocket studio is live.</span>
+          </h2>
+          <p class="download-subtitle">
+            No desk? No laptop? No problem. Sideload the APK directly onto your Android device—free, private, and open
+            source.
           </p>
 
-          <div class="download-action-row">
-            <a href="/klix-code-v0.4.8.apk" download="klix-code-v0.4.8.apk" class="btn-primary-lime btn-huge"
-              id="main-download-button" data-umami-event="apk_download" data-umami-event-source="main_card"
-              data-umami-event-version="v0.4.8">
-              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              <div class="btn-text-col">
-                <span class="btn-primary-label">Download APK (v0.4.8)</span>
-                <span class="btn-meta-label">Direct Download • 18.1 MB • Android 8.0+</span>
-              </div>
-            </a>
-
-            <!-- Scannable QR Code -->
-            <div class="qr-box">
-              <div class="qr-container" id="qr-display"></div>
-              <div class="qr-info">
-                <span class="qr-label font-pixel">Scan on Phone</span>
-                <span class="qr-sub">Scan with camera to download directly to your Android device</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- SHA-256 Checksum -->
-          <div class="checksum-strip">
-            <div class="checksum-header">
-              <span class="checksum-title font-pixel">SHA-256 Checksum:</span>
-              <button class="btn-copy-code" id="copy-hash-btn" type="button" aria-label="Copy SHA-256 Checksum">
-                <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          <div class="download-grid-row">
+            <!-- Download Button & Checksum Column -->
+            <div class="download-cta-col">
+              <a href="/klix-code-v0.4.8.apk" download="klix-code-v0.4.8.apk" class="btn-primary-pill btn-huge"
+                id="main-download-button" data-umami-event="apk_download" data-umami-event-source="main_card"
+                data-umami-event-version="v0.4.8">
+                <svg class="icon-svg-large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                <span id="copy-btn-text">Copy Hash</span>
-              </button>
+                <div class="btn-text-block">
+                  <span class="btn-main-label">Download APK (v0.4.8)</span>
+                  <span class="btn-sub-label">Direct Download &bull; 19.0 MB &bull; Android 8.0+</span>
+                </div>
+              </a>
+
+              <!-- Checksum Verification Card -->
+              <div class="checksum-card">
+                <div class="checksum-header">
+                  <span class="checksum-title">SHA-256 Checksum:</span>
+                  <button class="btn-copy-hash" id="copy-hash-btn" type="button" aria-label="Copy SHA-256 Checksum">
+                    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      width="13" height="13">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span id="copy-btn-text">Copy Hash</span>
+                  </button>
+                </div>
+                <code class="checksum-value" id="checksum-text"
+                  data-hash="2320a38ecfd3ea096a205f92cf421358e2376915e7f9f84a105b05b260687a9f">2320a38ecfd3ea096a205f92cf421358e2376915e7f9f84a105b05b260687a9f</code>
+              </div>
             </div>
-            <div class="checksum-body">
-              <code class="checksum-code" id="checksum-text"
-                data-hash="26b94b792d9f938b40fd3e9c1a1d09dee68281747ae4df4657de5b655caf4a70">26b94b792d9f938b40fd3e9c1a1d09dee68281747ae4df4657de5b655caf4a70</code>
+
+            <!-- Scannable QR Code Column (Desktop Phone Installation) -->
+            <div class="qr-code-col">
+              <div class="qr-canvas-box" id="qr-display"></div>
+              <div class="qr-caption">
+                <span class="qr-title">Scan with Phone Camera</span>
+                <span class="qr-sub">Instant install on Android</span>
+              </div>
             </div>
           </div>
+
+          <!-- Release Notes Details Accordion -->
+          <details class="release-notes-drawer">
+            <summary class="release-notes-summary">
+              <span>View Release Notes for v0.4.8</span>
+              <span class="drawer-arrow">&dtrif;</span>
+            </summary>
+            <div class="release-notes-body">
+              <ul class="notes-list">
+                <li><strong>Editor Gesture Isolation:</strong> Horizontal swipe in Sora editor shifts cursor without
+                  triggering drawer gestures.</li>
+                <li><strong>Hierarchical Back Stack:</strong> Fluid back navigation across nested workspace folders.
+                </li>
+                <li><strong>Unsaved Changes Dialog:</strong> Confirmation modal prevents accidental data loss during
+                  active diff reviews.</li>
+                <li><strong>Alpine Linux PRoot:</strong> Stable background command synchronization and environment
+                  persistence.</li>
+              </ul>
+            </div>
+          </details>
+
         </div>
+
       </div>
     </section>
 
-    <!-- FAQ Section -->
+    <!-- ==========================================================================
+         FREQUENTLY ASKED QUESTIONS
+         ========================================================================== -->
     <section class="faq-section" id="faq">
       <div class="section-container">
-        <div class="section-badge-center reveal reveal-blur">
-          <span class="badge-dot"></span>
-          <span>Questions & Answers</span>
+
+        <div class="section-header-centered reveal">
+          <span class="section-eyebrow-pill">FAQ</span>
+          <h2 class="section-headline">Frequently Asked Questions</h2>
+          <p class="section-subheadline">
+            Core technical specifications, safety, and runtime requirements.
+          </p>
         </div>
-        <h2 class="section-title text-center font-pixel reveal reveal-up delay-100">Frequently Asked Questions</h2>
 
-        <div class="faq-accordion-list stagger-children">
-          <details class="faq-item reveal reveal-up" open>
-            <summary class="faq-question">
-              <span>What is KlixCode (Klix Code)?</span>
-              <span class="faq-arrow">+</span>
+        <div class="faq-accordion-group">
+          <details class="faq-accordion-item reveal" open>
+            <summary class="faq-summary">
+              <span>What is Klix Code?</span>
+              <span class="faq-toggle-icon">&plus;</span>
             </summary>
-            <div class="faq-answer">
+            <div class="faq-content">
               <p>
-                <strong>KlixCode (also known as Klix Code)</strong> is a mobile-first autonomous AI coding environment
-                for Android. It lets you run an unrooted Alpine Linux userland with Node.js, Python, and Git via PRoot,
-                orchestrate multi-step autonomous agent tasks (Claude, GPT, Gemini), review diffs, and build real
-                software right on your Android phone with 100% BYOK privacy.
+                Klix Code brings Cursor and Claude Code workflows directly to Android. It pairs an autonomous multi-turn
+                agent loop with an unrooted local Alpine Linux PRoot userland, the native Sora code editor, unified diff
+                reviews, and 100% BYOK privacy.
               </p>
             </div>
           </details>
 
-          <details class="faq-item reveal reveal-up">
-            <summary class="faq-question">
-              <span>Do I need root access on my phone?</span>
-              <span class="faq-arrow">+</span>
+          <details class="faq-accordion-item reveal">
+            <summary class="faq-summary">
+              <span>Do I need root access on my Android phone?</span>
+              <span class="faq-toggle-icon">&plus;</span>
             </summary>
-            <div class="faq-answer">
+            <div class="faq-content">
               <p>
-                <strong>No root access is required.</strong> Klix uses <code>proot</code> to run an unrooted Alpine
-                Linux userland inside the app's sandboxed storage. You can run Node.js, Python, Git, and shell tools
-                safely without touching the Android OS.
+                No root access is required. Klix Code uses PRoot to execute an unrooted Alpine Linux userland inside the
+                app's sandboxed storage. You can run Node.js, Python, Git, and shell tools safely without touching the
+                host Android OS.
               </p>
             </div>
           </details>
 
-          <details class="faq-item reveal reveal-up">
-            <summary class="faq-question">
-              <span>Are my API keys sent to any server?</span>
-              <span class="faq-arrow">+</span>
+          <details class="faq-accordion-item reveal">
+            <summary class="faq-summary">
+              <span>Are my API keys sent to any Klix server?</span>
+              <span class="faq-toggle-icon">&plus;</span>
             </summary>
-            <div class="faq-answer">
+            <div class="faq-content">
               <p>
-                No. Klix does not operate an intermediate relay server. Your API keys are encrypted at rest with Android
-                Keystore, and model calls travel directly from your device to the model provider (Anthropic, OpenAI, or
-                Gemini) over TLS.
+                No. Klix Code operates without any intermediate relay server. Your API keys are encrypted at rest with
+                Android Keystore, and model calls travel directly from your device to the model provider (Anthropic,
+                OpenAI, or Google) over TLS 1.3.
               </p>
             </div>
           </details>
 
-          <details class="faq-item">
-            <summary class="faq-question">
+          <details class="faq-accordion-item reveal">
+            <summary class="faq-summary">
               <span>Can I open project folders on my phone's storage?</span>
-              <span class="faq-arrow">+</span>
+              <span class="faq-toggle-icon">&plus;</span>
             </summary>
-            <div class="faq-answer">
+            <div class="faq-content">
               <p>
-                Yes. Klix integrates with Android's Storage Access Framework (SAF). You select your project directory
-                once, and persistent URI permission allows you to work across app restarts without re-prompting.
+                Yes. Klix Code integrates with Android's native Storage Access Framework (SAF). You select your project
+                directory once, and persistent URI permission allows you to work across app restarts without
+                re-prompting.
               </p>
             </div>
           </details>
 
-          <details class="faq-item">
-            <summary class="faq-question">
+          <details class="faq-accordion-item reveal">
+            <summary class="faq-summary">
               <span>Will long agent tasks get paused when my screen turns off?</span>
-              <span class="faq-arrow">+</span>
+              <span class="faq-toggle-icon">&plus;</span>
             </summary>
-            <div class="faq-answer">
+            <div class="faq-content">
               <p>
-                No. Klix runs multi-turn agent execution inside an Android Foreground Service with a persistent status
-                notification, preventing Android Doze from pausing execution.
+                No. Klix Code runs multi-turn agent execution inside an Android Foreground Service with a persistent
+                status notification, preventing Android Doze from pausing execution while your phone is locked.
               </p>
             </div>
           </details>
         </div>
+
       </div>
     </section>
   </main>
 
-  <!-- Clean, Properly Formatted Footer (No Overlapping!) -->
+  <!-- Site Footer -->
   <footer class="site-footer">
-    <div class="section-container">
-      <div class="footer-grid-clean reveal reveal-up">
-        <!-- Col 1: Brand Info -->
-        <div class="footer-brand-box">
-          <div class="footer-brand-row">
-            <div class="brand-icon-wrapper-sm">
-              <img src="/app_logo.png" alt="Klix Code logo" class="brand-icon-img" />
-            </div>
-            <span class="footer-brand-name font-pixel">Klix<span class="brand-accent">code</span></span>
+    <div class="footer-container">
+      <div class="footer-top-row">
+        <div class="footer-brand-col">
+          <div class="brand-link">
+            <img src="/app_logo.png" alt="Klix Code Logo" class="brand-icon" width="24" height="24" />
+            <span class="brand-name">Klix <span class="brand-accent">Code</span></span>
           </div>
           <p class="footer-tagline">
-            The autonomous AI agent coding platform for Android. Desktop-grade agent harness, Sora editor, and unrooted
-            Linux sandboxes — mobile-first.
+            Autonomous AI Agent IDE for Android. Code anywhere in your pocket.
           </p>
-          <span class="footer-byok-note">100% BYOK • Zero Server Intermediaries</span>
         </div>
 
-        <!-- Col 2: Navigation Links -->
-        <div class="footer-links-box">
-          <h4 class="footer-col-title font-pixel">Navigation</h4>
-          <ul class="footer-links-list">
-            <li><a href="#hero">Overview</a></li>
-            <li><a href="#demo">Interactive App</a></li>
-            <li><a href="#features">Architecture</a></li>
-            <li><a href="#download">Download APK</a></li>
-            <li><a href="#faq">FAQ</a></li>
-          </ul>
+        <div class="footer-links-col">
+          <span class="footer-col-title">Navigation</span>
+          <a href="#hero" class="footer-link">Overview</a>
+          <a href="#compilers" class="footer-link">Compilers</a>
+          <a href="#privacy" class="footer-link">Privacy</a>
+          <a href="#download" class="footer-link">Download</a>
         </div>
 
-        <!-- Col 3: Direct APK Download Link -->
-        <div class="footer-links-box">
-          <h4 class="footer-col-title font-pixel">Releases</h4>
-          <ul class="footer-links-list">
-            <li>
-              <a href="/klix-code-v0.4.8.apk" download="klix-code-v0.4.8.apk" class="footer-apk-link"
-                data-umami-event="apk_download" data-umami-event-source="footer" data-umami-event-version="v0.4.8">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg-sm">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>klix-code-v0.4.8.apk (18.1 MB) — Latest</span>
-              </a>
-            </li>
-            <li>
-              <a href="/klix-code-v0.4.7.apk" download="klix-code-v0.4.7.apk" class="footer-apk-link footer-old-apk"
-                data-umami-event="apk_download" data-umami-event-source="footer" data-umami-event-version="v0.4.7">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg-sm">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>klix-code-v0.4.7.apk (18.1 MB)</span>
-              </a>
-            </li>
-            <li>
-              <a href="/klix-code-v0.4.1.apk" download="klix-code-v0.4.1.apk" class="footer-apk-link footer-old-apk"
-                data-umami-event="apk_download" data-umami-event-source="footer" data-umami-event-version="v0.4.1">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg-sm">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>klix-code-v0.4.1.apk (18.1 MB)</span>
-              </a>
-            </li>
-            <li>
-              <a href="/klix-code-v0.3.11.apk" download="klix-code-v0.3.11.apk" class="footer-apk-link footer-old-apk"
-                data-umami-event="apk_download" data-umami-event-source="footer" data-umami-event-version="v0.3.11">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg-sm">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>klix-code-v0.3.11.apk (17.6 MB)</span>
-              </a>
-            </li>
-            <li>
-              <a href="/klix-code-v0.3.10.apk" download="klix-code-v0.3.10.apk" class="footer-apk-link footer-old-apk"
-                data-umami-event="apk_download" data-umami-event-source="footer" data-umami-event-version="v0.3.10">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg-sm">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>klix-code-v0.3.10.apk (17.6 MB)</span>
-              </a>
-            </li>
-            <li>
-              <a href="/klix-code-v0.3.9.apk" download="klix-code-v0.3.9.apk" class="footer-apk-link footer-old-apk"
-                data-umami-event="apk_download" data-umami-event-source="footer" data-umami-event-version="v0.3.9">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg-sm">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>klix-code-v0.3.9.apk (17.6 MB)</span>
-              </a>
-            </li>
-            <li class="footer-note-text">Requires Android 8.0 or higher. No root needed.</li>
-          </ul>
+        <div class="footer-links-col">
+          <span class="footer-col-title">Resources</span>
+          <a href="https://github.com/NeuroKaran/klix_code" target="_blank" rel="noopener noreferrer"
+            class="footer-link">GitHub Repository ↗</a>
+          <a href="https://github.com/NeuroKaran/klix_code/releases" target="_blank" rel="noopener noreferrer"
+            class="footer-link">All Releases ↗</a>
+          <a href="#faq" class="footer-link">FAQ</a>
         </div>
       </div>
 
-      <div class="footer-bottom-row reveal reveal-up delay-200">
-        <p>© 2026 Klix Code. Built for Android developers everywhere.</p>
-        <div class="footer-pills">
-          <span class="foot-pill">Android 8.0+</span>
-          <span class="foot-pill">Alpine PRoot</span>
-          <span class="foot-pill">Kotlin Native</span>
-        </div>
+      <div class="footer-bottom-row">
+        <span class="copyright-text">&copy; 2026 Klix Code. Built with unrooted Alpine Linux &amp; Sora Editor.</span>
+        <span class="footer-meta-text">Apache 2.0 License &bull; 100% BYOK Privacy</span>
       </div>
     </div>
   </footer>
 
-  <!-- Toast Notification -->
-  <div class="toast-notification" id="toast" role="alert" aria-live="assertive">
-    <div class="toast-icon">✓</div>
-    <div class="toast-text" id="toast-text">APK download started!</div>
-  </div>
-
-  <!-- Script -->
   <script type="module" src="/src/main.js"></script>
 </body>
 
