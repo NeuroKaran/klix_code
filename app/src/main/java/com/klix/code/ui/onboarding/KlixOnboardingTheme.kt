@@ -153,3 +153,4 @@ object OnboardingTypography {
         letterSpacing = (-0.1).sp
     )
 }
+
