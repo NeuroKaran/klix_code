@@ -41,12 +41,15 @@ import com.klix.code.data.update.UpdateInfo
 import com.klix.code.ui.theme.AccentError
 import com.klix.code.ui.theme.AccentPrimary
 import com.klix.code.ui.theme.AccentSecondary
+import com.klix.code.ui.theme.BricolageGrotesque
 import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurface
 import com.klix.code.ui.theme.DarkSurfaceVariant
+import com.klix.code.ui.theme.JetBrainsMono
 import com.klix.code.ui.theme.LimeDimColor
 import com.klix.code.ui.theme.LocalIsDarkTheme
+import com.klix.code.ui.theme.PlusJakartaSans
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
@@ -102,8 +105,10 @@ fun UpdateDialog(
                 Column {
                     Text(
                         text = if (updateInfo.forceUpdate) "Mandatory Update" else "Update Available",
-                        fontSize = 17.sp,
+                        fontSize = 17.5.sp,
+                        fontFamily = BricolageGrotesque,
                         fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.25).sp,
                         color = TextPrimary
                     )
 
@@ -115,7 +120,7 @@ fun UpdateDialog(
                             text = "v${updateInfo.currentVersionName}",
                             fontSize = 12.sp,
                             color = TextMuted,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = JetBrainsMono
                         )
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
@@ -128,7 +133,7 @@ fun UpdateDialog(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = AccentSecondary,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = JetBrainsMono
                         )
                     }
                 }
@@ -146,6 +151,7 @@ fun UpdateDialog(
                     Text(
                         text = "WHAT'S NEW",
                         fontSize = 10.sp,
+                        fontFamily = PlusJakartaSans,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                         color = TextSecondary
@@ -162,9 +168,10 @@ fun UpdateDialog(
                     ) {
                         Text(
                             text = updateInfo.releaseNotes.trim(),
-                            fontSize = 12.sp,
+                            fontSize = 12.5.sp,
+                            fontFamily = PlusJakartaSans,
                             color = TextPrimary,
-                            lineHeight = 18.sp
+                            lineHeight = 18.5.sp
                         )
                     }
                 }
@@ -175,6 +182,7 @@ fun UpdateDialog(
                     Text(
                         text = "Error: ${errState.message}",
                         fontSize = 12.sp,
+                        fontFamily = PlusJakartaSans,
                         color = AccentError,
                         lineHeight = 16.sp
                     )

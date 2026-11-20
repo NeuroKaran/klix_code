@@ -41,7 +41,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.ui.theme.AccentPrimary
+import com.klix.code.ui.theme.BricolageGrotesque
+import com.klix.code.ui.theme.JetBrainsMono
 import com.klix.code.ui.theme.LimeDimColor
+import com.klix.code.ui.theme.PlusJakartaSans
 import com.klix.code.ui.theme.DarkBg
 import com.klix.code.ui.theme.DarkBorder
 import com.klix.code.ui.theme.DarkSurfaceVariant
@@ -164,7 +167,7 @@ fun buildMarkdownAnnotatedString(
                     val codeContent = text.substring(cursor + 1, end)
                     pushStyle(
                         SpanStyle(
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = JetBrainsMono,
                             fontWeight = FontWeight.SemiBold,
                             color = AccentPrimary,
                             background = DarkSurfaceVariant,
@@ -217,7 +220,7 @@ fun buildMarkdownAnnotatedString(
                             fontWeight = FontWeight.SemiBold,
                             color = AccentPrimary,
                             background = LimeDimColor,
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = JetBrainsMono,
                             fontSize = 12.5.sp
                         )
                     )
@@ -255,8 +258,8 @@ fun MarkdownMessageView(
             when (block) {
                 is MarkdownBlock.HeaderBlock -> {
                     val fontSize = when (block.level) {
-                        1 -> 17.sp
-                        2 -> 15.5.sp
+                        1 -> 18.sp
+                        2 -> 16.sp
                         3 -> 14.5.sp
                         else -> 13.5.sp
                     }
@@ -265,15 +268,23 @@ fun MarkdownMessageView(
                         2 -> FontWeight.Bold
                         else -> FontWeight.SemiBold
                     }
+                    val letterSpacing = when (block.level) {
+                        1 -> (-0.35).sp
+                        2 -> (-0.25).sp
+                        3 -> (-0.15).sp
+                        else -> 0.sp
+                    }
                     val color = if (block.level <= 2) TextPrimary else AccentPrimary
 
                     Text(
                         text = buildMarkdownAnnotatedString(block.text, color),
                         fontSize = fontSize,
+                        fontFamily = BricolageGrotesque,
                         fontWeight = fontWeight,
                         color = color,
-                        lineHeight = (fontSize.value * 1.35f).sp,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                        lineHeight = (fontSize.value * 1.32f).sp,
+                        letterSpacing = letterSpacing,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
                     )
                 }
 
@@ -281,9 +292,10 @@ fun MarkdownMessageView(
                     Text(
                         text = buildMarkdownAnnotatedString(block.text, textColor),
                         fontSize = 14.sp,
+                        fontFamily = PlusJakartaSans,
                         color = textColor,
                         lineHeight = 21.sp,
-                        letterSpacing = 0.2.sp
+                        letterSpacing = 0.15.sp
                     )
                 }
 
@@ -296,6 +308,7 @@ fun MarkdownMessageView(
                         Text(
                             text = block.prefix,
                             fontSize = 13.sp,
+                            fontFamily = PlusJakartaSans,
                             fontWeight = FontWeight.Bold,
                             color = AccentPrimary,
                             modifier = Modifier.padding(top = 1.dp)
@@ -303,8 +316,10 @@ fun MarkdownMessageView(
                         Text(
                             text = buildMarkdownAnnotatedString(block.text, textColor),
                             fontSize = 14.sp,
+                            fontFamily = PlusJakartaSans,
                             color = textColor,
                             lineHeight = 20.sp,
+                            letterSpacing = 0.1.sp,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -357,7 +372,7 @@ fun CodeBlockCard(
                 Text(
                     text = if (language.isNotBlank()) language.uppercase() else "CODE",
                     fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
                     color = AccentPrimary
                 )
@@ -406,7 +421,7 @@ fun CodeBlockCard(
             Text(
                 text = code,
                 fontSize = 12.sp,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = JetBrainsMono,
                 color = TextPrimary,
                 lineHeight = 18.sp
             )

@@ -8,29 +8,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.klix.code.R
+import com.klix.code.ui.theme.BricolageGrotesque
+import com.klix.code.ui.theme.JetBrainsMono
+import com.klix.code.ui.theme.PlusJakartaSans
 
 object OnboardingFonts {
-    val BricolageGrotesque = FontFamily(
-        Font(R.font.bricolage_grotesque, FontWeight.Normal),
-        Font(R.font.bricolage_grotesque, FontWeight.Medium),
-        Font(R.font.bricolage_grotesque, FontWeight.SemiBold),
-        Font(R.font.bricolage_grotesque, FontWeight.Bold),
-        Font(R.font.bricolage_grotesque, FontWeight.ExtraBold)
-    )
-
-    val PlusJakartaSans = FontFamily(
-        Font(R.font.plus_jakarta_sans, FontWeight.Normal),
-        Font(R.font.plus_jakarta_sans, FontWeight.Medium),
-        Font(R.font.plus_jakarta_sans, FontWeight.SemiBold),
-        Font(R.font.plus_jakarta_sans, FontWeight.Bold)
-    )
-
-    val JetBrainsMono = FontFamily(
-        Font(R.font.jetbrains_mono, FontWeight.Normal),
-        Font(R.font.jetbrains_mono, FontWeight.Medium),
-        Font(R.font.jetbrains_mono, FontWeight.SemiBold),
-        Font(R.font.jetbrains_mono, FontWeight.Bold)
-    )
+    val BricolageGrotesque = com.klix.code.ui.theme.BricolageGrotesque
+    val PlusJakartaSans = com.klix.code.ui.theme.PlusJakartaSans
+    val JetBrainsMono = com.klix.code.ui.theme.JetBrainsMono
 }
 
 object OnboardingColors {

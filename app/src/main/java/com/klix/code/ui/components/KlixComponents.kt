@@ -69,6 +69,7 @@ import com.klix.code.ui.theme.KlixPrimaryCtaText
 import com.klix.code.ui.theme.KlixSurfaceSheet
 import com.klix.code.ui.theme.KlixTypography
 import com.klix.code.ui.theme.LocalIsDarkTheme
+import com.klix.code.ui.theme.PlusJakartaSans
 
 /**
  * 1. KlixPeekingMascotScaffold
@@ -315,6 +316,7 @@ private fun DockItem(
                 Text(
                     text = tab.label,
                     color = Color(0xFF0C0D14),
+                    fontFamily = PlusJakartaSans,
                     fontSize = 12.5.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = (-0.2).sp
@@ -336,6 +338,7 @@ private fun DockItem(
                 Text(
                     text = tab.label,
                     color = Color(0xFF94A3B8),
+                    fontFamily = PlusJakartaSans,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium
                 )

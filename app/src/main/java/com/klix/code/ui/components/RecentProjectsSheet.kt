@@ -40,9 +40,11 @@ import com.klix.code.data.model.ProjectItem
 import com.klix.code.ui.components.glass.GlassButton
 import com.klix.code.ui.components.glass.glassBorder
 import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.theme.BricolageGrotesque
 import com.klix.code.ui.theme.CyanBrandColor
 import com.klix.code.ui.theme.GlassSurfaceColor
 import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.PlusJakartaSans
 import com.klix.code.ui.theme.LimeBrandColor
 import com.klix.code.ui.theme.OnAccentPrimaryColor
 import com.klix.code.ui.theme.TextMuted
@@ -74,8 +76,10 @@ fun RecentProjectsDialog(
                 Text(
                     text = "Open Project",
                     color = TextPrimary,
+                    fontFamily = BricolageGrotesque,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.25).sp
                 )
             }
         },
@@ -105,7 +109,12 @@ fun RecentProjectsDialog(
                         tint = OnAccentPrimaryColor
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Default Workspace (/workspaces/default)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text(
+                        text = "Default Workspace (/workspaces/default)",
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -113,9 +122,10 @@ fun RecentProjectsDialog(
                 Text(
                     text = "RECENT WORKSPACES",
                     color = TextSecondary,
+                    fontFamily = PlusJakartaSans,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.8.sp
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -166,12 +176,14 @@ fun RecentProjectsDialog(
                                     Text(
                                         text = project.name,
                                         color = TextPrimary,
+                                        fontFamily = PlusJakartaSans,
                                         fontSize = 13.5.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
                                         text = "$timeAgo",
                                         color = TextMuted,
+                                        fontFamily = PlusJakartaSans,
                                         fontSize = 11.sp
                                     )
                                 }

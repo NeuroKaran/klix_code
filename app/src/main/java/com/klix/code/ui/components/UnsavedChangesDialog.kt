@@ -41,6 +41,7 @@ import com.klix.code.R
 import com.klix.code.data.model.EditorTab
 import com.klix.code.ui.components.glass.glassBorder
 import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.theme.BricolageGrotesque
 import com.klix.code.ui.theme.DarkAccentErrorValue
 import com.klix.code.ui.theme.GlassSurfaceElevatedColor
 import com.klix.code.ui.theme.KlixBorderHairline
@@ -51,6 +52,7 @@ import com.klix.code.ui.theme.KlixTypography
 import com.klix.code.ui.theme.LimeBrandColor
 import com.klix.code.ui.theme.LocalIsDarkTheme
 import com.klix.code.ui.theme.OnAccentPrimaryColor
+import com.klix.code.ui.theme.PlusJakartaSans
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
 
@@ -112,6 +114,7 @@ fun UnsavedChangesDialog(
             Text(
                 text = "Unsaved Changes",
                 color = TextPrimary,
+                fontFamily = BricolageGrotesque,
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.3).sp,
@@ -127,8 +130,10 @@ fun UnsavedChangesDialog(
                 Text(
                     text = "Do you want to save your progress in this file before closing?",
                     color = TextSecondary,
+                    fontFamily = PlusJakartaSans,
                     fontSize = 14.sp,
-                    lineHeight = 20.sp,
+                    lineHeight = 21.sp,
+                    letterSpacing = 0.1.sp,
                     textAlign = TextAlign.Center
                 )
 

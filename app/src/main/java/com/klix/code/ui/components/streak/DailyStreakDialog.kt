@@ -73,6 +73,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.klix.code.ui.theme.BricolageGrotesque
+import com.klix.code.ui.theme.JetBrainsMono
+import com.klix.code.ui.theme.PlusJakartaSans
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -417,7 +420,7 @@ fun DailyStreakDialog(
                                 text = "DAILY STREAK",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace,
+                                fontFamily = JetBrainsMono,
                                 letterSpacing = 1.2.sp,
                                 color = TextPrimary
                             )
@@ -596,8 +599,10 @@ fun DailyStreakDialog(
                     ) {
                         Text(
                             text = "$displayedStreakCount ${if (displayedStreakCount == 1) "day" else "days"}",
+                            fontFamily = BricolageGrotesque,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp,
                             color = if (animStage == StreakAnimStage.COMPLETED || streakState.isClaimedToday) {
                                 StreakActiveColor
                             } else {
@@ -612,7 +617,9 @@ fun DailyStreakDialog(
                             } else {
                                 "Tap fire or claim button to add to your streak!"
                             },
-                            fontSize = 12.sp,
+                            fontFamily = PlusJakartaSans,
+                            fontSize = 12.5.sp,
+                            lineHeight = 17.sp,
                             color = TextSecondary,
                             textAlign = TextAlign.Center
                         )
@@ -751,6 +758,7 @@ fun DailyStreakDialog(
                                 Text(
                                     text = "CLAIM TODAY'S STREAK",
                                     fontSize = 13.5.sp,
+                                    fontFamily = PlusJakartaSans,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.5.sp,
                                     color = Color.White
@@ -781,6 +789,7 @@ fun DailyStreakDialog(
                                 Text(
                                     text = "Claimed for today!",
                                     fontSize = 13.sp,
+                                    fontFamily = PlusJakartaSans,
                                     fontWeight = FontWeight.SemiBold,
                                     color = StreakActiveColor
                                 )
@@ -800,7 +809,7 @@ fun DailyStreakDialog(
                                 Text(
                                     text = "Refreshes at 12 midnight (${StreakManager.formatTimeRemaining(millisUntilMidnight)})",
                                     fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
+                                    fontFamily = JetBrainsMono,
                                     color = TextSecondary
                                 )
                             }

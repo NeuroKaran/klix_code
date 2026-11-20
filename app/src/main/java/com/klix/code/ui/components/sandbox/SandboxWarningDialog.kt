@@ -27,16 +27,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.ui.components.glass.glassBorder
 import com.klix.code.ui.components.glass.pressEffect
-import com.klix.code.ui.theme.AccentWarning
-import com.klix.code.ui.theme.GlassSurfaceElevatedColor
-import com.klix.code.ui.theme.LimeBrandColor
-import com.klix.code.ui.theme.OnAccentPrimaryColor
-import com.klix.code.ui.theme.TextPrimary
-import com.klix.code.ui.theme.TextSecondary
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import com.klix.code.R
+import com.klix.code.ui.theme.AccentWarning
+import com.klix.code.ui.theme.BricolageGrotesque
+import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.LimeBrandColor
 import com.klix.code.ui.theme.LocalIsDarkTheme
+import com.klix.code.ui.theme.OnAccentPrimaryColor
+import com.klix.code.ui.theme.PlusJakartaSans
+import com.klix.code.ui.theme.TextPrimary
+import com.klix.code.ui.theme.TextSecondary
 
 @Composable
 fun SandboxWarningDialog(
@@ -73,6 +75,7 @@ fun SandboxWarningDialog(
             Text(
                 text = "Sandbox Required",
                 color = TextPrimary,
+                fontFamily = BricolageGrotesque,
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.3).sp,
@@ -83,8 +86,10 @@ fun SandboxWarningDialog(
             Text(
                 text = "You need to first install the sandbox to use the workspace and run code locally.",
                 color = TextSecondary,
+                fontFamily = PlusJakartaSans,
                 fontSize = 14.sp,
                 lineHeight = 21.sp,
+                letterSpacing = 0.1.sp,
                 textAlign = TextAlign.Center
             )
         },
