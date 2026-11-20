@@ -291,6 +291,9 @@ class MainActivity : ComponentActivity() {
                 var showSandboxWarningDialog by rememberSaveable { mutableStateOf(false) }
 
                 val prefs = remember { getSharedPreferences("klix_prefs", Context.MODE_PRIVATE) }
+                var isOnboardingCompleted by rememberSaveable {
+                    mutableStateOf(prefs.getBoolean("onboarding_completed", false))
+                }
                 var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
 
                 val streakState by StreakManager.streakState.collectAsState()
@@ -347,7 +350,8 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Onboarding: Prompt sandbox setup warning card on launch if not configured
-                LaunchedEffect(isSandboxInstalled) {
+                LaunchedEffect(isSandboxInstalled, isOnboardingCompleted) {
+                    if (!isOnboardingCompleted) return@LaunchedEffect
                     val hasShownSandboxOnboarding = prefs.getBoolean("has_shown_sandbox_onboarding", false)
                     if (!hasShownSandboxOnboarding && !isSandboxInstalled) {
                         prefs.edit().putBoolean("has_shown_sandbox_onboarding", true).apply()
@@ -404,7 +408,7 @@ class MainActivity : ComponentActivity() {
                     drawerState.isOpen
 
                 val isInsideFile = openTabs.isNotEmpty()
-                val shouldHandleBack = hasActiveOverlay || isInsideFile
+                val shouldHandleBack = (hasActiveOverlay || isInsideFile) && isOnboardingCompleted
 
                 BackHandler(enabled = shouldHandleBack) {
                     when {
@@ -482,7 +486,19 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxSize()) {
+                val isDark = LocalIsDarkTheme.current
+                if (!isOnboardingCompleted) {
+                    com.klix.code.ui.onboarding.KlixOnboardingScreen(
+                        isDark = isDark,
+                        sandboxManager = terminalViewModel.sandboxManager,
+                        onComplete = {
+                            isOnboardingCompleted = true
+                            agentViewModel.syncHarnessConfig()
+                            terminalViewModel.sandboxManager.refreshInstalledTools()
+                        }
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxSize()) {
                     ModalNavigationDrawer(
                     drawerState = drawerState,
                     gesturesEnabled = openTabs.isEmpty() || drawerState.isOpen,
@@ -1273,6 +1289,9 @@ class MainActivity : ComponentActivity() {
                             isTerminalOpen = true
                             terminalViewModel.executeCommand(cmd)
                         },
+                        onReplayOnboarding = {
+                            isOnboardingCompleted = false
+                        },
                         onDismiss = { agentViewModel.toggleSettings() }
                     )
                 }
@@ -1378,5 +1397,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 }
 }

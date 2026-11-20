@@ -115,6 +115,7 @@ fun AgentSettingsDialog(
     onRefreshModels: (ModelProvider, String?, Boolean) -> Unit = { _, _, _ -> },
     sandboxManager: SandboxManager? = null,
     onRunCommandInTerminal: ((String) -> Unit)? = null,
+    onReplayOnboarding: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -229,6 +230,45 @@ fun AgentSettingsDialog(
                                 onClick = { ThemeManager.setThemeMode(context, ThemeMode.SYSTEM) },
                                 modifier = Modifier.weight(1f)
                             )
+                        }
+
+                        if (onReplayOnboarding != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(KlixSurfaceCardItem)
+                                    .clickable {
+                                        onDismiss()
+                                        onReplayOnboarding()
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_icon_play),
+                                        contentDescription = null,
+                                        tint = Color(0xFFD5FB66),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Onboarding Flow",
+                                        style = KlixTypography.bodyPrimary,
+                                        color = KlixInkPrimary
+                                    )
+                                }
+                                Text(
+                                    text = "Replay »",
+                                    style = KlixTypography.bodySecondary,
+                                    color = Color(0xFFD5FB66),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
