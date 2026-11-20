@@ -40,7 +40,7 @@ Bundle **Plus Jakarta Sans** (`res/font/plus_jakarta_sans_*.ttf`) for UI/Display
 | `sheetHeader` | Plus Jakarta Sans | `20.sp` | `26.sp` | `Bold (700)` | `-0.3.sp` | `Chat History`, `7 Days Streak`, `Alpine Linux Active`, `Klix AI Sessions` |
 | `sectionHeader` | Plus Jakarta Sans | `16.sp` | `22.sp` | `Bold (700)` | `-0.15.sp` | `App Theme`, `Active AI Provider`, `Quick Mentions & Model`, `What shall we do?`, `Pre-Configured Toolchains`, `Recent Workspaces`, `Custom Macros (2)` |
 | `cardTitle` | Plus Jakarta Sans | `15.sp` | `20.sp` | `Bold (700)` | `-0.1.sp` | `Node.js`, `Python 3`, `Git`, `C/C++`, `Chat 1 • palindrome.py`, `Google Gemini` |
-| `bodyPrimary` | Plus Jakarta Sans | `14.sp` | `20.sp` | `SemiBold (600)` | `0.sp` | Action row labels, button text (`+ Open Sandbox Workspace`, `Apply & Close`) |
+| `bodyPrimary` | Plus Jakarta Sans | `14.sp` | `20.sp` | `SemiBold (600)` | `0.sp` | Action row labels, button text (`Apply & Close`) |
 | `bodySecondary` | Plus Jakarta Sans | `12.5.sp` | `17.sp` | `Medium (500)` | `0.1.sp` | `Sandbox Workspace`, `Your local on-device environment`, `Installed ✓`, macro descriptions |
 | `codeEditor` | JetBrains Mono | `13.sp` | `20.sp` (`1.54x`) | `Medium (500)` | `0.sp` | Sora Code Editor lines (`palindrome.py`), Alpine Linux terminal stdout |
 | `codePill` | JetBrains Mono | `12.sp` | `16.sp` | `SemiBold (600)` | `-0.1.sp` | `/refactor`, `/fix`, `/test`, `/explain`, `/summarize`, `/optimize`, `+ TERM`, `ESC`, `TAB`, `CTRL-C` |
@@ -71,7 +71,6 @@ Bundle **Plus Jakarta Sans** (`res/font/plus_jakarta_sans_*.ttf`) for UI/Display
   - Bottom row inside card: Two side-by-side pill chips:
     1. `[Vector CPU Icon] Thinking: 4K`
     2. `[Official Alpine Linux Hexagon Logo] Alpine: Ready`
-- **Primary CTA**: `KlixPrimaryPillButton(text = "+ Open Sandbox Workspace")`.
 - **Recent Workspaces Section**:
   - Section title `"Recent Workspaces"`.
   - 3 stacked `56.dp` height rounded cards (`RoundedCornerShape(16.dp)`):

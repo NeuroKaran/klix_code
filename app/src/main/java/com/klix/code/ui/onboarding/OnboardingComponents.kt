@@ -25,28 +25,27 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,7 +58,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -68,8 +69,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.klix.code.R
 import com.klix.code.data.agent.model.ModelProvider
+import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.theme.LocalIsDarkTheme
 import kotlin.math.sin
 
 /**
@@ -370,76 +375,283 @@ fun TrustVaultCard(
 
 /**
  * Secure Dialog to enter API Key for chosen AI provider.
+ * Follows the borderless soft-tonal Bento Card design language:
+ * - RoundedCornerShape(26.dp) elevated sheet with no border
+ * - Official provider vector brand badge
+ * - Inner borderless bento group container for API key input with JetBrains Mono font
+ * - AES-256 On-Device Keystore Vault trust pill
+ * - Thumb-friendly tactile pill action buttons with pressEffect
  */
 @Composable
 fun ApiKeyInputDialog(
     provider: ModelProvider,
     initialKey: String,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit
+    onSave: (String) -> Unit,
+    isDark: Boolean = LocalIsDarkTheme.current
 ) {
     var keyText by remember(initialKey) { mutableStateOf(initialKey) }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Connect ${provider.displayName}",
-                    fontFamily = OnboardingFonts.BricolageGrotesque,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = "Enter your API key below. It will be encrypted into Android Keystore and never leaves your device.",
-                    fontFamily = OnboardingFonts.PlusJakartaSans,
-                    fontSize = 13.5.sp,
-                    color = Color.Gray
-                )
+    val providerLogoRes = when (provider) {
+        ModelProvider.GEMINI -> R.drawable.ic_logo_gemini
+        ModelProvider.ANTHROPIC -> R.drawable.ic_logo_claude
+        ModelProvider.OPENAI -> R.drawable.ic_logo_openai
+        ModelProvider.CUSTOM_OPENAI_COMPATIBLE -> R.drawable.ic_logo_openrouter
+    }
 
-                OutlinedTextField(
-                    value = keyText,
-                    onValueChange = { keyText = it },
-                    placeholder = { Text("Paste key here...", fontSize = 14.sp) },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                )
+                .padding(horizontal = 20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Main Bento Card Container (NO BORDER)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(OnboardingColors.elevatedSheet(isDark))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {} // Consume inner click
+                    )
+                    .padding(22.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Header Row: Brand Logo, Title & Close Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            // Official Provider Logo in soft bento container
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(OnboardingColors.bentoGroup(isDark)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = providerLogoRes),
+                                    contentDescription = provider.displayName,
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    text = "Connect ${provider.displayName}",
+                                    fontFamily = OnboardingFonts.BricolageGrotesque,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 19.sp,
+                                    letterSpacing = (-0.4).sp,
+                                    color = OnboardingColors.textPrimary(isDark)
+                                )
+                                Text(
+                                    text = "Bring Your Own Key (BYOK)",
+                                    fontFamily = OnboardingFonts.JetBrainsMono,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 11.5.sp,
+                                    color = if (isDark) OnboardingColors.LimeAccent else Color(0xFF10A37F)
+                                )
+                            }
+                        }
+
+                        // Close icon button
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(OnboardingColors.bentoGroup(isDark))
+                        ) {
                             Icon(
-                                imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                contentDescription = if (passwordVisible) "Hide key" else "Show key",
-                                modifier = Modifier.size(20.dp)
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Close",
+                                tint = OnboardingColors.textSecondary(isDark),
+                                modifier = Modifier.size(16.dp)
                             )
                         }
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                    }
+
+                    // Description
+                    Text(
+                        text = "Enter your API key below. It will be encrypted into Android Keystore and never leaves your device.",
+                        fontFamily = OnboardingFonts.PlusJakartaSans,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 13.5.sp,
+                        lineHeight = 19.5.sp,
+                        color = OnboardingColors.textSecondary(isDark)
+                    )
+
+                    // Inner Bento Input Box (NO BORDER)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(OnboardingColors.bentoGroup(isDark))
+                            .padding(horizontal = 16.dp, vertical = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            BasicTextField(
+                                value = keyText,
+                                onValueChange = { keyText = it },
+                                singleLine = true,
+                                textStyle = TextStyle(
+                                    fontFamily = OnboardingFonts.JetBrainsMono,
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.sp,
+                                    color = OnboardingColors.textPrimary(isDark)
+                                ),
+                                cursorBrush = SolidColor(if (isDark) OnboardingColors.LimeAccent else OnboardingColors.ObsidianInk),
+                                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                decorationBox = { innerTextField ->
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(vertical = 14.dp),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        if (keyText.isEmpty()) {
+                                            Text(
+                                                text = "Paste key here...",
+                                                fontFamily = OnboardingFonts.PlusJakartaSans,
+                                                fontSize = 14.sp,
+                                                color = if (isDark) OnboardingColors.DarkTextMuted else OnboardingColors.LightTextMuted
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            IconButton(
+                                onClick = { passwordVisible = !passwordVisible },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                    contentDescription = if (passwordVisible) "Hide key" else "Show key",
+                                    tint = if (isDark) OnboardingColors.DarkTextMuted else OnboardingColors.LightTextMuted,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Trust Vault Badge (Bento Pill)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(OnboardingColors.trustVaultBg(isDark))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_icon_shield_check),
+                            contentDescription = "Shield",
+                            tint = OnboardingColors.trustVaultInk(isDark),
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(7.dp))
+                        Text(
+                            text = "AES-256 On-Device Keystore • Zero Server Proxy",
+                            fontFamily = OnboardingFonts.PlusJakartaSans,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.5.sp,
+                            color = OnboardingColors.trustVaultInk(isDark)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    // Bottom Action Buttons: Cancel and Save & Connect
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Cancel Pill Button
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp)
+                                .clip(CircleShape)
+                                .background(OnboardingColors.bentoGroup(isDark))
+                                .pressEffect(0.96f)
+                                .clickable { onDismiss() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                fontFamily = OnboardingFonts.PlusJakartaSans,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.5.sp,
+                                color = OnboardingColors.textPrimary(isDark)
+                            )
+                        }
+
+                        // Save & Connect Pill Button
+                        val saveBgColor = if (isDark) OnboardingColors.LimeAccent else OnboardingColors.ObsidianInk
+                        val saveTextColor = if (isDark) OnboardingColors.ObsidianInk else OnboardingColors.WhitePure
+                        val saveEnabled = keyText.trim().isNotEmpty()
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1.5f)
+                                .height(50.dp)
+                                .clip(CircleShape)
+                                .background(if (saveEnabled) saveBgColor else saveBgColor.copy(alpha = 0.5f))
+                                .pressEffect(0.96f)
+                                .clickable(enabled = saveEnabled) {
+                                    onSave(keyText.trim())
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Save & Connect",
+                                fontFamily = OnboardingFonts.PlusJakartaSans,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.5.sp,
+                                color = saveTextColor
+                            )
+                        }
+                    }
+                }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onSave(keyText) }
-            ) {
-                Text(
-                    text = "Save & Connect",
-                    fontFamily = OnboardingFonts.PlusJakartaSans,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF10A37F)
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", fontFamily = OnboardingFonts.PlusJakartaSans)
-            }
-        },
-        shape = RoundedCornerShape(20.dp)
-    )
+        }
+    }
 }
 

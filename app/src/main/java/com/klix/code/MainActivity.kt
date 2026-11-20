@@ -1091,13 +1091,6 @@ class MainActivity : ComponentActivity() {
                                     onOpenStreak = { showDailyStreakDialog = true },
                                     onOpenDrawer = { scope.launch { drawerState.open() } },
                                     isSandboxInstalled = isSandboxInstalled,
-                                    onOpenSandboxWorkspace = {
-                                        if (!isSandboxInstalled) {
-                                            terminalViewModel.openSetupDialog()
-                                        } else {
-                                            viewModel.openSandboxWorkspace()
-                                        }
-                                    },
                                     onConfigureSandbox = {
                                         terminalViewModel.openSetupDialog()
                                     },

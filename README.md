@@ -208,7 +208,7 @@ Grab the latest release APK directly from our releases or website:
 4. Paste your API key. Keys are instantly encrypted inside the on-device **Android Keystore**.
 
 ### 3. Open Sandbox Workspace
-1. Tap **Open Sandbox Workspace** on the home screen.
+1. Select or create a workspace under **Recent Workspaces** on the home screen.
 2. Access the isolated native Linux `/workspace` environment directly on-device.
 3. Use the terminal, pre-configured toolchains (Node.js, Python, Git, C/C++), and prompt the AI agent to write features, diagnose bugs, or build apps!
 

@@ -74,7 +74,6 @@ import com.klix.code.ui.theme.LocalIsDarkTheme
  *   - Left side: R.drawable.mascot_coding_laptop (2D Klix Bot typing on laptop).
  *   - Top-right speech bubble: "What shall we build today?".
  *   - Bottom row inside card: Alpine Status Pill Chip: [Official Alpine Linux Hexagon Logo] Alpine: Ready (Non-clickable status indicator)
- * - Primary CTA: KlixPrimaryPillButton(text = "+ Open Sandbox Workspace").
  * - Recent Workspaces Section:
  *   - Section title "Recent Workspaces" with "+ New" button.
  *   - Realtime workspace cards displaying the user's active & recent workspaces.
@@ -96,7 +95,6 @@ fun HomeDashboard(
     onOpenDrawer: () -> Unit = {},
     isSandboxInstalled: Boolean = true,
     activeModelName: String = "",
-    onOpenSandboxWorkspace: () -> Unit = {},
     onConfigureSandbox: () -> Unit = {},
     recentProjects: List<ProjectItem> = emptyList(),
     onSelectProject: (Uri, String) -> Unit = { _, _ -> },
@@ -329,15 +327,7 @@ fun HomeDashboard(
                 }
             }
 
-            // 3. Primary CTA: "+ Open Sandbox Workspace"
-            item {
-                KlixPrimaryPillButton(
-                    text = "+ Open Sandbox Workspace",
-                    onClick = onOpenSandboxWorkspace
-                )
-            }
-
-            // 4. Recent Workspaces Section
+            // 3. Recent Workspaces Section
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(

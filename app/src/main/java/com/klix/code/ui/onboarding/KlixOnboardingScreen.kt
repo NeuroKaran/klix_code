@@ -178,6 +178,7 @@ fun KlixOnboardingScreen(
             ApiKeyInputDialog(
                 provider = selectedProvider,
                 initialKey = keyManager.getApiKey(selectedProvider) ?: apiKeyInput,
+                isDark = isDark,
                 onDismiss = {
                     onboardingViewModel.setShowKeyInputDialog(false)
                 },
