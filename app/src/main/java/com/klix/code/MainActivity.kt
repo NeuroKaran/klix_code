@@ -693,6 +693,7 @@ class MainActivity : ComponentActivity() {
                                                                 "sh" -> "sh ${tab.name}"
                                                                 else -> "./${tab.name}"
                                                             }
+                                                            StreakManager.recordActivityRun(applicationContext)
                                                             terminalViewModel.executeCommand(cmd)
                                                             isTerminalOpen = true
                                                         }
@@ -732,7 +733,10 @@ class MainActivity : ComponentActivity() {
                                                         color = if (isModified) Color.Transparent else KlixBorderHairline,
                                                         shape = RoundedCornerShape(10.dp)
                                                     )
-                                                    .clickable(enabled = isModified) { viewModel.saveActiveTab() }
+                                                    .clickable(enabled = isModified) {
+                                                        viewModel.saveActiveTab()
+                                                        StreakManager.recordActivityRun(applicationContext)
+                                                    }
                                                     .pressEffect(0.92f),
                                                 contentAlignment = Alignment.Center
                                             ) {
@@ -1113,7 +1117,9 @@ class MainActivity : ComponentActivity() {
                                             NavTab.SETTINGS -> agentViewModel.toggleSettings()
                                         }
                                     },
-                                    isNavDockVisible = !isAgentPanelOpen && !isTerminalOpen && !isAgentSettingsOpen && !showSandboxSetup && !showRecentProjectsDialog && !showDailyStreakDialog && !isSlashCommandManagerOpen && !showAgentPromptDialog && !showSandboxWarningDialog && activeDiff == null && agentDiffToReview == null && !isUpdateDialogVisible
+                                    isNavDockVisible = !isAgentPanelOpen && !isTerminalOpen && !isAgentSettingsOpen && !showSandboxSetup && !showRecentProjectsDialog && !showDailyStreakDialog && !isSlashCommandManagerOpen && !showAgentPromptDialog && !showSandboxWarningDialog && activeDiff == null && agentDiffToReview == null && !isUpdateDialogVisible,
+                                    monthActivities = streakState.monthActivities,
+                                    totalMonthRuns = streakState.totalMonthRuns
                                 )
                             }
                         }

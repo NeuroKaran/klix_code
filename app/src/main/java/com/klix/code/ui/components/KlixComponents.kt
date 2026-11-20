@@ -263,7 +263,6 @@ fun KlixFloatingBottomDock(
                 .height(64.dp)
                 .clip(RoundedCornerShape(32.dp))
                 .background(Color(0xFF121521))
-                .border(1.dp, Color(0xFF2A3449), RoundedCornerShape(32.dp))
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)

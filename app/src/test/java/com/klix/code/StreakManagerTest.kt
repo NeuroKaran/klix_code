@@ -43,6 +43,19 @@ class StreakManagerTest {
             (storage[key] as? Set<String>) ?: default
         }
 
+        `when`(mockPrefs.getInt(anyString(), anyInt())).thenAnswer { invocation ->
+            val key = invocation.getArgument<String>(0)
+            val default = invocation.getArgument<Int>(1)
+            (storage[key] as? Int) ?: default
+        }
+
+        `when`(mockEditor.putInt(anyString(), anyInt())).thenAnswer { invocation ->
+            val key = invocation.getArgument<String>(0)
+            val value = invocation.getArgument<Int>(1)
+            storage[key] = value
+            mockEditor
+        }
+
         `when`(mockEditor.putStringSet(anyString(), any())).thenAnswer { invocation ->
             val key = invocation.getArgument<String>(0)
             val set = invocation.getArgument<Set<String>?>(1)
@@ -137,6 +150,31 @@ class StreakManagerTest {
 
         assertEquals(7, weekly.size)
         assertTrue(weekly[todayIdx])
+    }
+
+    @Test
+    fun testRecordActivityRunIncrementsCounts() {
+        val todayStr = dateFormat.format(Date())
+        assertEquals(0, StreakManager.getRunCountForDay(mockContext, todayStr))
+
+        StreakManager.recordActivityRun(mockContext, 2)
+        assertEquals(2, StreakManager.getRunCountForDay(mockContext, todayStr))
+        assertTrue(StreakManager.isClaimedToday(mockContext))
+
+        StreakManager.recordActivityRun(mockContext, 3)
+        assertEquals(5, StreakManager.getRunCountForDay(mockContext, todayStr))
+    }
+
+    @Test
+    fun testMonthActivitiesHasExactDaysInMonth() {
+        val cal = Calendar.getInstance()
+        val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val activities = StreakManager.getMonthActivities(mockContext, cal)
+
+        assertEquals(daysInMonth, activities.size)
+        assertTrue(activities.size in 28..31)
+        assertEquals(1, activities.first().dayOfMonth)
+        assertEquals(daysInMonth, activities.last().dayOfMonth)
     }
 }
 

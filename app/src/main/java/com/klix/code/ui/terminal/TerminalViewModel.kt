@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import com.klix.code.data.sandbox.SandboxExecutionProvider
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.workspace.SandboxWorkspace
+import com.klix.code.data.stats.StreakManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -359,6 +360,9 @@ class TerminalViewModel @JvmOverloads constructor(
     fun executeCommand(command: String, terminalId: String? = null) {
         val trimmed = command.trim()
         if (trimmed.isEmpty()) return
+        try {
+            StreakManager.recordActivityRun(getApplication())
+        } catch (_: Exception) {}
 
         val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return

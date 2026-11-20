@@ -11,12 +11,23 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+data class DayActivity(
+    val dayOfMonth: Int,
+    val dateString: String,
+    val runCount: Int,
+    val isToday: Boolean,
+    val isFuture: Boolean,
+    val intensityLevel: Int
+)
+
 data class StreakState(
     val streakCount: Int = 0,
     val isClaimedToday: Boolean = false,
     val weeklyActive: BooleanArray = BooleanArray(7),
     val todayIndex: Int = 0,
-    val millisUntilMidnight: Long = 0L
+    val millisUntilMidnight: Long = 0L,
+    val totalMonthRuns: Int = 0,
+    val monthActivities: List<DayActivity> = emptyList()
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -27,6 +38,8 @@ data class StreakState(
         if (!weeklyActive.contentEquals(other.weeklyActive)) return false
         if (todayIndex != other.todayIndex) return false
         if (millisUntilMidnight != other.millisUntilMidnight) return false
+        if (totalMonthRuns != other.totalMonthRuns) return false
+        if (monthActivities != other.monthActivities) return false
         return true
     }
 
@@ -36,6 +49,8 @@ data class StreakState(
         result = 31 * result + weeklyActive.contentHashCode()
         result = 31 * result + todayIndex
         result = 31 * result + millisUntilMidnight.hashCode()
+        result = 31 * result + totalMonthRuns
+        result = 31 * result + monthActivities.hashCode()
         return result
     }
 }
@@ -43,6 +58,7 @@ data class StreakState(
 object StreakManager {
     private const val PREFS_NAME = "klix_streak_prefs"
     private const val KEY_ACTIVE_DAYS = "active_days_set"
+    private const val KEY_RUN_COUNTS_PREFIX = "run_count_"
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
     private val _streakState = MutableStateFlow(StreakState())
@@ -70,11 +86,18 @@ object StreakManager {
         val prefs = getPrefs(context)
         val todayStr = dateFormat.format(Date())
         val daysSet = prefs.getStringSet(KEY_ACTIVE_DAYS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        val runKey = KEY_RUN_COUNTS_PREFIX + todayStr
+        val currentRuns = prefs.getInt(runKey, 0)
+        val editor = prefs.edit()
 
         if (!daysSet.contains(todayStr)) {
             daysSet.add(todayStr)
-            prefs.edit().putStringSet(KEY_ACTIVE_DAYS, daysSet).apply()
+            editor.putStringSet(KEY_ACTIVE_DAYS, daysSet)
         }
+        if (currentRuns == 0) {
+            editor.putInt(runKey, 1)
+        }
+        editor.apply()
 
         refresh(context)
         KlixWidgets.updateAll(context)
@@ -82,10 +105,90 @@ object StreakManager {
     }
 
     /**
+     * Records a real run/execution in the sandbox, terminal, editor, or agent.
+     * Increments the daily run counter, records the active day in the streak set,
+     * refreshes streak and month activity state, and notifies widgets.
+     */
+    fun recordActivityRun(context: Context, count: Int = 1) {
+        val prefs = getPrefs(context)
+        val todayStr = dateFormat.format(Date())
+        val daysSet = prefs.getStringSet(KEY_ACTIVE_DAYS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        daysSet.add(todayStr)
+
+        val runKey = KEY_RUN_COUNTS_PREFIX + todayStr
+        val currentRuns = prefs.getInt(runKey, 0)
+        val newRuns = currentRuns + count
+
+        prefs.edit()
+            .putStringSet(KEY_ACTIVE_DAYS, daysSet)
+            .putInt(runKey, newRuns)
+            .apply()
+
+        refresh(context)
+        KlixWidgets.updateAll(context)
+    }
+
+    /**
      * Compatibility wrapper for activity recording.
      */
     fun recordActivity(context: Context) {
-        claimDailyStreak(context)
+        recordActivityRun(context, 1)
+    }
+
+    /**
+     * Returns the recorded run count for a specific date (yyyy-MM-dd).
+     */
+    fun getRunCountForDay(context: Context, dateStr: String): Int {
+        val prefs = getPrefs(context)
+        val explicitRuns = prefs.getInt(KEY_RUN_COUNTS_PREFIX + dateStr, 0)
+        if (explicitRuns > 0) return explicitRuns
+        val daysSet = prefs.getStringSet(KEY_ACTIVE_DAYS, emptySet()) ?: emptySet()
+        return if (daysSet.contains(dateStr)) 1 else 0
+    }
+
+    /**
+     * Returns real activity data for every day of the given calendar month.
+     */
+    fun getMonthActivities(context: Context, calendar: Calendar = Calendar.getInstance()): List<DayActivity> {
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val todayCal = Calendar.getInstance()
+        val todayYear = todayCal.get(Calendar.YEAR)
+        val todayMonth = todayCal.get(Calendar.MONTH)
+        val todayDay = todayCal.get(Calendar.DAY_OF_MONTH)
+        val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+        val activities = ArrayList<DayActivity>(daysInMonth)
+        for (day in 1..daysInMonth) {
+            val dateStr = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, day)
+            val isCurrentMonthAndYear = year == todayYear && month == todayMonth
+            val isToday = isCurrentMonthAndYear && day == todayDay
+            val isFuture = if (isCurrentMonthAndYear) {
+                day > todayDay
+            } else {
+                year > todayYear || (year == todayYear && month > todayMonth)
+            }
+
+            val runCount = if (isFuture) 0 else getRunCountForDay(context, dateStr)
+            val intensity = when {
+                isFuture || runCount == 0 -> 0
+                runCount in 1..2 -> 1
+                runCount in 3..5 -> 2
+                else -> 3
+            }
+
+            activities.add(
+                DayActivity(
+                    dayOfMonth = day,
+                    dateString = dateStr,
+                    runCount = runCount,
+                    isToday = isToday,
+                    isFuture = isFuture,
+                    intensityLevel = intensity
+                )
+            )
+        }
+        return activities
     }
 
     /**
@@ -194,12 +297,16 @@ object StreakManager {
         val weekly = getWeeklyActiveDays(context)
         val todayIdx = getCurrentDayOfWeekIndex()
         val millis = getMillisUntilNextMidnight()
+        val monthActivities = getMonthActivities(context)
+        val totalMonthRuns = monthActivities.sumOf { it.runCount }
         _streakState.value = StreakState(
             streakCount = count,
             isClaimedToday = claimed,
             weeklyActive = weekly,
             todayIndex = todayIdx,
-            millisUntilMidnight = millis
+            millisUntilMidnight = millis,
+            totalMonthRuns = totalMonthRuns,
+            monthActivities = monthActivities
         )
     }
 }
