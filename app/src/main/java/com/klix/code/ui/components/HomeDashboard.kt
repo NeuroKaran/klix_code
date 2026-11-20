@@ -439,7 +439,7 @@ fun HomeDashboard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 26.dp)
+                        .padding(top = 36.dp)
                 ) {
                     // Card Container (Borderless 26.dp soft surface)
                     Box(
@@ -528,8 +528,8 @@ fun HomeDashboard(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(end = 18.dp)
-                            .offset(y = (-30).dp)
-                            .size(width = 82.dp, height = 65.dp)
+                            .offset(y = (-34).dp)
+                            .size(width = 92.dp, height = 68.dp)
                     )
                 }
             }
