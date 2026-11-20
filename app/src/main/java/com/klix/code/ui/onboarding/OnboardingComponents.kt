@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,6 +62,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -160,6 +163,7 @@ fun DriftingAmbientBackground(
 /**
  * Top App Bar for onboarding screens.
  * Features optional back arrow on the left and optional underlined "Skip" on the right.
+ * Applies statusBarsPadding to cleanly clear the notification bar and notch/cutout.
  */
 @Composable
 fun OnboardingTopBar(
@@ -171,41 +175,50 @@ fun OnboardingTopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (onBack != null) {
             IconButton(
                 onClick = onBack,
-                modifier = Modifier.size(38.dp)
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = OnboardingColors.textPrimary(isDark),
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         } else {
-            Spacer(modifier = Modifier.size(38.dp))
+            Spacer(modifier = Modifier.size(48.dp))
         }
 
         if (onSkip != null) {
-            Text(
-                text = "Skip",
-                fontFamily = OnboardingFonts.PlusJakartaSans,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp,
-                textDecoration = TextDecoration.Underline,
-                color = OnboardingColors.textPrimary(isDark).copy(alpha = 0.85f),
+            Box(
                 modifier = Modifier
+                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .clickable { onSkip() }
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            )
+                    .clickable(
+                        onClick = onSkip,
+                        role = Role.Button
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Skip",
+                    fontFamily = OnboardingFonts.PlusJakartaSans,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    textDecoration = TextDecoration.Underline,
+                    color = OnboardingColors.textPrimary(isDark).copy(alpha = 0.85f)
+                )
+            }
         } else {
-            Spacer(modifier = Modifier.size(38.dp))
+            Spacer(modifier = Modifier.size(48.dp))
         }
     }
 }

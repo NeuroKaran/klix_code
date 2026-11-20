@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -72,7 +73,8 @@ fun OnboardingPage4(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(bottom = 32.dp),
+            .navigationBarsPadding()
+            .padding(bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Top Bar (with back arrow)
