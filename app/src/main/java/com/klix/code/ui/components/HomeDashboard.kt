@@ -439,9 +439,20 @@ fun HomeDashboard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 36.dp)
+                        .padding(top = 48.dp)
                 ) {
-                    // Card Container (Borderless 26.dp soft surface)
+                    // Peeking Klix Bot Mascot with Headphones behind top-right corner
+                    Image(
+                        painter = painterResource(id = R.drawable.mascot_corner_headphones),
+                        contentDescription = "Klix Bot Mascot with Headphones",
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(end = 18.dp)
+                            .offset(y = (-46).dp)
+                            .size(width = 96.dp, height = 71.dp)
+                    )
+
+                    // Card Container (Borderless 26.dp soft surface rendered in front of mascot)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -520,17 +531,6 @@ fun HomeDashboard(
                             }
                         }
                     }
-
-                    // Peeking Klix Bot Mascot with Headphones overlapping top-right corner
-                    Image(
-                        painter = painterResource(id = R.drawable.mascot_corner_headphones),
-                        contentDescription = "Klix Bot Mascot with Headphones",
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(end = 18.dp)
-                            .offset(y = (-34).dp)
-                            .size(width = 92.dp, height = 68.dp)
-                    )
                 }
             }
 
