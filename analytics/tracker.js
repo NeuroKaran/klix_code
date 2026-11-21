@@ -48,14 +48,14 @@ export function trackEvent(eventName, eventData = {}) {
 /**
  * Track an APK download event with structured metadata
  * @param {Object} options
- * @param {string} [options.version='v0.4.8']
+ * @param {string} [options.version='v0.4.9']
  * @param {'hero' | 'main_card' | 'mobile_nav' | 'footer' | 'qr_scan' | 'unknown'} [options.source='unknown']
- * @param {string} [options.fileName='klix-code-v0.4.8.apk']
+ * @param {string} [options.fileName='klix-code-v0.4.9.apk']
  */
 export function trackDownload({
-  version = 'v0.4.8',
+  version = 'v0.4.9',
   source = 'unknown',
-  fileName = 'klix-code-v0.4.8.apk',
+  fileName = 'klix-code-v0.4.9.apk',
 } = {}) {
   trackEvent('apk_download', {
     version,

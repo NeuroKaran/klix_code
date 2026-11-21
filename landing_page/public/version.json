@@ -1,9 +1,9 @@
 {
-  "versionCode": 19,
-  "versionName": "0.4.7",
+  "versionCode": 21,
+  "versionName": "0.4.9",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.7.apk",
-  "releaseNotes": "• Editor Swipe Gesture Isolation: Swiping right while viewing or editing code now traverses code smoothly without inadvertently pulling out the workspace panel; edge swipe is preserved on the home dashboard\n• Conversation Clear & Management: Added quick conversation clearing with confirmation dialog and corrected chat session pluralization\n• Alpine Linux Sandbox Stability: Ensured seamless tool execution and workspace synchronization",
-  "releaseDate": "2026-11-16",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.9.apk",
+  "releaseNotes": "• Storytelling Onboarding v0.4.0: 4-chapter narrative onboarding with real toolchain provisioning and hardware keystore encryption\n• AI Provider Settings Polish: Auto-expand API key card upon selecting any provider, accurate 'Not Ready' status badges for unconfigured keys, and real-time validation\n• Terminal & UX Enhancements: Monospace viewport cleanup with zero obstructive overlays, refined mascot framing, and Bricolage Grotesque typography\n• Landing Page Overhaul: Neo-bento architecture with live dual-theme switching and instant direct APK download",
+  "releaseDate": "2026-11-21",
   "forceUpdate": false
 }
