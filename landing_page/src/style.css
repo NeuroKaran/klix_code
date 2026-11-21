@@ -183,7 +183,9 @@
    BASE & RESET RULES (Zero 1px Outlines, Smooth Font Rendering)
    ========================================================================== */
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -224,7 +226,8 @@ button {
   color: inherit;
 }
 
-img, svg {
+img,
+svg {
   display: block;
   max-width: 100%;
 }
@@ -252,6 +255,7 @@ img {
     transform: none !important;
     transition: none !important;
   }
+
   .ambient-orb {
     animation: none !important;
   }
@@ -293,13 +297,23 @@ img {
 }
 
 @keyframes orbDrift1 {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(50px, 70px) scale(1.08); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(50px, 70px) scale(1.08);
+  }
 }
 
 @keyframes orbDrift2 {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-60px, 80px) scale(0.96); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(-60px, 80px) scale(0.96);
+  }
 }
 
 /* ==========================================================================
@@ -398,7 +412,8 @@ img {
   gap: 10px;
 }
 
-.nav-theme-toggle, .nav-icon-btn {
+.nav-theme-toggle,
+.nav-icon-btn {
   width: 38px;
   height: 38px;
   border-radius: var(--radius-pill);
@@ -410,16 +425,19 @@ img {
   transition: transform 0.15s ease, background 0.15s ease;
 }
 
-.nav-theme-toggle:hover, .nav-icon-btn:hover {
+.nav-theme-toggle:hover,
+.nav-icon-btn:hover {
   background: var(--surface-card);
   transform: scale(1.04);
 }
 
-.nav-theme-toggle:active, .nav-icon-btn:active {
+.nav-theme-toggle:active,
+.nav-icon-btn:active {
   transform: scale(0.96);
 }
 
-.theme-icon, .icon-svg-sm {
+.theme-icon,
+.icon-svg-sm {
   width: 17px;
   height: 17px;
   flex-shrink: 0;
@@ -449,13 +467,16 @@ img {
 :root:not([data-theme="light"]) .theme-icon-moon {
   display: block;
 }
+
 :root[data-theme="dark"] .theme-icon-sun,
 :root:not([data-theme="light"]) .theme-icon-sun {
   display: none;
 }
+
 :root[data-theme="light"] .theme-icon-sun {
   display: block;
 }
+
 :root[data-theme="light"] .theme-icon-moon {
   display: none;
 }
@@ -1012,7 +1033,8 @@ img {
   gap: 5px;
 }
 
-.app-chip-model, .app-chip-sandbox {
+.app-chip-model,
+.app-chip-sandbox {
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 600;
@@ -1321,8 +1343,13 @@ img {
 }
 
 @keyframes mascotFloat {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-4px); }
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-4px);
+  }
 }
 
 .bento-grid-2x2 {
@@ -1431,9 +1458,18 @@ img {
   height: 9px;
   border-radius: 50%;
 }
-.tdot.red { background: #EF4444; }
-.tdot.yellow { background: #F59E0B; }
-.tdot.green { background: #10B981; }
+
+.tdot.red {
+  background: #EF4444;
+}
+
+.tdot.yellow {
+  background: #F59E0B;
+}
+
+.tdot.green {
+  background: #10B981;
+}
 
 .term-title {
   font-family: var(--font-mono);
@@ -1554,9 +1590,17 @@ img {
   height: 24px;
 }
 
-.node-icon-wrap.lime-glow svg { color: #16A34A; }
-.node-icon-wrap.cyan-glow svg { color: #0284C7; }
-.node-icon-wrap.emerald-glow svg { color: #059669; }
+.node-icon-wrap.lime-glow svg {
+  color: #16A34A;
+}
+
+.node-icon-wrap.cyan-glow svg {
+  color: #0284C7;
+}
+
+.node-icon-wrap.emerald-glow svg {
+  color: #059669;
+}
 
 .node-title {
   font-family: var(--font-display);
@@ -2013,12 +2057,15 @@ img {
   .nav-links {
     display: none;
   }
+
   .mobile-menu-toggle {
     display: flex;
   }
+
   .download-grid-row {
     grid-template-columns: 1fr;
   }
+
   .footer-top-row {
     grid-template-columns: 1fr 1fr;
   }
@@ -2028,26 +2075,33 @@ img {
   .hero-section {
     padding: 48px 18px 64px;
   }
+
   .chapter-section {
     padding: 64px 18px;
   }
+
   .bento-grid-2x2 {
     grid-template-columns: 1fr;
     gap: 16px;
   }
+
   .bento-toolchain-card {
     padding: 22px;
   }
+
   .download-card-wrapper {
     padding: 36px 20px;
   }
+
   .diagram-flow-row {
     flex-direction: column;
     gap: 20px;
   }
+
   .flow-arrow svg {
     transform: rotate(90deg);
   }
+
   .footer-top-row {
     grid-template-columns: 1fr;
   }
@@ -2058,11 +2112,13 @@ img {
     font-size: 32px;
     letter-spacing: -0.6px;
   }
+
   .hero-cta-group {
     flex-direction: column;
     width: 100%;
     gap: 12px;
   }
+
   .btn-large {
     width: 100%;
     max-width: 330px;
@@ -2071,6 +2127,7 @@ img {
     font-size: 14.5px;
     justify-content: center;
   }
+
   .btn-huge {
     width: 100%;
     max-width: 330px;
@@ -2079,16 +2136,20 @@ img {
     font-size: 14.5px;
     justify-content: center;
   }
+
   .sync-pill-list {
     justify-content: center;
   }
+
   .hero-showcase-canvas {
     max-width: 320px;
   }
+
   .smartphone-frame {
     max-width: 320px;
     border-radius: 40px;
   }
+
   .phone-screen-viewport {
     border-radius: 30px;
     min-height: 600px;
