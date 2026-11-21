@@ -334,4 +334,17 @@ class ChatSessionTest {
             tempDir.deleteRecursively()
         }
     }
+
+    @Test
+    fun testSessionTokensLabelLogic() {
+        val sessionZero = ChatSession(promptTokens = 0, completionTokens = 0)
+        assertEquals(0, sessionZero.totalTokens)
+
+        val sessionActive = ChatSession(promptTokens = 1200, completionTokens = 350)
+        assertEquals(1550, sessionActive.totalTokens)
+        val tokenLabelZero = if (sessionZero.totalTokens > 0) "${sessionZero.totalTokens} tokens" else "Ready"
+        val tokenLabelActive = if (sessionActive.totalTokens > 0) "${sessionActive.totalTokens} tokens" else "Ready"
+        assertEquals("Ready", tokenLabelZero)
+        assertEquals("1550 tokens", tokenLabelActive)
+    }
 }

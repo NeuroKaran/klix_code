@@ -333,32 +333,43 @@ fun AgentChatPanel(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(max = 38.dp)
                 .background(GlassSurfaceColor)
                 .padding(horizontal = 14.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
+                modifier = Modifier.weight(1f, fill = false),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 GlassBadge(
                     text = settings.activeModel.substringAfterLast('/'),
+                    modifier = Modifier.widthIn(max = 180.dp),
                     containerColor = CyanDimColor,
                     textColor = CyanBrandColor
                 )
                 Text(
                     text = settings.activeProvider.displayName,
                     fontSize = 11.sp,
-                    color = TextMuted
+                    color = TextMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    softWrap = false,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             Text(
                 text = if (totalTokens > 0) "$totalTokens tokens" else "Ready",
                 fontSize = 10.5.sp,
                 fontFamily = FontFamily.Monospace,
-                color = TextMuted
+                color = TextMuted,
+                maxLines = 1,
+                softWrap = false
             )
         }
 
@@ -1260,7 +1271,10 @@ private fun EmptyAgentState(
                             text = activeModel.substringAfterLast('/'),
                             style = KlixTypography.codePill,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
+                            color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F),
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -1420,6 +1434,7 @@ private fun ChatMessageItem(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
+                    modifier = Modifier.weight(1f, fill = false),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -1448,7 +1463,10 @@ private fun ChatMessageItem(
                             text = activeModel.substringAfterLast('/'),
                             fontSize = 9.5.sp,
                             fontFamily = FontFamily.Monospace,
-                            color = TextMuted
+                            color = TextMuted,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
