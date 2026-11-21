@@ -140,7 +140,7 @@ fun AgentSettingsDialog(
     var apiKeyInput by remember { mutableStateOf("") }
     var isKeyVisible by remember { mutableStateOf(false) }
     var keyUpdateTrigger by remember { mutableStateOf(0) }
-    var scrollKeyTrigger by remember { mutableStateOf(0) }
+    var isInputAlreadyVisible by remember { mutableStateOf(false) }
 
     var modelSearchQuery by remember { mutableStateOf("") }
     var openRouterFilter by remember { mutableStateOf(OpenRouterModelFilter.ALL) }
@@ -160,14 +160,19 @@ fun AgentSettingsDialog(
         }
     }
 
-    LaunchedEffect(scrollKeyTrigger) {
-        if (scrollKeyTrigger > 0 && editingKeyProvider != null) {
+    LaunchedEffect(editingKeyProvider) {
+        if (editingKeyProvider != null && !isInputAlreadyVisible) {
+            isInputAlreadyVisible = true
             delay(100)
-            val scrollAmountPx = with(density) { 220.dp.toPx() }.toInt()
-            scrollState.animateScrollTo(
-                value = scrollState.value + scrollAmountPx,
-                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
-            )
+            val targetScroll = with(density) { 200.dp.toPx() }.toInt().coerceAtMost(scrollState.maxValue)
+            if (scrollState.value < targetScroll) {
+                scrollState.animateScrollTo(
+                    value = targetScroll,
+                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
+                )
+            }
+        } else if (editingKeyProvider == null) {
+            isInputAlreadyVisible = false
         }
     }
 
@@ -321,7 +326,6 @@ fun AgentSettingsDialog(
                             editingKeyProvider = provider
                             apiKeyInput = onGetApiKey(provider) ?: ""
                             onRefreshModels(provider, onGetApiKey(provider), false)
-                            scrollKeyTrigger++
                         }
 
                         // 4 Stacked Provider Pill Rows
