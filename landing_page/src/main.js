@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollRevealFallback();
 
   initDownloadTracking({
-    version: 'v0.4.10',
-    fileName: 'klix-code-v0.4.10.apk',
+    version: 'v0.4.11',
+    fileName: 'klix-code-v0.4.11.apk',
   });
 });

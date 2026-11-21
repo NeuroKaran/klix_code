@@ -1,9 +1,9 @@
 {
-  "versionCode": 22,
-  "versionName": "0.4.10",
+  "versionCode": 23,
+  "versionName": "0.4.11",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.10.apk",
-  "releaseNotes": "• AI Provider UX Polish: Seamless smooth appearing animation and automated viewport scrolling when selecting any AI provider\n• Smart Scroll Clamping: Prevents redundant or runaway scrolling by anchoring to the initial input card reveal and capping at the ideal view offset\n• Provider Readiness Assurance: Explicit 'Not Ready' status verification for unconfigured providers with instant reactive state synchronization\n• Direct Tap Target: Tapping anywhere on a provider row instantly selects it and brings up the API key input card",
-  "releaseDate": "2026-11-21",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.11.apk",
+  "releaseNotes": "• Agent Chat Layout Bounds: Fixed subheader vertical expansion by enforcing tight height bounds (38dp) and responsive single-line truncation on model chips, provider text, and token counters\n• Model Selection Pill Hardening: Prevented character-by-character vertical text squishing on FREE/PAID status pills when displaying long model names\n• GlassBadge Wrap Prevention: Hardened glass pill badges app-wide with single-line and ellipsis constraints\n• Layout Stability: Guaranteed smooth chat messaging viewport with zero header void ballooning",
+  "releaseDate": "2026-11-22",
   "forceUpdate": false
 }
