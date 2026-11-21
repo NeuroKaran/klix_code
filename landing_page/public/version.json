@@ -1,9 +1,9 @@
 {
-  "versionCode": 21,
-  "versionName": "0.4.9",
+  "versionCode": 22,
+  "versionName": "0.4.10",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.9.apk",
-  "releaseNotes": "• Storytelling Onboarding v0.4.0: 4-chapter narrative onboarding with real toolchain provisioning and hardware keystore encryption\n• AI Provider Settings Polish: Auto-expand API key card upon selecting any provider, accurate 'Not Ready' status badges for unconfigured keys, and real-time validation\n• Terminal & UX Enhancements: Monospace viewport cleanup with zero obstructive overlays, refined mascot framing, and Bricolage Grotesque typography\n• Landing Page Overhaul: Neo-bento architecture with live dual-theme switching and instant direct APK download",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.10.apk",
+  "releaseNotes": "• AI Provider UX Polish: Seamless smooth appearing animation and automated viewport scrolling when selecting any AI provider\n• Smart Scroll Clamping: Prevents redundant or runaway scrolling by anchoring to the initial input card reveal and capping at the ideal view offset\n• Provider Readiness Assurance: Explicit 'Not Ready' status verification for unconfigured providers with instant reactive state synchronization\n• Direct Tap Target: Tapping anywhere on a provider row instantly selects it and brings up the API key input card",
   "releaseDate": "2026-11-21",
   "forceUpdate": false
 }
