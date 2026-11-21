@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.LightMode
@@ -292,20 +293,20 @@ fun AgentSettingsDialog(
                             color = KlixInkPrimary
                         )
 
+                        val selectProvider: (ModelProvider) -> Unit = { provider ->
+                            selectedProvider = provider
+                            editingKeyProvider = provider
+                            apiKeyInput = onGetApiKey(provider) ?: ""
+                            onRefreshModels(provider, onGetApiKey(provider), false)
+                        }
+
                         // 4 Stacked Provider Pill Rows
                         ProviderPillRow(
                             name = "Google Gemini",
                             logoRes = R.drawable.ic_logo_gemini,
                             isSelected = selectedProvider == ModelProvider.GEMINI,
                             hasKey = keyUpdateTrigger.let { !onGetApiKey(ModelProvider.GEMINI).isNullOrBlank() },
-                            onClick = {
-                                selectedProvider = ModelProvider.GEMINI
-                                onRefreshModels(ModelProvider.GEMINI, onGetApiKey(ModelProvider.GEMINI), false)
-                            },
-                            onEditKey = {
-                                editingKeyProvider = ModelProvider.GEMINI
-                                apiKeyInput = onGetApiKey(ModelProvider.GEMINI) ?: ""
-                            }
+                            onClick = { selectProvider(ModelProvider.GEMINI) }
                         )
 
                         ProviderPillRow(
@@ -313,14 +314,7 @@ fun AgentSettingsDialog(
                             logoRes = R.drawable.ic_logo_claude,
                             isSelected = selectedProvider == ModelProvider.ANTHROPIC,
                             hasKey = keyUpdateTrigger.let { !onGetApiKey(ModelProvider.ANTHROPIC).isNullOrBlank() },
-                            onClick = {
-                                selectedProvider = ModelProvider.ANTHROPIC
-                                onRefreshModels(ModelProvider.ANTHROPIC, onGetApiKey(ModelProvider.ANTHROPIC), false)
-                            },
-                            onEditKey = {
-                                editingKeyProvider = ModelProvider.ANTHROPIC
-                                apiKeyInput = onGetApiKey(ModelProvider.ANTHROPIC) ?: ""
-                            }
+                            onClick = { selectProvider(ModelProvider.ANTHROPIC) }
                         )
 
                         ProviderPillRow(
@@ -328,14 +322,7 @@ fun AgentSettingsDialog(
                             logoRes = R.drawable.ic_logo_openai,
                             isSelected = selectedProvider == ModelProvider.OPENAI,
                             hasKey = keyUpdateTrigger.let { !onGetApiKey(ModelProvider.OPENAI).isNullOrBlank() },
-                            onClick = {
-                                selectedProvider = ModelProvider.OPENAI
-                                onRefreshModels(ModelProvider.OPENAI, onGetApiKey(ModelProvider.OPENAI), false)
-                            },
-                            onEditKey = {
-                                editingKeyProvider = ModelProvider.OPENAI
-                                apiKeyInput = onGetApiKey(ModelProvider.OPENAI) ?: ""
-                            }
+                            onClick = { selectProvider(ModelProvider.OPENAI) }
                         )
 
                         ProviderPillRow(
@@ -343,17 +330,10 @@ fun AgentSettingsDialog(
                             logoRes = R.drawable.ic_logo_openrouter,
                             isSelected = selectedProvider == ModelProvider.CUSTOM_OPENAI_COMPATIBLE,
                             hasKey = keyUpdateTrigger.let { !onGetApiKey(ModelProvider.CUSTOM_OPENAI_COMPATIBLE).isNullOrBlank() },
-                            onClick = {
-                                selectedProvider = ModelProvider.CUSTOM_OPENAI_COMPATIBLE
-                                onRefreshModels(ModelProvider.CUSTOM_OPENAI_COMPATIBLE, onGetApiKey(ModelProvider.CUSTOM_OPENAI_COMPATIBLE), false)
-                            },
-                            onEditKey = {
-                                editingKeyProvider = ModelProvider.CUSTOM_OPENAI_COMPATIBLE
-                                apiKeyInput = onGetApiKey(ModelProvider.CUSTOM_OPENAI_COMPATIBLE) ?: ""
-                            }
+                            onClick = { selectProvider(ModelProvider.CUSTOM_OPENAI_COMPATIBLE) }
                         )
 
-                        // Inline API key entry when user clicks Add/Edit Key
+                        // Inline API key entry when user selects a provider
                         AnimatedVisibility(visible = editingKeyProvider != null) {
                             Column(
                                 modifier = Modifier
@@ -364,12 +344,29 @@ fun AgentSettingsDialog(
                                     .padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(
-                                    text = "API Key for ${editingKeyProvider?.name ?: ""}",
-                                    style = KlixTypography.bodySecondary,
-                                    fontWeight = FontWeight.Bold,
-                                    color = KlixInkPrimary
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "API Key for ${editingKeyProvider?.displayName ?: ""}",
+                                        style = KlixTypography.bodySecondary,
+                                        fontWeight = FontWeight.Bold,
+                                        color = KlixInkPrimary
+                                    )
+                                    IconButton(
+                                        onClick = { editingKeyProvider = null },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Close",
+                                            tint = KlixInkSecondary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
 
                                 OutlinedTextField(
                                     value = apiKeyInput,
@@ -691,7 +688,7 @@ private fun ProviderPillRow(
     isSelected: Boolean,
     hasKey: Boolean,
     onClick: () -> Unit,
-    onEditKey: () -> Unit
+    onEditKey: () -> Unit = onClick
 ) {
     val isDark = LocalIsDarkTheme.current
     val rowBg = if (isSelected) Color(0xFFD5FB66) else KlixSurfaceCardItem
