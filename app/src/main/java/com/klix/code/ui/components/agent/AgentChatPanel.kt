@@ -993,7 +993,9 @@ fun AgentChatPanel(
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp,
-                                    color = Color(0xFF0C0D14)
+                                    color = Color(0xFF0C0D14),
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
@@ -2117,7 +2119,9 @@ private fun SessionHistoryCard(
                             text = "ACTIVE",
                             fontSize = 8.5.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF0C0D14)
+                            color = Color(0xFF0C0D14),
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }

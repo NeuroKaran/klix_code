@@ -748,6 +748,7 @@ private fun ProviderPillRow(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
+            modifier = Modifier.weight(1f, fill = false),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -760,9 +761,13 @@ private fun ProviderPillRow(
             Text(
                 text = name,
                 style = KlixTypography.cardTitle,
-                color = textCol
+                color = textCol,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
+
+        Spacer(modifier = Modifier.width(8.dp))
 
         // Right pill badge/button
         Box(
@@ -777,7 +782,9 @@ private fun ProviderPillRow(
                 text = AgentSettingsUiHelper.getProviderStatusLabel(hasKey = hasKey, isSelected = isSelected),
                 style = KlixTypography.codePill,
                 fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color(0xFF0C0D14) else KlixInkPrimary
+                color = if (isSelected) Color(0xFF0C0D14) else KlixInkPrimary,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }
@@ -820,7 +827,8 @@ private fun ModelCategoryTab(
             style = KlixTypography.bodySecondary,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             color = textCol,
-            maxLines = 1
+            maxLines = 1,
+            softWrap = false
         )
     }
 }
@@ -850,13 +858,14 @@ private fun ModelItemRow(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -866,7 +875,8 @@ private fun ModelItemRow(
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         color = KlixInkPrimary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
 
                     if (model.isFree) {
@@ -881,7 +891,9 @@ private fun ModelItemRow(
                                 text = "FREE",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D)
+                                color = if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D),
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     } else if (model.provider == ModelProvider.CUSTOM_OPENAI_COMPATIBLE) {
@@ -896,7 +908,9 @@ private fun ModelItemRow(
                                 text = "PAID",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = KlixInkSecondary
+                                color = KlixInkSecondary,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
