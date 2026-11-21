@@ -1,6 +1,13 @@
 package com.klix.code.ui.components.agent
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
 import com.klix.code.R
 import com.klix.code.data.agent.model.DiscoveredModel
 import com.klix.code.data.agent.model.ModelDiscoveryRepository
@@ -120,8 +129,10 @@ fun AgentSettingsDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     val isDark = LocalIsDarkTheme.current
     val currentThemeMode by ThemeManager.themeMode.collectAsState()
+    val scrollState = rememberScrollState()
 
     var selectedProvider by remember { mutableStateOf(currentSettings.activeProvider) }
     var selectedModel by remember { mutableStateOf(currentSettings.activeModel) }
@@ -129,6 +140,7 @@ fun AgentSettingsDialog(
     var apiKeyInput by remember { mutableStateOf("") }
     var isKeyVisible by remember { mutableStateOf(false) }
     var keyUpdateTrigger by remember { mutableStateOf(0) }
+    var scrollKeyTrigger by remember { mutableStateOf(0) }
 
     var modelSearchQuery by remember { mutableStateOf("") }
     var openRouterFilter by remember { mutableStateOf(OpenRouterModelFilter.ALL) }
@@ -145,6 +157,17 @@ fun AgentSettingsDialog(
     LaunchedEffect(selectedProvider, modelsForProvider) {
         if (modelsForProvider.none { it.id == selectedModel }) {
             selectedModel = modelsForProvider.firstOrNull()?.id ?: selectedProvider.defaultModel
+        }
+    }
+
+    LaunchedEffect(scrollKeyTrigger) {
+        if (scrollKeyTrigger > 0 && editingKeyProvider != null) {
+            delay(100)
+            val scrollAmountPx = with(density) { 220.dp.toPx() }.toInt()
+            scrollState.animateScrollTo(
+                value = scrollState.value + scrollAmountPx,
+                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
+            )
         }
     }
 
@@ -184,7 +207,7 @@ fun AgentSettingsDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Card 1: App Theme
@@ -298,6 +321,7 @@ fun AgentSettingsDialog(
                             editingKeyProvider = provider
                             apiKeyInput = onGetApiKey(provider) ?: ""
                             onRefreshModels(provider, onGetApiKey(provider), false)
+                            scrollKeyTrigger++
                         }
 
                         // 4 Stacked Provider Pill Rows
@@ -333,8 +357,20 @@ fun AgentSettingsDialog(
                             onClick = { selectProvider(ModelProvider.CUSTOM_OPENAI_COMPATIBLE) }
                         )
 
-                        // Inline API key entry when user selects a provider
-                        AnimatedVisibility(visible = editingKeyProvider != null) {
+                        // Inline API key entry with fast & smooth appearing animation
+                        AnimatedVisibility(
+                            visible = editingKeyProvider != null,
+                            enter = fadeIn(animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing)) +
+                                    expandVertically(
+                                        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+                                        expandFrom = Alignment.Top
+                                    ),
+                            exit = fadeOut(animationSpec = tween(durationMillis = 150, easing = FastOutLinearInEasing)) +
+                                   shrinkVertically(
+                                       animationSpec = tween(durationMillis = 180, easing = FastOutLinearInEasing),
+                                       shrinkTowards = Alignment.Top
+                                   )
+                        ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
