@@ -97,10 +97,10 @@ enum class OpenRouterModelFilter {
  * - Card 2 — Active AI Provider (surfaceBentoGroup, RoundedCornerShape(22.dp)):
  *   - Header "Active AI Provider"
  *   - 4 stacked provider pill rows (52.dp height, RoundedCornerShape(26.dp)):
- *     1. [Official Google Gemini Star Logo] Google Gemini — full #D5FB66 lime highlight fill with right pill badge "Ready"
- *     2. [Official Anthropic Claude Starburst Logo] Anthropic Claude — right pill button "Add Key" / "Ready"
- *     3. [Official OpenAI Blossom Logo] OpenAI — right pill button "Add Key" / "Ready"
- *     4. [Vector Node Graph Icon] OpenRouter / Groq — right pill button "Add Key" / "Ready"
+ *     1. [Official Google Gemini Star Logo] Google Gemini — full #D5FB66 lime highlight fill with right pill badge "Ready" / "Not Ready"
+ *     2. [Official Anthropic Claude Starburst Logo] Anthropic Claude — right pill button "Add Key" / "Ready" / "Not Ready"
+ *     3. [Official OpenAI Blossom Logo] OpenAI — right pill button "Add Key" / "Ready" / "Not Ready"
+ *     4. [Vector Node Graph Icon] OpenRouter / Groq — right pill button "Add Key" / "Ready" / "Not Ready"
  * - Card 3 — Model Selection (dynamic querying from provider API, free vs paid categorization for OpenRouter)
  * - Bottom CTA: KlixPrimaryPillButton(text = "Apply & Close")
  */
@@ -127,6 +127,7 @@ fun AgentSettingsDialog(
     var editingKeyProvider by remember { mutableStateOf<ModelProvider?>(null) }
     var apiKeyInput by remember { mutableStateOf("") }
     var isKeyVisible by remember { mutableStateOf(false) }
+    var keyUpdateTrigger by remember { mutableStateOf(0) }
 
     var modelSearchQuery by remember { mutableStateOf("") }
     var openRouterFilter by remember { mutableStateOf(OpenRouterModelFilter.ALL) }
@@ -296,7 +297,7 @@ fun AgentSettingsDialog(
                             name = "Google Gemini",
                             logoRes = R.drawable.ic_logo_gemini,
                             isSelected = selectedProvider == ModelProvider.GEMINI,
-                            hasKey = onGetApiKey(ModelProvider.GEMINI)?.isNotEmpty() == true,
+                            hasKey = keyUpdateTrigger.let { !onGetApiKey(ModelProvider.GEMINI).isNullOrBlank() },
                             onClick = {
                                 selectedProvider = ModelProvider.GEMINI
                                 onRefreshModels(ModelProvider.GEMINI, onGetApiKey(ModelProvider.GEMINI), false)
@@ -311,7 +312,7 @@ fun AgentSettingsDialog(
                             name = "Anthropic Claude",
                             logoRes = R.drawable.ic_logo_claude,
                             isSelected = selectedProvider == ModelProvider.ANTHROPIC,
-                            hasKey = onGetApiKey(ModelProvider.ANTHROPIC)?.isNotEmpty() == true,
+                            hasKey = keyUpdateTrigger.let { !onGetApiKey(ModelProvider.ANTHROPIC).isNullOrBlank() },
                             onClick = {
                                 selectedProvider = ModelProvider.ANTHROPIC
                                 onRefreshModels(ModelProvider.ANTHROPIC, onGetApiKey(ModelProvider.ANTHROPIC), false)
@@ -326,7 +327,7 @@ fun AgentSettingsDialog(
                             name = "OpenAI",
                             logoRes = R.drawable.ic_logo_openai,
                             isSelected = selectedProvider == ModelProvider.OPENAI,
-                            hasKey = onGetApiKey(ModelProvider.OPENAI)?.isNotEmpty() == true,
+                            hasKey = keyUpdateTrigger.let { !onGetApiKey(ModelProvider.OPENAI).isNullOrBlank() },
                             onClick = {
                                 selectedProvider = ModelProvider.OPENAI
                                 onRefreshModels(ModelProvider.OPENAI, onGetApiKey(ModelProvider.OPENAI), false)
@@ -341,7 +342,7 @@ fun AgentSettingsDialog(
                             name = "OpenRouter / Groq",
                             logoRes = R.drawable.ic_logo_openrouter,
                             isSelected = selectedProvider == ModelProvider.CUSTOM_OPENAI_COMPATIBLE,
-                            hasKey = onGetApiKey(ModelProvider.CUSTOM_OPENAI_COMPATIBLE)?.isNotEmpty() == true,
+                            hasKey = keyUpdateTrigger.let { !onGetApiKey(ModelProvider.CUSTOM_OPENAI_COMPATIBLE).isNullOrBlank() },
                             onClick = {
                                 selectedProvider = ModelProvider.CUSTOM_OPENAI_COMPATIBLE
                                 onRefreshModels(ModelProvider.CUSTOM_OPENAI_COMPATIBLE, onGetApiKey(ModelProvider.CUSTOM_OPENAI_COMPATIBLE), false)
@@ -407,6 +408,7 @@ fun AgentSettingsDialog(
                                                     val trimmedKey = apiKeyInput.trim().ifEmpty { null }
                                                     onSaveApiKey(prov, trimmedKey)
                                                     onRefreshModels(prov, trimmedKey, true)
+                                                    keyUpdateTrigger++
                                                 }
                                                 editingKeyProvider = null
                                             }
@@ -666,6 +668,22 @@ private fun ThemeChip(
     }
 }
 
+object AgentSettingsUiHelper {
+    /**
+     * Determines the status label displayed in the AI Provider pill badge.
+     * "Ready" is ONLY shown if the provider's API key is configured (hasKey == true).
+     * Until the API key is configured, shows "Not Ready" (a negation of ready) for the selected provider,
+     * or "Add Key" for unselected providers.
+     */
+    fun getProviderStatusLabel(hasKey: Boolean, isSelected: Boolean): String {
+        return when {
+            hasKey -> "Ready"
+            isSelected -> "Not Ready"
+            else -> "Add Key"
+        }
+    }
+}
+
 @Composable
 private fun ProviderPillRow(
     name: String,
@@ -719,7 +737,7 @@ private fun ProviderPillRow(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (hasKey || isSelected) "Ready" else "Add Key",
+                text = AgentSettingsUiHelper.getProviderStatusLabel(hasKey = hasKey, isSelected = isSelected),
                 style = KlixTypography.codePill,
                 fontWeight = FontWeight.Bold,
                 color = if (isSelected) Color(0xFF0C0D14) else KlixInkPrimary
