@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -263,6 +264,7 @@ fun SandboxWarningDialog(
                     modifier = Modifier
                         .size(width = 130.dp, height = 64.dp)
                         .align(Alignment.TopCenter)
+                        .offset(y = (-16.dp))
                 )
             }
         }
