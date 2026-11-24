@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -34,47 +35,89 @@ fun WorkspaceDropdownSelector(
     onSelectWorkspace: (String) -> Unit,
     onCreateWorkspace: (String) -> Unit,
     onDeleteWorkspace: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSidebarStyle: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var workspaceToDelete by remember { mutableStateOf<SandboxWorkspace?>(null) }
+    val isDark = LocalIsDarkTheme.current
 
     Box(modifier = modifier) {
-        // Pill Button in TopAppBar
-        Row(
-            modifier = Modifier
-                .height(34.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(KlixSurfaceCardItem)
-                .border(1.dp, KlixBorderHairline, RoundedCornerShape(10.dp))
-                .clickable { expanded = true }
-                .pressEffect(0.92f)
-                .padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_icon_folder),
-                contentDescription = null,
-                tint = LimeBrandColor,
-                modifier = Modifier.size(16.dp)
-            )
-            Text(
-                text = activeWorkspace?.name ?: "Select Workspace",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = KlixInkPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 140.dp)
-            )
-            Icon(
-                imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                contentDescription = "Dropdown",
-                tint = KlixInkSecondary,
-                modifier = Modifier.size(18.dp)
-            )
+        if (isSidebarStyle) {
+            // White Pill Button in Sidebar (Reference Image style)
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(if (isDark) Color(0xFF1E2536) else Color.White)
+                    .border(
+                        0.5.dp,
+                        if (isDark) Color(0x33CBD5E1) else Color(0x18000000),
+                        RoundedCornerShape(18.dp)
+                    )
+                    .clickable { expanded = true }
+                    .pressEffect(0.92f)
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_icon_folder),
+                    contentDescription = null,
+                    tint = Color(0xFF3F6212),
+                    modifier = Modifier.size(17.dp)
+                )
+                Text(
+                    text = activeWorkspace?.name ?: "KlixCode",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                    contentDescription = "Dropdown",
+                    tint = Color(0xFF64748B),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        } else {
+            // Pill Button in TopAppBar
+            Row(
+                modifier = Modifier
+                    .height(34.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(KlixSurfaceCardItem)
+                    .border(1.dp, KlixBorderHairline, RoundedCornerShape(10.dp))
+                    .clickable { expanded = true }
+                    .pressEffect(0.92f)
+                    .padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_icon_folder),
+                    contentDescription = null,
+                    tint = LimeBrandColor,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = activeWorkspace?.name ?: "Select Workspace",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = KlixInkPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 140.dp)
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                    contentDescription = "Dropdown",
+                    tint = KlixInkSecondary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
 
         // Dropdown Menu

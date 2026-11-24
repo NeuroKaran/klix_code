@@ -448,7 +448,7 @@ fun HomeDashboard(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(end = 18.dp)
-                            .offset(y = (-46).dp)
+                            .offset(y = (-58).dp)
                             .size(width = 96.dp, height = 71.dp)
                     )
 

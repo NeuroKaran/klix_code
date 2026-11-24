@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -503,13 +504,20 @@ class MainActivity : ComponentActivity() {
                     drawerState = drawerState,
                     gesturesEnabled = openTabs.isEmpty() || drawerState.isOpen,
                     drawerContent = {
+                        val drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
                         ModalDrawerSheet(
                             modifier = Modifier
                                 .fillMaxWidth(0.84f)
                                 .fillMaxHeight(),
-                            drawerContainerColor = KlixSurfaceSheet
+                            drawerShape = drawerShape,
+                            drawerContainerColor = Color.Transparent,
+                            drawerTonalElevation = 0.dp,
+                            windowInsets = WindowInsets(0, 0, 0, 0)
                         ) {
                             FileTreeView(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(drawerShape),
                                 rootNode = fileTree,
                                 activeFileUri = activeTabUri,
                                 currentProjectName = activeWorkspace?.name ?: currentProject?.name,

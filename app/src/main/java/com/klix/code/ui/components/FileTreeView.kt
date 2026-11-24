@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreateNewFolder
@@ -50,6 +51,8 @@ import com.klix.code.ui.theme.ThemeMode
 import androidx.compose.runtime.collectAsState
 import com.klix.code.BuildConfig
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import com.klix.code.ui.theme.LocalIsDarkTheme
 import androidx.compose.material3.AlertDialog
@@ -152,18 +155,49 @@ fun FileTreeView(
         }
     }
 
+    val isDark = LocalIsDarkTheme.current
+    val sidePanelGradient = remember(isDark) {
+        if (!isDark) {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFFD4F5EE), // soft pastel mint cyan
+                    Color(0xFFDCF6F0),
+                    Color(0xFFE8FAF3),
+                    Color(0xFFF2FBF6),
+                    Color(0xFFFAFEFC)
+                )
+            )
+        } else {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF0F1E19),
+                    Color(0xFF131D1F),
+                    Color(0xFF111722),
+                    Color(0xFF0C1019)
+                )
+            )
+        }
+    }
+
+    val drawerCornerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(com.klix.code.ui.theme.KlixSurfaceSheet)
+            .clip(drawerCornerShape)
+            .background(sidePanelGradient)
+            .border(
+                0.5.dp,
+                if (isDark) Color(0x33CBD5E1) else Color(0x18000000),
+                drawerCornerShape
+            )
     ) {
-        // Workspace Tree Header
+        // Workspace Tree Header (Top Row)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(com.klix.code.ui.theme.KlixSurfaceSheet)
-                .border(0.5.dp, com.klix.code.ui.theme.KlixBorderHairline)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .statusBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -174,90 +208,121 @@ fun FileTreeView(
                 Text(
                     text = "Klix Code",
                     style = com.klix.code.ui.theme.KlixTypography.screenTitle,
-                    color = com.klix.code.ui.theme.KlixInkPrimary
+                    color = if (isDark) Color.White else Color(0xFF0C0D14)
                 )
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(Color(0xFFD5FB66))
+                        .background(Color(0xFFB5FA36))
                         .clickable(enabled = onCheckForUpdates != null) { onCheckForUpdates?.invoke() }
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                        .padding(horizontal = 9.dp, vertical = 3.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "v${BuildConfig.VERSION_NAME}",
                         style = com.klix.code.ui.theme.KlixTypography.codePill,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0C0D14)
+                        color = Color(0xFF224403)
                     )
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 rootNode?.let { root ->
-                    IconButton(
-                        onClick = {
-                            if (!isSandboxInstalled) {
-                                triggerWarning()
-                            } else {
-                                dialogInputText = ""
-                                showCreateFileDialog = root.uri
+                    // New File Button
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(if (isDark) Color(0xFF1E2433) else Color.White)
+                            .border(
+                                0.5.dp,
+                                if (isDark) Color(0x33CBD5E1) else Color(0x18000000),
+                                CircleShape
+                            )
+                            .clickable {
+                                if (!isSandboxInstalled) {
+                                    triggerWarning()
+                                } else {
+                                    dialogInputText = ""
+                                    showCreateFileDialog = root.uri
+                                }
                             }
-                        },
-                        modifier = Modifier.size(28.dp).pressEffect(0.9f)
+                            .pressEffect(0.9f),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.NoteAdd,
                             contentDescription = "New File",
-                            tint = TextSecondary,
+                            tint = if (isDark) Color.White else Color(0xFF0F172A),
                             modifier = Modifier.size(17.dp)
                         )
                     }
 
-                    IconButton(
-                        onClick = {
-                            if (!isSandboxInstalled) {
-                                triggerWarning()
-                            } else {
-                                dialogInputText = ""
-                                showCreateDirDialog = root.uri
+                    // New Folder Button
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(if (isDark) Color(0xFF1E2433) else Color.White)
+                            .border(
+                                0.5.dp,
+                                if (isDark) Color(0x33CBD5E1) else Color(0x18000000),
+                                CircleShape
+                            )
+                            .clickable {
+                                if (!isSandboxInstalled) {
+                                    triggerWarning()
+                                } else {
+                                    dialogInputText = ""
+                                    showCreateDirDialog = root.uri
+                                }
                             }
-                        },
-                        modifier = Modifier.size(28.dp).pressEffect(0.9f)
+                            .pressEffect(0.9f),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.CreateNewFolder,
                             contentDescription = "New Folder",
-                            tint = TextSecondary,
+                            tint = if (isDark) Color.White else Color(0xFF0F172A),
                             modifier = Modifier.size(17.dp)
                         )
                     }
                 }
 
-                IconButton(
-                    onClick = onRefresh,
-                    modifier = Modifier.size(28.dp).pressEffect(0.9f)
+                // Refresh Button
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(if (isDark) Color(0xFF1E2433) else Color.White)
+                        .border(
+                            0.5.dp,
+                            if (isDark) Color(0x33CBD5E1) else Color(0x18000000),
+                            CircleShape
+                        )
+                        .clickable(onClick = onRefresh)
+                        .pressEffect(0.9f),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Refresh",
-                        tint = TextSecondary,
+                        tint = if (isDark) Color.White else Color(0xFF0F172A),
                         modifier = Modifier.size(17.dp)
                     )
                 }
             }
         }
 
-        // Active Workspace sub-bar
-        val displayName = currentProjectName ?: rootNode?.name ?: "No Workspace"
+        // Active Workspace sub-bar (Floating White Pill)
+        val displayName = currentProjectName ?: rootNode?.name ?: "KlixCode"
         val isSandbox = rootNode?.uri?.toString()?.contains("sandbox") == true || rootNode?.uri?.toString()?.contains("workspaces") == true
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(GlassSurfaceColor)
-                .glassBorder(RoundedCornerShape(0.dp), strokeWidth = 0.5.dp, highlightAlpha = 0.12f, midAlpha = 0.04f)
-                .padding(horizontal = 14.dp, vertical = 7.dp),
+                .padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -268,27 +333,42 @@ fun FileTreeView(
                     onSelectWorkspace = onSelectWorkspace,
                     onCreateWorkspace = onCreateWorkspace,
                     onDeleteWorkspace = onDeleteWorkspace,
+                    isSidebarStyle = true,
                     modifier = Modifier.weight(1f, fill = false)
                 )
             } else {
                 Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(if (isDark) Color(0xFF1E2433) else Color.White)
+                        .border(
+                            0.5.dp,
+                            if (isDark) Color(0x33CBD5E1) else Color(0x18000000),
+                            RoundedCornerShape(18.dp)
+                        )
+                        .padding(horizontal = 14.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.weight(1f, fill = false)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = if (isSandbox) R.drawable.ic_icon_terminal_prompt else R.drawable.ic_icon_folder),
                         contentDescription = null,
-                        tint = if (isSandbox) LimeBrandColor else CyanBrandColor,
-                        modifier = Modifier.size(15.dp)
+                        tint = Color(0xFF3F6212),
+                        modifier = Modifier.size(17.dp)
                     )
                     Text(
-                        text = displayName.uppercase(),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
+                        text = displayName,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isDark) Color.White else Color(0xFF0F172A),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Dropdown",
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -305,8 +385,6 @@ fun FileTreeView(
             }
         }
 
-        HorizontalDivider(color = DarkBorder, thickness = 1.dp)
-
         if (onOpenStreak != null) {
             StreakSidebarCard(
                 streakCount = streakState.streakCount,
@@ -314,21 +392,44 @@ fun FileTreeView(
                 weeklyActive = streakState.weeklyActive,
                 todayIndex = streakState.todayIndex,
                 onClick = onOpenStreak,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
             )
         }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = "Workspace Files",
                 style = com.klix.code.ui.theme.KlixTypography.sectionHeader,
-                color = com.klix.code.ui.theme.KlixInkPrimary
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isDark) Color.White else Color(0xFF0F172A)
+            )
+
+            Text(
+                text = "+ New",
+                fontSize = 14.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF3F6212),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        rootNode?.let { root ->
+                            if (!isSandboxInstalled) {
+                                triggerWarning()
+                            } else {
+                                dialogInputText = ""
+                                showCreateFileDialog = root.uri
+                            }
+                        }
+                    }
+                    .pressEffect(0.92f)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
             )
         }
 
@@ -582,8 +683,8 @@ fun FileTreeView(
             Row(
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(Color(0xFF121521))
-                    .border(1.dp, Color(0xFF2E364F), CircleShape)
+                    .background(Color(0xFF0F121D))
+                    .border(1.dp, Color(0xFF22283A), CircleShape)
                     .padding(horizontal = 6.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -592,14 +693,14 @@ fun FileTreeView(
                 Row(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(Color(0xFF1B2030))
+                        .background(Color(0xFF181D2C))
                         .padding(2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(if (!isDark) Color(0xFFD5FB66) else Color.Transparent)
+                            .background(if (!isDark) Color(0xFFB5FA36) else Color.Transparent)
                             .clickable { ThemeManager.setThemeMode(context, ThemeMode.LIGHT) }
                             .pressEffect(0.94f)
                             .padding(horizontal = 10.dp, vertical = 5.dp),
@@ -627,7 +728,7 @@ fun FileTreeView(
                     Box(
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(if (isDark) Color(0xFFD5FB66) else Color.Transparent)
+                            .background(if (isDark) Color(0xFFB5FA36) else Color.Transparent)
                             .clickable { ThemeManager.setThemeMode(context, ThemeMode.DARK) }
                             .pressEffect(0.94f)
                             .padding(horizontal = 10.dp, vertical = 5.dp),
@@ -837,166 +938,167 @@ private fun FileTreeRow(
     onRename: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val indent = (node.level * 16).dp
-    val rowShape = RoundedCornerShape(10.dp)
-    val bg = if (isSelected) CyanDimColor else Color.Transparent
+    val indent = (node.level * 14).dp
+    val cardShape = RoundedCornerShape(18.dp)
+    val isDark = LocalIsDarkTheme.current
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = indent + 4.dp, end = 6.dp, top = 2.dp, bottom = 2.dp)
-            .clip(rowShape)
-            .background(bg)
-            .then(
-                if (isSelected) {
-                    Modifier.glassBorder(rowShape, strokeWidth = 0.8.dp, highlightAlpha = 0.35f, midAlpha = 0.12f)
-                } else Modifier
+            .padding(start = 14.dp + indent, end = 14.dp, top = 4.dp, bottom = 4.dp)
+            .clip(cardShape)
+            .background(if (isDark) Color(0xFF1E2433) else Color.White)
+            .border(
+                width = if (isSelected) 1.5.dp else 0.5.dp,
+                color = if (isSelected) Color(0xFF84CC16) else if (isDark) Color(0x22CBD5E1) else Color(0x12000000),
+                shape = cardShape
             )
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .pressEffect(0.97f)
+            .padding(horizontal = 12.dp, vertical = 9.dp)
     ) {
-        if (node.isDirectory) {
-            IconButton(
-                onClick = onToggleExpand,
-                modifier = Modifier.size(22.dp).pressEffect(0.9f)
-            ) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = TextMuted,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.FolderOpen else Icons.Default.Folder,
-                contentDescription = null,
-                tint = LimeBrandColor,
-                modifier = Modifier.size(18.dp)
-            )
-        } else {
-            Spacer(modifier = Modifier.width(22.dp))
-            val logoRes = when (node.extension.lowercase()) {
-                "py" -> R.drawable.ic_logo_python
-                "kt", "kts", "java" -> R.drawable.ic_logo_kotlin
-                "js", "ts", "jsx", "tsx", "mjs" -> R.drawable.ic_logo_nodejs
-                "cpp", "c", "h", "hpp" -> R.drawable.ic_logo_cpp
-                "sh", "bash" -> R.drawable.ic_logo_alpine
-                else -> null
-            }
-            if (logoRes != null) {
-                Image(
-                    painter = painterResource(id = logoRes),
-                    contentDescription = node.name,
-                    modifier = Modifier.size(16.dp)
-                )
-            } else {
-                val extColor = when (node.extension.lowercase()) {
-                    "json" -> LimeBrandColor
-                    "md" -> Color(0xFF38BDF8)
-                    else -> TextSecondary
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icon squircle container with language/folder specific pastel background
+            if (node.isDirectory) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(if (isDark) Color(0xFF1E382B) else Color(0xFFE8F5EE)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.FolderOpen else Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = Color(0xFF2E6335),
+                        modifier = Modifier.size(19.dp)
+                    )
                 }
-                Icon(
-                    imageVector = Icons.Default.Description,
-                    contentDescription = null,
-                    tint = extColor,
-                    modifier = Modifier.size(16.dp)
-                )
+            } else {
+                val (logoRes, iconBg) = when (node.extension.lowercase()) {
+                    "cpp", "c", "h", "hpp" -> Pair(R.drawable.ic_logo_cpp, if (isDark) Color(0xFF1E2942) else Color(0xFFE8EEFA))
+                    "py" -> Pair(R.drawable.ic_logo_python, if (isDark) Color(0xFF193324) else Color(0xFFE8F5E9))
+                    "kt", "kts", "java" -> Pair(R.drawable.ic_logo_kotlin, if (isDark) Color(0xFF321E3D) else Color(0xFFF3E8FF))
+                    "js", "ts", "jsx", "tsx", "mjs" -> Pair(R.drawable.ic_logo_nodejs, if (isDark) Color(0xFF38321B) else Color(0xFFFEF3C7))
+                    "sh", "bash" -> Pair(R.drawable.ic_logo_alpine, if (isDark) Color(0xFF1B2E3D) else Color(0xFFE0F2FE))
+                    else -> Pair(null, if (isDark) Color(0xFF242A38) else Color(0xFFF1F5F9))
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(iconBg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (logoRes != null) {
+                        Image(
+                            painter = painterResource(id = logoRes),
+                            contentDescription = node.name,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        val extColor = when (node.extension.lowercase()) {
+                            "json" -> LimeBrandColor
+                            "md" -> Color(0xFF38BDF8)
+                            else -> Color(0xFF64748B)
+                        }
+                        Icon(
+                            imageVector = Icons.Default.Description,
+                            contentDescription = null,
+                            tint = extColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-        Text(
-            text = node.name,
-            color = if (isSelected) CyanBrandColor else TextPrimary,
-            fontSize = 13.sp,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            fontFamily = FontFamily.Monospace,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
-
-        // Screen 8 Badges
-        if (node.name.equals("server.js", ignoreCase = true) || node.extension.lowercase() in listOf("js", "mjs")) {
-            Box(
-                modifier = Modifier
-                    .border(1.dp, com.klix.code.ui.theme.KlixBorderHairline, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 4.dp, vertical = 1.dp)
-            ) {
-                Text(
-                    text = "JS",
-                    style = com.klix.code.ui.theme.KlixTypography.codePill,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = com.klix.code.ui.theme.KlixInkSecondary
-                )
-            }
-            Spacer(modifier = Modifier.width(4.dp))
-        } else if (node.name.contains("orbit-ui", ignoreCase = true)) {
-            Row(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color(0x22F97316))
-                    .border(1.dp, Color(0x66F97316), CircleShape)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_icon_git_branch),
-                    contentDescription = "main",
-                    modifier = Modifier.size(10.dp)
-                )
-                Text(
-                    text = "main",
-                    style = com.klix.code.ui.theme.KlixTypography.codePill,
-                    fontSize = 9.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFF97316)
-                )
-            }
-            Spacer(modifier = Modifier.width(4.dp))
-        }
-
-        // Contextual buttons
-        if (node.isDirectory) {
-            IconButton(
-                onClick = onAddFileInDir,
-                modifier = Modifier.size(24.dp).pressEffect(0.9f)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.NoteAdd,
-                    contentDescription = "Add File Here",
-                    tint = TextMuted,
-                    modifier = Modifier.size(13.dp)
-                )
-            }
-        }
-
-        IconButton(
-            onClick = onRename,
-            modifier = Modifier.size(24.dp).pressEffect(0.9f)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = "Rename",
-                tint = TextMuted,
-                modifier = Modifier.size(13.dp)
+            // File or Folder Name
+            Text(
+                text = node.name,
+                color = if (isSelected) Color(0xFF15803D) else if (isDark) Color(0xFFE2E8F0) else Color(0xFF0F172A),
+                fontSize = 14.5.sp,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
-        }
 
-        IconButton(
-            onClick = onDelete,
-            modifier = Modifier.size(24.dp).pressEffect(0.9f)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = "Delete",
-                tint = TextMuted,
-                modifier = Modifier.size(13.dp)
-            )
+            // Right side Action Icons
+            if (node.isDirectory) {
+                IconButton(
+                    onClick = onAddFileInDir,
+                    modifier = Modifier.size(26.dp).pressEffect(0.9f)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.NoteAdd,
+                        contentDescription = "Add File Here",
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onRename,
+                    modifier = Modifier.size(26.dp).pressEffect(0.9f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Rename",
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(26.dp).pressEffect(0.9f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onToggleExpand,
+                    modifier = Modifier.size(26.dp).pressEffect(0.9f)
+                ) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(17.dp)
+                    )
+                }
+            } else {
+                IconButton(
+                    onClick = onRename,
+                    modifier = Modifier.size(28.dp).pressEffect(0.9f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Rename",
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(28.dp).pressEffect(0.9f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }

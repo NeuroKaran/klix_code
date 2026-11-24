@@ -32,7 +32,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -154,7 +156,7 @@ fun StreakPillButton(
 }
 
 /**
- * Modular Glass Streak Card for the Sidebar / File Tree (Reference 1 style).
+ * Bento Streak Card for the Sidebar / File Tree matching Reference Image.
  */
 @Composable
 fun StreakSidebarCard(
@@ -166,95 +168,128 @@ fun StreakSidebarCard(
     modifier: Modifier = Modifier
 ) {
     val dayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
-
-    val infiniteTransition = rememberInfiniteTransition(label = "sidebar_streak_flame")
-    val flamePulse by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = if (!isClaimedToday) 1.14f else 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "flame_pulse"
-    )
+    val isDark = LocalIsDarkTheme.current
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(com.klix.code.ui.theme.KlixStreakCardGradient)
-            .border(1.dp, com.klix.code.ui.theme.KlixBorderHairline, RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick)
-            .pressEffect(0.96f)
-            .padding(horizontal = 14.dp, vertical = 14.dp)
+            .padding(top = 34.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        // Peeking mascot in the BACK side (rendered before card so card covers lower body)
+        Image(
+            painter = painterResource(id = R.drawable.mascot_peeking),
+            contentDescription = "Streak Mascot",
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 40.dp)
+                .offset(y = (-48).dp)
+                .size(64.dp)
+        )
+
+        // Main Bento Card in the FRONT
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(26.dp))
+                .background(if (isDark) Color(0xFF1E2536) else Color.White)
+                .border(
+                    width = 0.5.dp,
+                    color = if (isDark) Color(0x33CBD5E1) else Color(0x15000000),
+                    shape = RoundedCornerShape(26.dp)
+                )
+                .clickable(onClick = onClick)
+                .pressEffect(0.96f)
+                .padding(horizontal = 18.dp, vertical = 18.dp)
         ) {
-            // Mascot streak fire (cheering 2D Klix Bot in vector flame aura)
-            Image(
-                painter = painterResource(id = R.drawable.mascot_streak_fire),
-                contentDescription = "Streak Fire Mascot",
-                modifier = Modifier
-                    .size(76.dp)
-                    .scale(flamePulse)
-            )
-
-            // Center Title: "7 Days Streak" (20.sp ExtraBold)
-            Text(
-                text = "$streakCount Days Streak",
-                style = com.klix.code.ui.theme.KlixTypography.sheetHeader,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = com.klix.code.ui.theme.KlixInkPrimary,
-                letterSpacing = (-0.4).sp
-            )
-
-            // 7-Column weekly strip (M T W T F S S) with #D5FB66 circular checkmark badges
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                for (i in 0 until 7) {
-                    val isActive = if (i < weeklyActive.size) weeklyActive[i] else false
-                    val isToday = i == todayIndex
+                // Header row: "CODING STREAK" on left, "Active" pill on right
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "CODING STREAK",
+                        style = com.klix.code.ui.theme.KlixTypography.codePill,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.6.sp,
+                        color = if (isDark) Color(0xFF94A3B8) else Color(0xFF1E293B)
+                    )
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Color(0xFF0F172A))
+                            .padding(horizontal = 14.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = dayLabels[i],
+                            text = if (isClaimedToday || streakCount > 0) "Active" else "Claim",
                             style = com.klix.code.ui.theme.KlixTypography.codePill,
                             fontSize = 11.sp,
-                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isToday) com.klix.code.ui.theme.KlixInkPrimary else com.klix.code.ui.theme.KlixInkSecondary
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFB5FA36)
                         )
+                    }
+                }
 
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .background(if (isActive) Color(0xFFD5FB66) else Color(0x33000000))
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isActive) Color(0xFFD5FB66) else Color(0x44CBD5E1),
-                                    shape = CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
+                // Title row: "3 Days Streak 🔥"
+                Text(
+                    text = "$streakCount Days Streak \uD83D\uDD25",
+                    style = com.klix.code.ui.theme.KlixTypography.sheetHeader,
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                    letterSpacing = (-0.3).sp
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // 7-Column weekly strip (M T W T F S S) with #B5FA36 squircle checkmark boxes
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    for (i in 0 until 7) {
+                        val isActive = if (i < weeklyActive.size) weeklyActive[i] else false
+                        val isToday = i == todayIndex
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            if (isActive) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = Color(0xFF0C0D14),
-                                    modifier = Modifier.size(13.dp)
-                                )
+                            Text(
+                                text = dayLabels[i],
+                                style = com.klix.code.ui.theme.KlixTypography.codePill,
+                                fontSize = 12.sp,
+                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isDark) Color(0xFFE2E8F0) else Color(0xFF1E293B)
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(RoundedCornerShape(9.dp))
+                                    .background(
+                                        if (isActive) Color(0xFFB5FA36)
+                                        else if (isDark) Color(0xFF2B3346)
+                                        else Color(0xFFBAC7DF)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isActive) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = Color(0xFF0C0D14),
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                }
                             }
                         }
                     }
