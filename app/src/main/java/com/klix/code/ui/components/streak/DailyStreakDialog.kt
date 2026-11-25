@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -96,6 +97,12 @@ import com.klix.code.ui.components.glass.glassBorder
 import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.GlassSurfaceColor
 import com.klix.code.ui.theme.GlassSurfaceElevatedColor
+import com.klix.code.ui.theme.KlixAccentLime
+import com.klix.code.ui.theme.KlixBorderHairline
+import com.klix.code.ui.theme.KlixInkPrimary
+import com.klix.code.ui.theme.KlixInkSecondary
+import com.klix.code.ui.theme.KlixSurfaceBentoGroup
+import com.klix.code.ui.theme.KlixSurfaceCardItem
 import com.klix.code.ui.theme.LimeBrand
 import com.klix.code.ui.theme.LimeGlow
 import com.klix.code.ui.theme.ObsidianBase
@@ -111,13 +118,14 @@ private val KlixNeonLime = LimeBrand
 private val FlameOrange = Color(0xFFFF9800)
 private val FlameDeepOrange = Color(0xFFFF5722)
 private val FlameGold = Color(0xFFFFD54F)
+private val DarkInkOnLime = Color(0xFF0F172A)
 private val DotInactiveColor: Color
     @Composable
-    get() = if (LocalIsDarkTheme.current) Color(0xFF2B313E) else Color(0xFFD0D7DE)
+    get() = if (LocalIsDarkTheme.current) Color(0xFF334155) else Color.White
 
 private val StreakActiveColor: Color
     @Composable
-    get() = if (LocalIsDarkTheme.current) KlixNeonLime else Color(0xFF15803D)
+    get() = if (LocalIsDarkTheme.current) KlixAccentLime else Color(0xFF15803D)
 
 private enum class StreakAnimStage {
     IDLE,
@@ -377,12 +385,52 @@ fun DailyStreakDialog(
             contentAlignment = Alignment.Center
         ) {
             // Main Dialog Card
+            val isDark = LocalIsDarkTheme.current
+            val cardGradient = if (isDark) {
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF162032),
+                        Color(0xFF111827),
+                        Color(0xFF0D131F)
+                    )
+                )
+            } else {
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFFD9EEFF),
+                        Color(0xFFE9FAF3),
+                        Color(0xFFF6FAFD)
+                    )
+                )
+            }
+
             Box(
                 modifier = modifier
-                    .fillMaxWidth(0.92f)
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(GlassSurfaceColor)
-                    .glassBorder(RoundedCornerShape(26.dp), strokeWidth = 1.dp, highlightAlpha = 0.35f, midAlpha = 0.12f)
+                    .fillMaxWidth(0.88f)
+                    .shadow(
+                        elevation = 24.dp,
+                        shape = RoundedCornerShape(30.dp),
+                        ambientColor = Color.Black.copy(alpha = 0.25f),
+                        spotColor = Color.Black.copy(alpha = 0.25f)
+                    )
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(cardGradient)
+                    .then(
+                        if (isDark) {
+                            Modifier.glassBorder(
+                                RoundedCornerShape(30.dp),
+                                strokeWidth = 1.dp,
+                                highlightAlpha = 0.30f,
+                                midAlpha = 0.10f
+                            )
+                        } else {
+                            Modifier.border(
+                                width = 1.dp,
+                                color = Color.White.copy(alpha = 0.85f),
+                                shape = RoundedCornerShape(30.dp)
+                            )
+                        }
+                    )
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -391,49 +439,48 @@ fun DailyStreakDialog(
                     .onGloballyPositioned { coords ->
                         dialogRootPosition = coords.boundsInRoot().topLeft
                     }
-                    .padding(20.dp)
+                    .padding(horizontal = 24.dp, vertical = 22.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    // Top Bar: Title & Close Button
+                    // Top Bar: Title & Circular Close Button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalFireDepartment,
-                                contentDescription = null,
-                                tint = FlameOrange,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = "DAILY STREAK",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = JetBrainsMono,
-                                letterSpacing = 1.2.sp,
-                                color = TextPrimary
-                            )
-                        }
+                        Text(
+                            text = "DAILY STREAK",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontFamily = JetBrainsMono,
+                            letterSpacing = 1.8.sp,
+                            color = KlixInkPrimary
+                        )
 
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.size(28.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .shadow(
+                                    elevation = if (isDark) 0.dp else 4.dp,
+                                    shape = CircleShape,
+                                    ambientColor = Color.Black.copy(alpha = 0.12f),
+                                    spotColor = Color.Black.copy(alpha = 0.12f)
+                                )
+                                .clip(CircleShape)
+                                .background(if (isDark) KlixSurfaceCardItem else Color.White)
+                                .clickable(onClick = onDismiss),
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Close",
-                                tint = TextSecondary,
+                                tint = KlixInkPrimary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -443,12 +490,12 @@ fun DailyStreakDialog(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(170.dp),
+                            .height(166.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Ambient Radial Glow
+                        // Ambient Radial Lime Glow
                         val glowScale = when (animStage) {
-                            StreakAnimStage.BLOW_UP -> 2.2f * fireScale.value
+                            StreakAnimStage.BLOW_UP -> 2.0f * fireScale.value
                             else -> idleFlameScale
                         }
                         val glowAlpha = when (animStage) {
@@ -459,14 +506,14 @@ fun DailyStreakDialog(
 
                         Box(
                             modifier = Modifier
-                                .size(110.dp)
+                                .size(148.dp)
                                 .scale(glowScale)
                                 .alpha(glowAlpha)
                                 .background(
                                     Brush.radialGradient(
                                         listOf(
-                                            FlameOrange.copy(alpha = 0.55f),
-                                            FlameDeepOrange.copy(alpha = 0.25f),
+                                            KlixAccentLime.copy(alpha = 0.65f),
+                                            KlixAccentLime.copy(alpha = 0.25f),
                                             Color.Transparent
                                         )
                                     ),
@@ -494,7 +541,7 @@ fun DailyStreakDialog(
                             }
                         }
 
-                        // Central Flame
+                        // Central Lime Circle Badge + Dark Flame Icon
                         if (animStage != StreakAnimStage.FLY_TO_STREAK && (fireAlpha.value > 0f || animStage == StreakAnimStage.COMPLETED)) {
                             val activeScale = when (animStage) {
                                 StreakAnimStage.BLOW_UP, StreakAnimStage.MORPH_TO_DOT -> fireScale.value
@@ -504,9 +551,11 @@ fun DailyStreakDialog(
 
                             Box(
                                 modifier = Modifier
-                                    .size(76.dp)
+                                    .size(118.dp)
                                     .scale(activeScale)
                                     .alpha(if (animStage == StreakAnimStage.COMPLETED) 1.0f else fireAlpha.value)
+                                    .clip(CircleShape)
+                                    .background(KlixAccentLime)
                                     .clickable(
                                         enabled = animStage == StreakAnimStage.IDLE && !streakState.isClaimedToday,
                                         onClick = triggerClaimSequence
@@ -523,8 +572,8 @@ fun DailyStreakDialog(
                                 Icon(
                                     imageVector = Icons.Default.LocalFireDepartment,
                                     contentDescription = "Flame",
-                                    tint = FlameOrange,
-                                    modifier = Modifier.fillMaxSize()
+                                    tint = DarkInkOnLime,
+                                    modifier = Modifier.size(56.dp)
                                 )
                             }
                         }
@@ -595,18 +644,18 @@ fun DailyStreakDialog(
                     // Streak Count & Motivation Title
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
                             text = "$displayedStreakCount ${if (displayedStreakCount == 1) "day" else "days"}",
                             fontFamily = BricolageGrotesque,
-                            fontSize = 28.sp,
+                            fontSize = 32.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = (-0.5).sp,
                             color = if (animStage == StreakAnimStage.COMPLETED || streakState.isClaimedToday) {
                                 StreakActiveColor
                             } else {
-                                TextPrimary
+                                KlixInkPrimary
                             },
                             modifier = Modifier.scale(counterScale.value)
                         )
@@ -615,24 +664,23 @@ fun DailyStreakDialog(
                             text = if (animStage == StreakAnimStage.COMPLETED || streakState.isClaimedToday) {
                                 "You're on fire! Daily login recorded."
                             } else {
-                                "Tap fire or claim button to add to your streak!"
+                                "Tap below to start your streak."
                             },
                             fontFamily = PlusJakartaSans,
-                            fontSize = 12.5.sp,
-                            lineHeight = 17.sp,
-                            color = TextSecondary,
+                            fontSize = 14.sp,
+                            lineHeight = 19.sp,
+                            color = KlixInkSecondary,
                             textAlign = TextAlign.Center
                         )
                     }
 
-                    // 7-Day Activity Matrix (Matching Widget_UI reference)
+                    // 7-Day Activity Matrix
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(DarkSurfaceVariant)
-                            .border(1.dp, DarkBorder, RoundedCornerShape(16.dp))
-                            .padding(vertical = 14.dp, horizontal = 12.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(KlixSurfaceBentoGroup)
+                            .padding(vertical = 8.dp, horizontal = 10.dp)
                     ) {
                         // Celebration Confetti Canvas
                         if (animStage == StreakAnimStage.COMPLETED && confettiProgress.value in 0.01f..0.99f) {
@@ -670,27 +718,36 @@ fun DailyStreakDialog(
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(6.dp),
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .then(
+                                            if (isToday) {
+                                                Modifier
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .background(KlixAccentLime)
+                                            } else Modifier
+                                        )
+                                        .padding(vertical = 8.dp, horizontal = 4.dp)
                                 ) {
                                     Box(
-                                        modifier = Modifier.size(24.dp),
+                                        modifier = Modifier.size(20.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         // Shockwave ripple on today's slot upon impact
                                         if (isToday && slotShockwaveAlpha.value > 0f) {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(16.dp)
+                                                    .size(14.dp)
                                                     .scale(slotShockwaveScale.value)
                                                     .alpha(slotShockwaveAlpha.value)
-                                                    .border(2.dp, StreakActiveColor, CircleShape)
+                                                    .border(2.dp, DarkInkOnLime, CircleShape)
                                             )
                                         }
 
                                         // The Dot Slot
                                         Box(
                                             modifier = Modifier
-                                                .size(14.dp)
+                                                .size(12.dp)
                                                 .then(if (isToday) Modifier.scale(slotScale.value) else Modifier)
                                                 .then(
                                                     if (isToday) {
@@ -704,25 +761,22 @@ fun DailyStreakDialog(
                                                     } else Modifier
                                                 )
                                                 .clip(CircleShape)
-                                                .background(if (isDayActive) (if (LocalIsDarkTheme.current) KlixNeonLime else Color(0xFF16A34A)) else DotInactiveColor)
-                                                .then(
-                                                    if (isToday && !isDayActive) {
-                                                        Modifier.border(1.5.dp, FlameOrange, CircleShape)
-                                                    } else Modifier
+                                                .background(
+                                                    when {
+                                                        isToday -> DarkInkOnLime
+                                                        isDayActive -> if (isDark) KlixAccentLime else Color(0xFF16A34A)
+                                                        else -> DotInactiveColor
+                                                    }
                                                 )
                                         )
                                     }
 
                                     Text(
                                         text = dayLabels[i],
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.Normal,
-                                        color = if (isToday) {
-                                            if (isDayActive) StreakActiveColor else FlameOrange
-                                        } else {
-                                            TextSecondary
-                                        }
+                                        fontSize = 12.sp,
+                                        fontFamily = PlusJakartaSans,
+                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isToday) DarkInkOnLime else KlixInkPrimary
                                     )
                                 }
                             }
@@ -738,11 +792,16 @@ fun DailyStreakDialog(
                             enabled = animStage == StreakAnimStage.IDLE,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
-                                .pressEffect(0.95f),
+                                .height(54.dp)
+                                .pressEffect(0.96f),
                             shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = FlameOrange
+                                containerColor = KlixAccentLime,
+                                contentColor = DarkInkOnLime
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 0.dp,
+                                pressedElevation = 0.dp
                             )
                         ) {
                             Row(
@@ -752,16 +811,16 @@ fun DailyStreakDialog(
                                 Icon(
                                     imageVector = Icons.Default.LocalFireDepartment,
                                     contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
+                                    tint = DarkInkOnLime,
+                                    modifier = Modifier.size(20.dp)
                                 )
                                 Text(
                                     text = "CLAIM TODAY'S STREAK",
-                                    fontSize = 13.5.sp,
+                                    fontSize = 14.sp,
                                     fontFamily = PlusJakartaSans,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp,
-                                    color = Color.White
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.6.sp,
+                                    color = DarkInkOnLime
                                 )
                             }
                         }
@@ -770,8 +829,8 @@ fun DailyStreakDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(GlassSurfaceElevatedColor)
-                                .glassBorder(RoundedCornerShape(16.dp), strokeWidth = 1.dp)
+                                .background(KlixSurfaceBentoGroup)
+                                .border(1.dp, KlixBorderHairline, RoundedCornerShape(16.dp))
                                 .padding(14.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -803,14 +862,14 @@ fun DailyStreakDialog(
                                 Icon(
                                     imageVector = Icons.Default.AccessTime,
                                     contentDescription = null,
-                                    tint = TextSecondary,
+                                    tint = KlixInkSecondary,
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Text(
                                     text = "Refreshes at 12 midnight (${StreakManager.formatTimeRemaining(millisUntilMidnight)})",
                                     fontSize = 11.sp,
                                     fontFamily = JetBrainsMono,
-                                    color = TextSecondary
+                                    color = KlixInkSecondary
                                 )
                             }
                         }
