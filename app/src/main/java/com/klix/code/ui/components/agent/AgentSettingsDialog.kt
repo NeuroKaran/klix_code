@@ -17,12 +17,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,6 +68,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -573,53 +579,52 @@ fun AgentSettingsDialog(
                             )
                         }
 
-                        // Models List
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (filteredModels.isEmpty()) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 12.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = if (isFetchingModels) "Discovering models from ${selectedProvider.displayName}..."
-                                               else "No matching models found.",
-                                        style = KlixTypography.bodySecondary,
-                                        color = KlixInkSecondary
-                                    )
-                                }
-                            } else {
-                                val displayedModels = remember(filteredModels, selectedModel) {
-                                    if (filteredModels.size <= 40) {
-                                        filteredModels
-                                    } else {
-                                        val top = filteredModels.take(40).toMutableList()
-                                        val selectedItem = filteredModels.find { it.id == selectedModel }
-                                        if (selectedItem != null && !top.contains(selectedItem)) {
-                                            top.add(0, selectedItem)
-                                        }
-                                        top
-                                    }
-                                }
+                        // Models List (capped at 3 visible rows; scroll inside card when more models exist)
+                        if (filteredModels.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (isFetchingModels) "Discovering models from ${selectedProvider.displayName}..."
+                                           else "No matching models found.",
+                                    style = KlixTypography.bodySecondary,
+                                    color = KlixInkSecondary
+                                )
+                            }
+                        } else {
+                            val modelRowMinHeight = rememberModelRowMinHeight()
+                            val maxVisibleModelsHeight = modelRowMinHeight * MAX_VISIBLE_MODEL_ROWS +
+                                8.dp * (MAX_VISIBLE_MODEL_ROWS - 1) + 2.dp
+                            val modelsListState = rememberLazyListState()
 
-                                displayedModels.forEach { model ->
+                            LaunchedEffect(selectedProvider, openRouterFilter, modelSearchQuery) {
+                                val selectedIndex = filteredModels.indexOfFirst { it.id == selectedModel }
+                                if (selectedIndex >= MAX_VISIBLE_MODEL_ROWS && modelSearchQuery.isBlank()) {
+                                    modelsListState.scrollToItem(selectedIndex)
+                                } else {
+                                    modelsListState.scrollToItem(0)
+                                }
+                            }
+
+                            LazyColumn(
+                                state = modelsListState,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = maxVisibleModelsHeight),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                itemsIndexed(
+                                    items = filteredModels,
+                                    key = { index, model -> "${model.provider.name}_${model.id}_$index" }
+                                ) { _, model ->
                                     ModelItemRow(
                                         model = model,
                                         isSelected = model.id == selectedModel,
+                                        minHeight = modelRowMinHeight,
                                         onClick = { selectedModel = model.id }
-                                    )
-                                }
-                                val extraCount = filteredModels.size - displayedModels.size
-                                if (extraCount > 0) {
-                                    Text(
-                                        text = "+ $extraCount more models (type in filter to search)",
-                                        style = KlixTypography.bodySecondary,
-                                        color = KlixInkSecondary,
-                                        modifier = Modifier.padding(start = 4.dp, top = 2.dp)
                                     )
                                 }
                             }
@@ -833,10 +838,23 @@ private fun ModelCategoryTab(
     }
 }
 
+private const val MAX_VISIBLE_MODEL_ROWS = 3
+
+@Composable
+private fun rememberModelRowMinHeight(): Dp {
+    val density = LocalDensity.current
+    return remember(density) {
+        with(density) {
+            22.dp + 20.sp.toDp() + 17.5.sp.toDp()
+        }
+    }
+}
+
 @Composable
 private fun ModelItemRow(
     model: DiscoveredModel,
     isSelected: Boolean,
+    minHeight: Dp,
     onClick: () -> Unit
 ) {
     val isDark = LocalIsDarkTheme.current
@@ -848,12 +866,14 @@ private fun ModelItemRow(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .defaultMinSize(minHeight = minHeight)
             .clip(RoundedCornerShape(16.dp))
             .background(bg)
             .border(1.dp, borderCol, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .pressEffect(0.97f)
-            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        contentAlignment = Alignment.CenterStart
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

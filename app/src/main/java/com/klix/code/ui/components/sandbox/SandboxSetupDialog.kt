@@ -20,10 +20,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -54,7 +58,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.klix.code.R
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.sandbox.SandboxStatus
-import com.klix.code.ui.components.KlixPrimaryPillButton
 import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.KlixBorderHairline
 import com.klix.code.ui.theme.KlixInkPrimary
@@ -132,6 +135,9 @@ fun SandboxConfigurationCard(
     val progress by sandboxManager.progress.collectAsState()
     val installedTools by sandboxManager.installedTools.collectAsState()
     val installingTools by sandboxManager.installingTools.collectAsState()
+    val isInstallingAll by sandboxManager.isInstallingAll.collectAsState()
+    val installAllProgress by sandboxManager.installAllProgress.collectAsState()
+    val installAllMessage by sandboxManager.installAllMessage.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val isDark = LocalIsDarkTheme.current
@@ -259,7 +265,7 @@ fun SandboxConfigurationCard(
                         val isReinstall = SandboxSetupUiHelper.isReinstall(status)
                         val actionLabel = SandboxSetupUiHelper.getActionLabel(status)
                         val actionIcon = SandboxSetupUiHelper.getActionIcon(status)
-                        val isInstalling = status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING
+                        val isInstalling = isInstallingAll || status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
@@ -294,11 +300,17 @@ fun SandboxConfigurationCard(
                 }
             }
 
-            // Progress if downloading
-            if (status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING) {
+            // Progress if downloading RootFS or running Download All
+            if (isInstallingAll || status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING) {
+                val activeProgress = if (isInstallingAll) installAllProgress else progress
+                val activeMessage = if (isInstallingAll) {
+                    installAllMessage ?: "Downloading all components..."
+                } else {
+                    statusMsg
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     LinearProgressIndicator(
-                        progress = { progress },
+                        progress = { activeProgress },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
@@ -307,7 +319,7 @@ fun SandboxConfigurationCard(
                         trackColor = if (isDark) Color(0xFF1E2638) else Color(0xFFE2E8F0)
                     )
                     Text(
-                        text = "$statusMsg (${(progress * 100).toInt()}%)",
+                        text = "$activeMessage (${(activeProgress * 100).toInt()}%)",
                         style = KlixTypography.bodySecondary,
                         color = KlixInkSecondary,
                         modifier = Modifier.align(Alignment.End)
@@ -328,6 +340,10 @@ fun SandboxConfigurationCard(
             val isCppInstalled = installedTools["c/c++"] == true
 
             fun handleToolClick(toolId: String, installCmd: String, reinstallCmd: String, isInstalled: Boolean) {
+                if (isInstallingAll) {
+                    Toast.makeText(context, "Download All is currently in progress", Toast.LENGTH_SHORT).show()
+                    return
+                }
                 if (status != SandboxStatus.READY) {
                     Toast.makeText(context, "Please install Alpine Linux RootFS first", Toast.LENGTH_SHORT).show()
                     return
@@ -556,28 +572,117 @@ fun SandboxConfigurationCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // 5. Primary CTA: [>_] Open Linux Terminal
-            KlixPrimaryPillButton(
-                text = "Open Linux Terminal",
-                onClick = onOpenTerminal,
-                leadingIcon = {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isDark) Color(0xFF0C0D14) else Color(0xFFD5FB66)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = ">_",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace,
-                            color = if (isDark) Color(0xFFD5FB66) else Color(0xFF0C0D14)
-                        )
+            // 5. Primary CTA: Download All (RootFS + all pre-configured toolchains)
+            val allToolsInstalled = isNodeInstalled && isPythonInstalled && isGitInstalled && isCppInstalled
+            val everythingReady = status == SandboxStatus.READY && allToolsInstalled
+            val isRootFsBusy = status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING
+
+            val ctaContainerColor = when {
+                everythingReady -> if (isDark) Color(0xFF16302B) else Color(0xFFDCFCE7)
+                isInstallingAll || isRootFsBusy -> Color(0xFFD5FB66).copy(alpha = 0.55f)
+                else -> Color(0xFFD5FB66)
+            }
+            val ctaContentColor = when {
+                everythingReady -> if (isDark) Color(0xFFD5FB66) else Color(0xFF15803D)
+                else -> Color(0xFF0C0D14)
+            }
+            val ctaBorderColor = when {
+                everythingReady -> if (isDark) Color(0xFFD5FB66).copy(alpha = 0.35f) else Color(0xFF16A34A).copy(alpha = 0.35f)
+                else -> if (isDark) Color.Transparent else Color(0xFF84CC16).copy(alpha = 0.45f)
+            }
+
+            Button(
+                onClick = {
+                    if (everythingReady) {
+                        Toast.makeText(context, "RootFS and all toolchains are already installed", Toast.LENGTH_SHORT).show()
+                    } else {
+                        sandboxManager.launchInstallAll { result ->
+                            result.onSuccess {
+                                Toast.makeText(context, "All sandbox components installed!", Toast.LENGTH_SHORT).show()
+                            }.onFailure { err ->
+                                Toast.makeText(context, err.message ?: "Download All failed", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                },
+                enabled = !isInstallingAll && !isRootFsBusy,
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ctaContainerColor,
+                    contentColor = ctaContentColor,
+                    disabledContainerColor = ctaContainerColor,
+                    disabledContentColor = ctaContentColor.copy(alpha = 0.85f)
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .border(1.dp, ctaBorderColor, CircleShape)
+                    .pressEffect(if (isInstallingAll || isRootFsBusy) 1f else 0.96f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    when {
+                        isInstallingAll || isRootFsBusy -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.2.dp,
+                                color = ctaContentColor
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Downloading Everything...",
+                                style = KlixTypography.bodyPrimary,
+                                fontWeight = FontWeight.Bold,
+                                color = ctaContentColor
+                            )
+                        }
+                        everythingReady -> {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = ctaContentColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Everything Installed",
+                                style = KlixTypography.bodyPrimary,
+                                fontWeight = FontWeight.Bold,
+                                color = ctaContentColor
+                            )
+                        }
+                        else -> {
+                            Box(
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF0C0D14)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = null,
+                                    tint = Color(0xFFD5FB66),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Download All",
+                                style = KlixTypography.bodyPrimary,
+                                fontWeight = FontWeight.Bold,
+                                color = ctaContentColor
+                            )
+                        }
                     }
                 }
-            )
+            }
         }
     }
 

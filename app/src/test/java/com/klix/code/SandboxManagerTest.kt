@@ -167,4 +167,38 @@ class SandboxManagerTest {
         sandboxManager.setToolInstalling("nodejs", false)
         assertFalse(sandboxManager.installingTools.value.contains("nodejs"))
     }
+
+    @Test
+    fun testInstallAllRejectsConcurrentExecution() = runBlocking {
+        val installingAllField = SandboxManager::class.java.getDeclaredField("_isInstallingAll")
+        installingAllField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val installingAllFlow = installingAllField.get(sandboxManager) as kotlinx.coroutines.flow.MutableStateFlow<Boolean>
+        installingAllFlow.value = true
+
+        val result = sandboxManager.installAll()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+        assertEquals("Installation is already in progress", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun testInstallAllSucceedsImmediatelyWhenEverythingReady() = runBlocking {
+        val rootfs = sandboxManager.getRootfsDir()
+        File(rootfs, "bin").mkdirs()
+        File(rootfs, "bin/sh").writeText("#!/bin/sh\n")
+        val etcApk = File(rootfs, "etc/apk").apply { mkdirs() }
+        File(etcApk, "world").writeText("nodejs\npython3\ngit\nbuild-base\n")
+
+        val statusField = SandboxManager::class.java.getDeclaredField("_status")
+        statusField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val statusFlow = statusField.get(sandboxManager) as kotlinx.coroutines.flow.MutableStateFlow<SandboxStatus>
+        statusFlow.value = SandboxStatus.READY
+
+        val result = sandboxManager.installAll()
+        assertTrue(result.isSuccess)
+        assertFalse(sandboxManager.isInstallingAll.value)
+        assertEquals(1.0f, sandboxManager.installAllProgress.value)
+    }
 }

@@ -2,10 +2,15 @@ package com.klix.code.data.sandbox
 
 import android.content.Context
 import android.os.Build
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -47,6 +52,30 @@ class SandboxManager(private val context: Context) {
 
     private val _installingTools = MutableStateFlow<Set<String>>(emptySet())
     val installingTools: StateFlow<Set<String>> = _installingTools.asStateFlow()
+
+    private val _isInstallingAll = MutableStateFlow(false)
+    val isInstallingAll: StateFlow<Boolean> = _isInstallingAll.asStateFlow()
+
+    private val _installAllProgress = MutableStateFlow(0f)
+    val installAllProgress: StateFlow<Float> = _installAllProgress.asStateFlow()
+
+    private val _installAllMessage = MutableStateFlow<String?>(null)
+    val installAllMessage: StateFlow<String?> = _installAllMessage.asStateFlow()
+
+    private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private data class PreconfiguredToolchain(
+        val id: String,
+        val label: String,
+        val apkCommand: String
+    )
+
+    private val preconfiguredToolchains = listOf(
+        PreconfiguredToolchain("nodejs", "Node.js", "apk add nodejs npm"),
+        PreconfiguredToolchain("python3", "Python 3", "apk add python3 py3-pip"),
+        PreconfiguredToolchain("git", "Git", "apk add git"),
+        PreconfiguredToolchain("c/c++", "C/C++", "apk add build-base")
+    )
 
     init {
         refreshInstalledTools()
@@ -254,6 +283,111 @@ class SandboxManager(private val context: Context) {
             _status.value = SandboxStatus.ERROR
             _statusMessage.value = "Installation error: ${e.message}"
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Launches a full installation (Alpine Linux RootFS if needed + all missing pre-configured toolchains)
+     * on the manager's background scope so it continues even if the setup dialog is dismissed.
+     */
+    fun launchInstallAll(onComplete: ((Result<Unit>) -> Unit)? = null) {
+        managerScope.launch {
+            val result = installAll()
+            if (onComplete != null) {
+                withContext(Dispatchers.Main) {
+                    onComplete(result)
+                }
+            }
+        }
+    }
+
+    /**
+     * Installs Alpine Linux RootFS (if not already installed) followed by all missing
+     * pre-configured toolchains (Node.js, Python 3, Git, C/C++).
+     */
+    suspend fun installAll(): Result<Unit> = withContext(Dispatchers.IO) {
+        if (_isInstallingAll.value ||
+            _status.value == SandboxStatus.DOWNLOADING ||
+            _status.value == SandboxStatus.EXTRACTING
+        ) {
+            return@withContext Result.failure(IllegalStateException("Installation is already in progress"))
+        }
+
+        _isInstallingAll.value = true
+        _installAllProgress.value = 0.02f
+        _installAllMessage.value = "Preparing local sandbox..."
+
+        try {
+            val needsRootFs = !isInstalled() || _status.value != SandboxStatus.READY
+            if (needsRootFs) {
+                val monitorJob = launch {
+                    while (isActive) {
+                        val currentProgress = _progress.value
+                        val currentMessage = _statusMessage.value
+                        _installAllProgress.value = (0.02f + currentProgress * 0.43f).coerceIn(0.02f, 0.45f)
+                        if (currentMessage.isNotBlank()) {
+                            _installAllMessage.value = currentMessage
+                        }
+                        delay(100)
+                    }
+                }
+                val rootResult = try {
+                    installSandbox()
+                } finally {
+                    monitorJob.cancel()
+                }
+
+                if (rootResult.isFailure) {
+                    val err = rootResult.exceptionOrNull()?.message ?: "Failed to install Alpine Linux RootFS"
+                    _installAllMessage.value = err
+                    return@withContext Result.failure(rootResult.exceptionOrNull() ?: IllegalStateException(err))
+                }
+            }
+
+            refreshInstalledTools()
+            val missingTools = preconfiguredToolchains.filter { !isToolInstalled(it.id) }
+            val startProgress = if (needsRootFs) 0.45f else 0.05f
+
+            if (missingTools.isNotEmpty()) {
+                val executionProvider = SandboxExecutionProvider(context, this@SandboxManager)
+                val failedTools = mutableListOf<String>()
+
+                for ((index, tool) in missingTools.withIndex()) {
+                    setToolInstalling(tool.id, true)
+                    _installAllMessage.value = "Installing ${tool.label} (${index + 1}/${missingTools.size})..."
+                    _installAllProgress.value = startProgress + (1f - startProgress) * (index.toFloat() / missingTools.size)
+
+                    val cmdResult = try {
+                        executionProvider.runCommand(tool.apkCommand)
+                    } finally {
+                        setToolInstalling(tool.id, false)
+                    }
+
+                    refreshInstalledTools()
+                    if (!cmdResult.isSuccess && !isToolInstalled(tool.id)) {
+                        failedTools.add(tool.label)
+                    }
+
+                    _installAllProgress.value = startProgress + (1f - startProgress) * ((index + 1).toFloat() / missingTools.size)
+                }
+
+                if (failedTools.isNotEmpty()) {
+                    val msg = "Failed to install: ${failedTools.joinToString(", ")}"
+                    _installAllMessage.value = msg
+                    return@withContext Result.failure(IllegalStateException(msg))
+                }
+            }
+
+            _installAllProgress.value = 1.0f
+            _installAllMessage.value = "All toolchains installed"
+            Result.success(Unit)
+        } catch (e: Exception) {
+            val msg = e.message ?: "Download All failed"
+            _installAllMessage.value = msg
+            Result.failure(e)
+        } finally {
+            preconfiguredToolchains.forEach { setToolInstalling(it.id, false) }
+            _isInstallingAll.value = false
         }
     }
 
@@ -468,6 +602,9 @@ class SandboxManager(private val context: Context) {
             _status.value = SandboxStatus.NOT_INSTALLED
             _statusMessage.value = "Sandbox not installed"
             _progress.value = 0f
+            _isInstallingAll.value = false
+            _installAllProgress.value = 0f
+            _installAllMessage.value = null
             refreshInstalledTools()
             true
         } catch (_: Exception) {
