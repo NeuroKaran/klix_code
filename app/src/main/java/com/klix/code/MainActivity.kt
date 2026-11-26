@@ -76,10 +76,13 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -488,18 +491,36 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val isDark = LocalIsDarkTheme.current
-                if (!isOnboardingCompleted) {
-                    com.klix.code.ui.onboarding.KlixOnboardingScreen(
-                        isDark = isDark,
-                        sandboxManager = terminalViewModel.sandboxManager,
-                        onComplete = {
-                            isOnboardingCompleted = true
-                            agentViewModel.syncHarnessConfig()
-                            terminalViewModel.sandboxManager.refreshInstalledTools()
-                        }
-                    )
-                } else {
-                    Box(modifier = Modifier.fillMaxSize()) {
+                AnimatedContent(
+                    targetState = isOnboardingCompleted,
+                    transitionSpec = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 420,
+                                delayMillis = 80,
+                                easing = FastOutSlowInEasing
+                            )
+                        ) togetherWith fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 280,
+                                easing = FastOutSlowInEasing
+                            )
+                        )
+                    },
+                    label = "onboardingRootTransition"
+                ) { completed ->
+                    if (!completed) {
+                        com.klix.code.ui.onboarding.KlixOnboardingScreen(
+                            isDark = isDark,
+                            sandboxManager = terminalViewModel.sandboxManager,
+                            onComplete = {
+                                isOnboardingCompleted = true
+                                agentViewModel.syncHarnessConfig()
+                                terminalViewModel.sandboxManager.refreshInstalledTools()
+                            }
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize()) {
                     ModalNavigationDrawer(
                     drawerState = drawerState,
                     gesturesEnabled = openTabs.isEmpty() || drawerState.isOpen,
@@ -1131,6 +1152,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
+                    }
                     }
                 }
 

@@ -7,6 +7,7 @@ import com.klix.code.data.agent.model.ProviderSettings
 import com.klix.code.data.security.KeyManager
 import com.klix.code.ui.onboarding.OnboardingViewModel
 import com.klix.code.ui.onboarding.ToolchainOption
+import com.klix.code.ui.onboarding.computeProgressRailLayout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -139,5 +140,46 @@ class OnboardingFlowTest {
 
         assertTrue(callbackCalled)
         assertEquals(true, prefValues["onboarding_completed"])
+    }
+
+    @Test
+    fun testProgressRailRestingLayoutsPreserveSpacingAndWidth() {
+        for (page in 0 until 4) {
+            val layout = computeProgressRailLayout(
+                leftIndex = page.toFloat(),
+                rightIndex = page.toFloat()
+            )
+            assertEquals(69f, layout.totalWidthDp, 0.001f)
+            assertEquals(30f, layout.pillRightDp - layout.pillLeftDp, 0.001f)
+            assertEquals(page * 13f, layout.pillLeftDp, 0.001f)
+            assertEquals(3, layout.inactiveDots.size)
+            for (dot in layout.inactiveDots) {
+                assertEquals(7f, dot.rightDp - dot.leftDp, 0.001f)
+                assertTrue(dot.leftDp >= 0f && dot.rightDp <= layout.totalWidthDp)
+            }
+        }
+    }
+
+    @Test
+    fun testProgressRailForwardAndBackwardSlideExpandsPillWithinBounds() {
+        // Forward step (Next: 0 -> 1): both dot 0 (left) and dot 1 (right) partially peek outside the sliding pill
+        val forwardMid = computeProgressRailLayout(leftIndex = 0.25f, rightIndex = 0.85f)
+        assertTrue(forwardMid.pillRightDp - forwardMid.pillLeftDp > 30f)
+        assertTrue(forwardMid.pillLeftDp >= 0f && forwardMid.pillRightDp <= forwardMid.totalWidthDp)
+        assertEquals(4, forwardMid.inactiveDots.size)
+        assertEquals(0f, forwardMid.inactiveDots[0].leftDp, 0.001f)
+        assertEquals(36f, forwardMid.inactiveDots[1].leftDp, 0.001f)
+
+        // Backward step (Back: 1 -> 0): reverse symmetry keeps pill expanded and dots in bounds
+        val backwardMid = computeProgressRailLayout(leftIndex = 0.15f, rightIndex = 0.75f)
+        assertTrue(backwardMid.pillRightDp - backwardMid.pillLeftDp > 30f)
+        assertTrue(backwardMid.pillLeftDp >= 0f && backwardMid.pillRightDp <= backwardMid.totalWidthDp)
+        assertEquals(4, backwardMid.inactiveDots.size)
+
+        // Multi-page skip sweep (0 -> 3): intermediate dots 1 & 2 are covered by the sweeping capsule
+        val skipMid = computeProgressRailLayout(leftIndex = 0.4f, rightIndex = 2.6f)
+        assertTrue(skipMid.pillRightDp - skipMid.pillLeftDp > 50f)
+        assertTrue(skipMid.pillLeftDp >= 0f && skipMid.pillRightDp <= skipMid.totalWidthDp)
+        assertEquals(2, skipMid.inactiveDots.size) // dot 0 on left, dot 3 on right
     }
 }

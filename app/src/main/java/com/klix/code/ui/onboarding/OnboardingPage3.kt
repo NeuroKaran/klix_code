@@ -20,17 +20,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,25 +41,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.R
 import com.klix.code.data.agent.model.ModelProvider
+import kotlinx.coroutines.delay
 
 @Composable
 fun OnboardingPage3(
     isDark: Boolean,
     selectedProvider: ModelProvider,
     onSelectProvider: (ModelProvider) -> Unit,
-    onConnectKey: () -> Unit,
-    onOfflineMode: () -> Unit,
-    onBack: () -> Unit,
-    onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var hasEntered by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        delay(100)
         hasEntered = true
     }
 
@@ -80,19 +71,9 @@ fun OnboardingPage3(
     )
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .navigationBarsPadding()
-            .padding(bottom = 24.dp),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Bar
-        OnboardingTopBar(
-            isDark = isDark,
-            onBack = onBack,
-            onSkip = onSkip
-        )
-
         Spacer(modifier = Modifier.height(2.dp))
 
         // Peeking Mascot resting on top of the sheet
@@ -235,47 +216,6 @@ fun OnboardingPage3(
 
                 Spacer(modifier = Modifier.weight(1f))
             }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Progress Rail
-        OnboardingProgressRail(
-            currentPage = 2,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Bottom Actions: Stacked "Connect My Key »" + "I'll Code Offline First"
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            OnboardingPillButton(
-                text = "Connect My Key",
-                onClick = onConnectKey,
-                backgroundColor = OnboardingColors.ObsidianInk,
-                contentColor = OnboardingColors.WhitePure,
-                chevronAccentColor = OnboardingColors.LimeAccent
-            )
-
-            // Secondary Action: "I'll Code Offline First"
-            Text(
-                text = "I'll Code Offline First",
-                fontFamily = OnboardingFonts.PlusJakartaSans,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp,
-                textDecoration = TextDecoration.Underline,
-                color = OnboardingColors.textPrimary(isDark).copy(alpha = 0.85f),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onOfflineMode() }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            )
         }
     }
 }

@@ -16,21 +16,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,8 +38,6 @@ import kotlin.math.sin
 @Composable
 fun OnboardingPage4(
     isDark: Boolean,
-    onComplete: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "page4Celebration")
@@ -71,19 +65,9 @@ fun OnboardingPage4(
     )
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .navigationBarsPadding()
-            .padding(bottom = 24.dp),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Bar (with back arrow)
-        OnboardingTopBar(
-            isDark = isDark,
-            onBack = onBack,
-            onSkip = null
-        )
-
         Spacer(modifier = Modifier.weight(0.3f))
 
         // Upper Stage: Celebration Mascot & Dynamic Star Accents
@@ -175,25 +159,6 @@ fun OnboardingPage4(
         }
 
         Spacer(modifier = Modifier.weight(1f))
-
-        // Progress Rail (dot 4 active)
-        OnboardingProgressRail(
-            currentPage = 3,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Bottom CTA: "Let's Ship Something »"
-        Box(modifier = Modifier.padding(horizontal = 24.dp)) {
-            OnboardingPillButton(
-                text = "Let's Ship Something",
-                onClick = onComplete,
-                backgroundColor = OnboardingColors.ObsidianInk,
-                contentColor = OnboardingColors.WhitePure,
-                chevronAccentColor = OnboardingColors.LimeAccent
-            )
-        }
     }
 }
 

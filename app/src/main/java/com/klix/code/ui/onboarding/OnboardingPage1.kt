@@ -16,11 +16,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,13 +32,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.R
-import kotlin.math.sin
 
 @Composable
 fun OnboardingPage1(
     isDark: Boolean,
-    onNext: () -> Unit,
-    onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "page1Motion")
@@ -56,31 +51,10 @@ fun OnboardingPage1(
         label = "mascotFloat"
     )
 
-    // Gentle sparkle pulse
-    val sparkleScale by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "sparklePulse"
-    )
-
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .navigationBarsPadding()
-            .padding(bottom = 24.dp),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Bar with Skip
-        OnboardingTopBar(
-            isDark = isDark,
-            onBack = null,
-            onSkip = onSkip
-        )
-
         Spacer(modifier = Modifier.height(8.dp))
 
         // Headline & Subtitle Section
@@ -224,25 +198,6 @@ fun OnboardingPage1(
         }
 
         Spacer(modifier = Modifier.weight(1f))
-
-        // Bottom Progress Rail
-        OnboardingProgressRail(
-            currentPage = 0,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Primary Call To Action Button: "Prove Me Wrong »"
-        Box(modifier = Modifier.padding(horizontal = 24.dp)) {
-            OnboardingPillButton(
-                text = "Prove Me Wrong",
-                onClick = onNext,
-                backgroundColor = OnboardingColors.ObsidianInk,
-                contentColor = OnboardingColors.WhitePure,
-                chevronAccentColor = OnboardingColors.LimeAccent
-            )
-        }
     }
 }
 

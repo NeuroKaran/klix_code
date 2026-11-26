@@ -1,17 +1,24 @@
 package com.klix.code.ui.onboarding
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -49,7 +56,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,7 +66,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -69,7 +80,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -78,6 +88,7 @@ import com.klix.code.R
 import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.theme.LocalIsDarkTheme
+import kotlinx.coroutines.launch
 import kotlin.math.sin
 
 /**
@@ -180,93 +191,228 @@ fun OnboardingTopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (onBack != null) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.size(48.dp)
+        Box(
+            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            var latestOnBack by remember { mutableStateOf(onBack) }
+            if (onBack != null) latestOnBack = onBack
+
+            androidx.compose.animation.AnimatedVisibility(
+                visible = onBack != null,
+                enter = fadeIn(animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing))
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = OnboardingColors.textPrimary(isDark),
-                    modifier = Modifier.size(24.dp)
-                )
+                IconButton(
+                    onClick = { latestOnBack?.invoke() },
+                    enabled = onBack != null,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = OnboardingColors.textPrimary(isDark),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
-        } else {
-            Spacer(modifier = Modifier.size(48.dp))
         }
 
-        if (onSkip != null) {
-            Box(
-                modifier = Modifier
-                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(
-                        onClick = onSkip,
-                        role = Role.Button
-                    )
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
+        Box(
+            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            var latestOnSkip by remember { mutableStateOf(onSkip) }
+            if (onSkip != null) latestOnSkip = onSkip
+
+            androidx.compose.animation.AnimatedVisibility(
+                visible = onSkip != null,
+                enter = fadeIn(animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing))
             ) {
-                Text(
-                    text = "Skip",
-                    fontFamily = OnboardingFonts.PlusJakartaSans,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp,
-                    textDecoration = TextDecoration.Underline,
-                    color = OnboardingColors.textPrimary(isDark).copy(alpha = 0.85f)
-                )
+                Box(
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(
+                            enabled = onSkip != null,
+                            onClick = { latestOnSkip?.invoke() },
+                            role = Role.Button
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Skip",
+                        fontFamily = OnboardingFonts.PlusJakartaSans,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        textDecoration = TextDecoration.Underline,
+                        color = OnboardingColors.textPrimary(isDark).copy(alpha = 0.85f)
+                    )
+                }
             }
-        } else {
-            Spacer(modifier = Modifier.size(48.dp))
         }
     }
 }
 
+internal data class ProgressDotBounds(
+    val leftDp: Float,
+    val rightDp: Float
+)
+
+internal data class ProgressRailLayout(
+    val totalWidthDp: Float,
+    val pillLeftDp: Float,
+    val pillRightDp: Float,
+    val inactiveDots: List<ProgressDotBounds>
+)
+
+internal fun computeProgressRailLayout(
+    leftIndex: Float,
+    rightIndex: Float,
+    pageCount: Int = 4,
+    dotSizeDp: Float = 7f,
+    pillWidthDp: Float = 30f,
+    spacingDp: Float = 6f
+): ProgressRailLayout {
+    val maxIndex = (pageCount - 1).coerceAtLeast(0).toFloat()
+    val safeLeft = minOf(leftIndex, rightIndex).coerceIn(0f, maxIndex)
+    val safeRight = maxOf(leftIndex, rightIndex).coerceIn(0f, maxIndex)
+    val stepDp = dotSizeDp + spacingDp
+    val totalWidthDp = spacingDp * (pageCount - 1) + dotSizeDp * (pageCount - 1) + pillWidthDp
+    val pillLeftDp = safeLeft * stepDp
+    val pillRightDp = safeRight * stepDp + pillWidthDp
+
+    val inactiveDots = buildList {
+        for (i in 0 until pageCount) {
+            val dotLeft = when {
+                i < safeLeft -> i * stepDp
+                i > safeRight -> i * stepDp + (pillWidthDp - dotSizeDp)
+                else -> continue
+            }
+            add(ProgressDotBounds(leftDp = dotLeft, rightDp = dotLeft + dotSizeDp))
+        }
+    }
+
+    return ProgressRailLayout(
+        totalWidthDp = totalWidthDp,
+        pillLeftDp = pillLeftDp,
+        pillRightDp = pillRightDp,
+        inactiveDots = inactiveDots
+    )
+}
+
 /**
- * 4-dot Progress Rail.
- * Active dot expands into a 32.dp pill, inactive dots are 8.dp circles.
+ * 4-dot Progress Rail with smooth sliding + expanding capsule animation.
+ * Active dot expands into a 30.dp pill, inactive dots are 7.dp circles.
  */
 @Composable
 fun OnboardingProgressRail(
     currentPage: Int,
     isDark: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pageCount: Int = 4
 ) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        for (i in 0 until 4) {
-            val isActive = i == currentPage
-            val width: Dp by animateDpAsState(
-                targetValue = if (isActive) 30.dp else 7.dp,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                ),
-                label = "dotWidth"
-            )
+    val clampedPage = currentPage.coerceIn(0, pageCount - 1)
+    val leftIndex = remember { Animatable(clampedPage.toFloat()) }
+    val rightIndex = remember { Animatable(clampedPage.toFloat()) }
+    var previousPage by remember { mutableIntStateOf(clampedPage) }
 
-            val color = if (isActive) {
-                if (isDark) OnboardingColors.LimeAccent else OnboardingColors.ObsidianInk
-            } else {
-                if (isDark) Color(0xFF334155) else Color(0xFFCBD5E1)
+    LaunchedEffect(clampedPage) {
+        val target = clampedPage.toFloat()
+        if (leftIndex.value == target && rightIndex.value == target) {
+            previousPage = clampedPage
+            return@LaunchedEffect
+        }
+
+        val movingForward = clampedPage >= previousPage
+        previousPage = clampedPage
+
+        // Lead edge advances first and trailing edge catches up so the pill smoothly expands and glides
+        if (movingForward) {
+            launch {
+                rightIndex.animateTo(
+                    targetValue = target,
+                    animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing)
+                )
             }
+            launch {
+                leftIndex.animateTo(
+                    targetValue = target,
+                    animationSpec = tween(durationMillis = 340, delayMillis = 75, easing = FastOutSlowInEasing)
+                )
+            }
+        } else {
+            launch {
+                leftIndex.animateTo(
+                    targetValue = target,
+                    animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing)
+                )
+            }
+            launch {
+                rightIndex.animateTo(
+                    targetValue = target,
+                    animationSpec = tween(durationMillis = 340, delayMillis = 75, easing = FastOutSlowInEasing)
+                )
+            }
+        }
+    }
 
-            Box(
-                modifier = Modifier
-                    .size(width = width, height = 7.dp)
-                    .clip(CircleShape)
-                    .background(color)
+    val activeColor by animateColorAsState(
+        targetValue = if (isDark) OnboardingColors.LimeAccent else OnboardingColors.ObsidianInk,
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+        label = "railActiveColor"
+    )
+    val inactiveColor by animateColorAsState(
+        targetValue = if (isDark) Color(0xFF334155) else Color(0xFFCBD5E1),
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+        label = "railInactiveColor"
+    )
+
+    val dotSizeDp = 7f
+    val pillWidthDp = 30f
+    val spacingDp = 6f
+    val totalWidthDp = spacingDp * (pageCount - 1) + dotSizeDp * (pageCount - 1) + pillWidthDp
+
+    Canvas(
+        modifier = modifier
+            .width(totalWidthDp.dp)
+            .height(dotSizeDp.dp)
+    ) {
+        val layout = computeProgressRailLayout(
+            leftIndex = leftIndex.value,
+            rightIndex = rightIndex.value,
+            pageCount = pageCount,
+            dotSizeDp = dotSizeDp,
+            pillWidthDp = pillWidthDp,
+            spacingDp = spacingDp
+        )
+        val dotSizePx = dotSizeDp.dp.toPx()
+        val radius = dotSizePx / 2f
+
+        for (dot in layout.inactiveDots) {
+            val dotLeftPx = dot.leftDp.dp.toPx()
+            drawCircle(
+                color = inactiveColor,
+                radius = radius,
+                center = Offset(x = dotLeftPx + radius, y = size.height / 2f)
             )
         }
+
+        val pillLeftPx = layout.pillLeftDp.dp.toPx()
+        val pillRightPx = layout.pillRightDp.dp.toPx()
+        drawRoundRect(
+            color = activeColor,
+            topLeft = Offset(x = pillLeftPx, y = 0f),
+            size = Size(width = (pillRightPx - pillLeftPx).coerceAtLeast(dotSizePx), height = dotSizePx),
+            cornerRadius = CornerRadius(radius, radius)
+        )
     }
 }
 
 /**
- * Primary Pill Call-To-Action Button with smooth press bounce and chevron.
+ * Primary Pill Call-To-Action Button with smooth press bounce, crossfading label, and chevron.
  */
 @Composable
 fun OnboardingPillButton(
@@ -307,42 +453,72 @@ fun OnboardingPillButton(
             .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = contentColor,
-                strokeWidth = 2.5.dp
-            )
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = text,
-                    fontFamily = OnboardingFonts.PlusJakartaSans,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = contentColor
-                )
+        Crossfade(
+            targetState = isLoading,
+            animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+            label = "pillBtnLoading"
+        ) { loading ->
+            if (loading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = contentColor,
+                        strokeWidth = 2.5.dp
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    AnimatedContent(
+                        targetState = text,
+                        transitionSpec = {
+                            fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = 240,
+                                    delayMillis = 80,
+                                    easing = FastOutSlowInEasing
+                                )
+                            ) togetherWith fadeOut(
+                                animationSpec = tween(
+                                    durationMillis = 150,
+                                    easing = FastOutLinearInEasing
+                                )
+                            )
+                        },
+                        label = "pillBtnText"
+                    ) { labelText ->
+                        Text(
+                            text = labelText,
+                            fontFamily = OnboardingFonts.PlusJakartaSans,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = contentColor
+                        )
+                    }
 
-                // Double Chevrons »
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = chevronAccentColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = chevronAccentColor,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .offset(x = (-10).dp)
-                    )
+                    // Double Chevrons »
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = chevronAccentColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = chevronAccentColor,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .offset(x = (-10).dp)
+                        )
+                    }
                 }
             }
         }

@@ -24,18 +24,14 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -56,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.R
+import kotlinx.coroutines.delay
 
 @Composable
 fun OnboardingPage2(
@@ -63,14 +60,12 @@ fun OnboardingPage2(
     selectedTools: Set<ToolchainOption>,
     installState: SandboxInstallState,
     onToggleTool: (ToolchainOption) -> Unit,
-    onInstallAndContinue: () -> Unit,
     onRetry: () -> Unit,
-    onBack: () -> Unit,
-    onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var hasEntered by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        delay(100)
         hasEntered = true
     }
 
@@ -89,19 +84,9 @@ fun OnboardingPage2(
         installState is SandboxInstallState.InstallingPackages
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .navigationBarsPadding()
-            .padding(bottom = 24.dp),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Bar
-        OnboardingTopBar(
-            isDark = isDark,
-            onBack = if (!isInstalling) onBack else null,
-            onSkip = if (!isInstalling) onSkip else null
-        )
-
         Spacer(modifier = Modifier.height(2.dp))
 
         // Peeking Mascot resting on top of the sheet
@@ -365,28 +350,6 @@ fun OnboardingPage2(
                     }
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Progress Rail
-        OnboardingProgressRail(
-            currentPage = 1,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Bottom CTA Button: "Install & Continue »"
-        Box(modifier = Modifier.padding(horizontal = 24.dp)) {
-            OnboardingPillButton(
-                text = if (isInstalling) "Provisioning Alpine..." else "Install & Continue",
-                onClick = onInstallAndContinue,
-                isLoading = isInstalling,
-                backgroundColor = OnboardingColors.ObsidianInk,
-                contentColor = OnboardingColors.WhitePure,
-                chevronAccentColor = OnboardingColors.LimeAccent
-            )
         }
     }
 }
