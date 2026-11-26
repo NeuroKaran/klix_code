@@ -1,9 +1,9 @@
 {
-  "versionCode": 23,
-  "versionName": "0.4.11",
+  "versionCode": 24,
+  "versionName": "0.5.0",
   "minSupportedVersionCode": 1,
-  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.4.11.apk",
-  "releaseNotes": "• Agent Chat Layout Bounds: Fixed subheader vertical expansion by enforcing tight height bounds (38dp) and responsive single-line truncation on model chips, provider text, and token counters\n• Model Selection Pill Hardening: Prevented character-by-character vertical text squishing on FREE/PAID status pills when displaying long model names\n• GlassBadge Wrap Prevention: Hardened glass pill badges app-wide with single-line and ellipsis constraints\n• Layout Stability: Guaranteed smooth chat messaging viewport with zero header void ballooning",
-  "releaseDate": "2026-11-22",
+  "apkUrl": "https://klixcode.vercel.app/klix-code-v0.5.0.apk",
+  "releaseNotes": "• Local Sandbox Download All: Added one-tap Download All provisioning for Alpine RootFS and core toolchains (Node.js, Python 3, Git, C/C++) with live progress tracking\n• AI Settings Model List: Capped Available Models card to 3 visible rows with smooth internal scrolling and auto-scroll to the active model\n• Onboarding & Sidepanel Redesign: Added smooth fade transitions with an expanding progress rail, bento sidepanel layout, pastel gradient, and elevated daily streak card\n• Stability & Lint Hardening: Fixed API 31+ splash screen theme attributes and widget RemoteViews spacer compatibility",
+  "releaseDate": "2026-11-26",
   "forceUpdate": false
 }
