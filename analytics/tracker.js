@@ -48,14 +48,14 @@ export function trackEvent(eventName, eventData = {}) {
 /**
  * Track an APK download event with structured metadata
  * @param {Object} options
- * @param {string} [options.version='v0.5.0']
+ * @param {string} [options.version='v0.6.0']
  * @param {'hero' | 'main_card' | 'mobile_nav' | 'footer' | 'qr_scan' | 'unknown'} [options.source='unknown']
- * @param {string} [options.fileName='klix-code-v0.5.0.apk']
+ * @param {string} [options.fileName='klix-code-v0.6.0.apk']
  */
 export function trackDownload({
-  version = 'v0.5.0',
+  version = 'v0.6.0',
   source = 'unknown',
-  fileName = 'klix-code-v0.5.0.apk',
+  fileName = 'klix-code-v0.6.0.apk',
 } = {}) {
   trackEvent('apk_download', {
     version,
@@ -88,13 +88,13 @@ export function getDownloadSource(element) {
 /**
  * Automatically bind tracking to all APK download links on the page
  * @param {Object} [config]
- * @param {string} [config.version='v0.5.0']
- * @param {string} [config.fileName='klix-code-v0.5.0.apk']
+ * @param {string} [config.version='v0.6.0']
+ * @param {string} [config.fileName='klix-code-v0.6.0.apk']
  * @param {Function} [config.onDownload] - Optional callback triggered on click (e.g. show toast)
  */
 export function initDownloadTracking({
-  version = 'v0.5.0',
-  fileName = 'klix-code-v0.5.0.apk',
+  version = 'v0.6.0',
+  fileName = 'klix-code-v0.6.0.apk',
   onDownload = null,
 } = {}) {
   if (typeof document === 'undefined') return;
