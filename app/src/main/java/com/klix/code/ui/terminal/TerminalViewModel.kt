@@ -10,10 +10,23 @@ import com.klix.code.data.stats.StreakManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+data class TerminalCommandCompletion(
+    val command: String,
+    val workingDir: String?,
+    val stdout: String,
+    val stderr: String,
+    val exitCode: Int,
+    val executionTimeMs: Long,
+    val timestamp: Long = System.currentTimeMillis()
+)
 
 internal object TerminalColors {
     val Primary = Color(0xFF3B82F6)
@@ -89,6 +102,9 @@ class TerminalViewModel @JvmOverloads constructor(
 
     private val _showSetupDialog = MutableStateFlow(false)
     val showSetupDialog: StateFlow<Boolean> = _showSetupDialog.asStateFlow()
+
+    private val _completedCommands = MutableSharedFlow<TerminalCommandCompletion>(extraBufferCapacity = 16)
+    val completedCommands: SharedFlow<TerminalCommandCompletion> = _completedCommands.asSharedFlow()
 
     init {
         val initialSession = TerminalSession(
@@ -443,6 +459,17 @@ class TerminalViewModel @JvmOverloads constructor(
                     appendSessionOutput(session, chunk, isStdout)
                 }
 
+                _completedCommands.tryEmit(
+                    TerminalCommandCompletion(
+                        command = effectiveCommand,
+                        workingDir = session.currentCwd,
+                        stdout = result.stdout,
+                        stderr = result.stderr,
+                        exitCode = result.exitCode,
+                        executionTimeMs = result.executionTimeMs
+                    )
+                )
+
                 result.newCwd?.let { newDir ->
                     if (newDir.isNotBlank() && result.isSuccess) {
                         session.currentCwd = newDir
@@ -484,6 +511,39 @@ class TerminalViewModel @JvmOverloads constructor(
         val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
         appendSessionOutput(session, text, isStdout)
+    }
+
+    fun logExternalExecution(command: String, stdout: String, stderr: String, exitCode: Int) {
+        val session = getActiveSession() ?: return
+        val cmdLine = TerminalLine(
+            text = "klix@mobile:${session.currentCwd}$ $command",
+            color = TerminalColors.Secondary,
+            isCommand = true,
+            isPrompt = false
+        )
+        synchronized(session) {
+            if (session.lines.isNotEmpty() && session.lines.last().isPrompt) {
+                session.lines[session.lines.size - 1] = cmdLine
+            } else {
+                session.lines.add(cmdLine)
+            }
+            session.lastLineHadNewline = true
+        }
+        if (session.id == _activeTerminalId.value) {
+            _terminalLines.value = session.lines.toList()
+        }
+        if (stdout.isNotBlank()) {
+            appendSessionOutput(session, if (stdout.endsWith("\n")) stdout else "$stdout\n", isStdout = true)
+        }
+        if (stderr.isNotBlank()) {
+            appendSessionOutput(session, if (stderr.endsWith("\n")) stderr else "$stderr\n", isStdout = false)
+        }
+        val statusColor = if (exitCode == 0) TerminalColors.Secondary else TerminalColors.Error
+        appendTerminalLine(
+            session,
+            TerminalLine(text = "[exit $exitCode]", color = statusColor, isError = exitCode != 0)
+        )
+        appendIdlePrompt(session)
     }
 
     private fun appendSessionOutput(session: TerminalSession, text: String, isStdout: Boolean) {

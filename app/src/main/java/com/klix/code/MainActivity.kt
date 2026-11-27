@@ -82,6 +82,8 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -146,8 +148,14 @@ import com.klix.code.ui.theme.ThemeManager
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
+import com.klix.code.data.model.FileNode
+import com.klix.code.ui.components.challenges.ChallengeSolvedDialog
+import com.klix.code.ui.components.challenges.ChallengeTrackerEditorCard
+import com.klix.code.ui.components.challenges.DailyChallengesCarouselScreen
+import com.klix.code.ui.viewmodel.ChallengeViewModel
 import com.klix.code.ui.viewmodel.EditorViewModel
 import com.klix.code.ui.viewmodel.UpdateViewModel
+import java.io.File
 import com.klix.code.ui.viewmodel.UpdateUIState
 import com.klix.code.ui.components.update.UpdateDialog
 import com.klix.code.ui.components.streak.DailyStreakDialog
@@ -186,6 +194,7 @@ class MainActivity : ComponentActivity() {
     private val agentViewModel: AgentViewModel by viewModels()
     private val terminalViewModel: TerminalViewModel by viewModels()
     private val updateViewModel: UpdateViewModel by viewModels()
+    private val challengeViewModel: ChallengeViewModel by viewModels()
 
     private var pendingWidgetAction by mutableStateOf<String?>(null)
     private var pendingProjectToOpen by mutableStateOf<Pair<Uri, String>?>(null)
@@ -271,8 +280,34 @@ class MainActivity : ComponentActivity() {
                 var showRecentProjectsDialog by remember { mutableStateOf(false) }
                 var isAgentPanelOpen by remember { mutableStateOf(false) }
                 var isTerminalOpen by remember { mutableStateOf(false) }
+                var isDailyChallengesOpen by rememberSaveable { mutableStateOf(false) }
                 var isOverflowMenuExpanded by rememberSaveable { mutableStateOf(false) }
                 var pendingUnsavedTabToClose by remember { mutableStateOf<EditorTab?>(null) }
+
+                val challengeProfile by challengeViewModel.profileState.collectAsState()
+                val isChallengeVerifying by challengeViewModel.isVerifying.collectAsState()
+                val challengeRewardEvent by challengeViewModel.rewardEvent.collectAsState()
+                val challengeRuntimeMissing by challengeViewModel.runtimeMissingPrompt.collectAsState()
+
+                val activeWorkspaceDir = remember(activeWorkspace, currentProject) {
+                    activeWorkspace?.let { viewModel.workspaceManager.getWorkspaceDirectory(it) }
+                        ?: currentProject?.uri?.path?.let { File(it) }
+                        ?: File(applicationContext.filesDir, "sandbox/rootfs/workspaces/default")
+                }
+
+                LaunchedEffect(terminalViewModel, activeWorkspaceDir) {
+                    terminalViewModel.completedCommands.collect { completion ->
+                        challengeViewModel.onTerminalCommandCompleted(
+                            command = completion.command,
+                            workingDir = completion.workingDir,
+                            stdout = completion.stdout,
+                            stderr = completion.stderr,
+                            exitCode = completion.exitCode,
+                            executionTimeMs = completion.executionTimeMs,
+                            workspaceDir = activeWorkspaceDir
+                        )
+                    }
+                }
 
                 val agentMessages by agentViewModel.messages.collectAsState()
                 val agentStatus by agentViewModel.status.collectAsState()
@@ -400,6 +435,7 @@ class MainActivity : ComponentActivity() {
                     showAgentPromptDialog ||
                     showRecentProjectsDialog ||
                     showDailyStreakDialog ||
+                    isDailyChallengesOpen ||
                     showSandboxWarningDialog ||
                     showSandboxSetup ||
                     isSlashCommandManagerOpen ||
@@ -427,6 +463,9 @@ class MainActivity : ComponentActivity() {
                         }
                         showDailyStreakDialog -> {
                             showDailyStreakDialog = false
+                        }
+                        isDailyChallengesOpen -> {
+                            isDailyChallengesOpen = false
                         }
                         showSandboxWarningDialog -> {
                             showSandboxWarningDialog = false
@@ -716,15 +755,52 @@ class MainActivity : ComponentActivity() {
                                                             viewModel.saveActiveTab()
                                                         }
                                                         activeTab?.let { tab ->
-                                                            val cmd = when (tab.extension.lowercase()) {
-                                                                "py" -> "python3 ${tab.name}"
-                                                                "js" -> "node ${tab.name}"
-                                                                "sh" -> "sh ${tab.name}"
-                                                                else -> "./${tab.name}"
+                                                            val matchedChallenge = challengeViewModel.getChallengeForUri(tab.uri)
+                                                            if (matchedChallenge != null) {
+                                                                val challengeFile = File(activeWorkspaceDir, matchedChallenge.relativeWorkspacePath)
+                                                                val sandboxCwd = activeWorkspace?.relativePath ?: "/workspaces/default"
+                                                                challengeViewModel.verifyAndRunChallenge(
+                                                                    challengeId = matchedChallenge.id,
+                                                                    currentCode = tab.content,
+                                                                    challengeFile = challengeFile,
+                                                                    sandboxWorkingDir = sandboxCwd,
+                                                                    onComplete = { outcome ->
+                                                                        val cmd = "${matchedChallenge.language.runCommandPrefix} ${matchedChallenge.relativeWorkspacePath}"
+                                                                        terminalViewModel.logExternalExecution(
+                                                                            command = cmd,
+                                                                            stdout = outcome.stdout,
+                                                                            stderr = outcome.stderr,
+                                                                            exitCode = outcome.exitCode
+                                                                        )
+                                                                        val summary = if (outcome.allPassed) {
+                                                                            "All ${outcome.passedCount}/${outcome.totalCount} tests passed!"
+                                                                        } else if (outcome.runtimeMissing) {
+                                                                            "Python 3 runtime not installed in sandbox"
+                                                                        } else {
+                                                                            "${outcome.passedCount}/${outcome.totalCount} tests passed"
+                                                                        }
+                                                                        Toast.makeText(applicationContext, summary, Toast.LENGTH_SHORT).show()
+                                                                    }
+                                                                )
+                                                            } else {
+                                                                val relPath = tab.uri.path?.let { rawPath ->
+                                                                    val wsPrefix = activeWorkspaceDir.absolutePath.trimEnd(File.separatorChar) + File.separator
+                                                                    if (rawPath.startsWith(wsPrefix)) {
+                                                                        rawPath.removePrefix(wsPrefix).replace('\\', '/')
+                                                                    } else {
+                                                                        tab.name
+                                                                    }
+                                                                } ?: tab.name
+                                                                val cmd = when (tab.extension.lowercase()) {
+                                                                    "py" -> "python3 \"$relPath\""
+                                                                    "js" -> "node \"$relPath\""
+                                                                    "sh" -> "sh \"$relPath\""
+                                                                    else -> "./\"$relPath\""
+                                                                }
+                                                                StreakManager.recordActivityRun(applicationContext)
+                                                                terminalViewModel.executeCommand(cmd)
+                                                                isTerminalOpen = true
                                                             }
-                                                            StreakManager.recordActivityRun(applicationContext)
-                                                            terminalViewModel.executeCommand(cmd)
-                                                            isTerminalOpen = true
                                                         }
                                                     }
                                                     .pressEffect(0.92f)
@@ -1075,6 +1151,7 @@ class MainActivity : ComponentActivity() {
                                                 fontSizeSp = fontSizeSp,
                                                 onContentChange = { newContent ->
                                                     viewModel.updateActiveTabContent(newContent)
+                                                    challengeViewModel.onCodeChanged(activeTab.uri, newContent)
                                                 },
                                                 onCursorChange = { line, col ->
                                                     viewModel.updateCursor(line, col)
@@ -1085,21 +1162,89 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
 
-                                    // Screen 7: Klix Buddy Inline Assistant Card
-                                    KlixBuddyCompanionCard(
-                                        activeFileName = activeTab.name,
-                                        onTriggerCommand = { cmd ->
-                                            agentViewModel.updateWorkspaceContext(
-                                                workspaceUri = currentProject?.uri,
-                                                workspaceName = currentProject?.name ?: "Workspace",
-                                                activeFileName = activeTab.name,
-                                                activeFileContent = activeTab.content
-                                            )
-                                            isAgentPanelOpen = true
-                                            agentViewModel.sendPrompt(cmd)
-                                        },
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
+                                    val activeChallenge = challengeViewModel.getChallengeForUri(activeTab.uri)
+                                    if (activeChallenge != null) {
+                                        val challengeProgress = challengeProfile.progressById[activeChallenge.id]
+                                        ChallengeTrackerEditorCard(
+                                            challenge = activeChallenge,
+                                            progress = challengeProgress,
+                                            currentCode = activeTab.content,
+                                            totalPoints = challengeProfile.totalPoints,
+                                            isVerifying = isChallengeVerifying,
+                                            runtimeMissing = challengeRuntimeMissing,
+                                            onRunAndVerify = {
+                                                if (activeTab.isModified) {
+                                                    viewModel.saveActiveTab()
+                                                }
+                                                val challengeFile = File(activeWorkspaceDir, activeChallenge.relativeWorkspacePath)
+                                                val sandboxCwd = activeWorkspace?.relativePath ?: "/workspaces/default"
+                                                challengeViewModel.verifyAndRunChallenge(
+                                                    challengeId = activeChallenge.id,
+                                                    currentCode = activeTab.content,
+                                                    challengeFile = challengeFile,
+                                                    sandboxWorkingDir = sandboxCwd,
+                                                    onComplete = { outcome ->
+                                                        val cmd = "${activeChallenge.language.runCommandPrefix} ${activeChallenge.relativeWorkspacePath}"
+                                                        terminalViewModel.logExternalExecution(
+                                                            command = cmd,
+                                                            stdout = outcome.stdout,
+                                                            stderr = outcome.stderr,
+                                                            exitCode = outcome.exitCode
+                                                        )
+                                                    }
+                                                )
+                                            },
+                                            onSetupSandbox = {
+                                                challengeViewModel.dismissRuntimeMissingPrompt()
+                                                terminalViewModel.openSetupDialog()
+                                            },
+                                            onAskBuddy = {
+                                                agentViewModel.updateWorkspaceContext(
+                                                    workspaceUri = currentProject?.uri,
+                                                    workspaceName = currentProject?.name ?: "Workspace",
+                                                    activeFileName = activeTab.name,
+                                                    activeFileContent = activeTab.content
+                                                )
+                                                val lastOut = challengeProgress?.lastOutput.orEmpty()
+                                                val lastErr = challengeProgress?.lastStderr.orEmpty()
+                                                val prompt = buildString {
+                                                    append("Help me solve the daily coding challenge '${activeChallenge.title}' (${activeChallenge.difficulty.label}). ")
+                                                    append("Problem: ${activeChallenge.description}\n")
+                                                    if (lastOut.isNotBlank() || lastErr.isNotBlank()) {
+                                                        append("My last tracked output was:\nstdout: $lastOut\nstderr: $lastErr\n")
+                                                    }
+                                                    append("Please give me a concise hint without rewriting everything unless asked.")
+                                                }
+                                                isAgentPanelOpen = true
+                                                agentViewModel.sendPrompt(prompt)
+                                            },
+                                            onResetStarter = {
+                                                scope.launch {
+                                                    val starter = challengeViewModel.resetChallengeToStarter(activeChallenge.id, activeWorkspaceDir)
+                                                    if (starter != null) {
+                                                        viewModel.updateActiveTabContent(starter)
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        )
+                                    } else {
+                                        // Screen 7: Klix Buddy Inline Assistant Card
+                                        KlixBuddyCompanionCard(
+                                            activeFileName = activeTab.name,
+                                            onTriggerCommand = { cmd ->
+                                                agentViewModel.updateWorkspaceContext(
+                                                    workspaceUri = currentProject?.uri,
+                                                    workspaceName = currentProject?.name ?: "Workspace",
+                                                    activeFileName = activeTab.name,
+                                                    activeFileContent = activeTab.content
+                                                )
+                                                isAgentPanelOpen = true
+                                                agentViewModel.sendPrompt(cmd)
+                                            },
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        )
+                                    }
                                 }
                             } else {
                                 // Modern Home Dashboard when no tabs are open (Gemini Mockup 0)
@@ -1146,9 +1291,12 @@ class MainActivity : ComponentActivity() {
                                             NavTab.SETTINGS -> agentViewModel.toggleSettings()
                                         }
                                     },
-                                    isNavDockVisible = !isAgentPanelOpen && !isTerminalOpen && !isAgentSettingsOpen && !showSandboxSetup && !showRecentProjectsDialog && !showDailyStreakDialog && !isSlashCommandManagerOpen && !showAgentPromptDialog && !showSandboxWarningDialog && activeDiff == null && agentDiffToReview == null && !isUpdateDialogVisible,
+                                    isNavDockVisible = !isAgentPanelOpen && !isTerminalOpen && !isAgentSettingsOpen && !showSandboxSetup && !showRecentProjectsDialog && !showDailyStreakDialog && !isDailyChallengesOpen && !isSlashCommandManagerOpen && !showAgentPromptDialog && !showSandboxWarningDialog && activeDiff == null && agentDiffToReview == null && !isUpdateDialogVisible,
                                     monthActivities = streakState.monthActivities,
-                                    totalMonthRuns = streakState.totalMonthRuns
+                                    totalMonthRuns = streakState.totalMonthRuns,
+                                    challenges = challengeProfile.challenges,
+                                    challengeProfile = challengeProfile,
+                                    onOpenDailyChallenges = { isDailyChallengesOpen = true }
                                 )
                             }
                         }
@@ -1388,6 +1536,52 @@ class MainActivity : ComponentActivity() {
                 if (showDailyStreakDialog) {
                     DailyStreakDialog(
                         onDismiss = { showDailyStreakDialog = false }
+                    )
+                }
+
+                // Daily Challenges Carousel Overlay
+                AnimatedVisibility(
+                    visible = isDailyChallengesOpen,
+                    enter = fadeIn(tween(240)) + scaleIn(initialScale = 0.94f, animationSpec = tween(260, easing = FastOutSlowInEasing)),
+                    exit = fadeOut(tween(180)) + scaleOut(targetScale = 0.96f, animationSpec = tween(180))
+                ) {
+                    DailyChallengesCarouselScreen(
+                        challenges = challengeProfile.challenges,
+                        profileState = challengeProfile,
+                        onSolveChallenge = { challenge ->
+                            scope.launch {
+                                val file = challengeViewModel.prepareChallengeFile(
+                                    challengeId = challenge.id,
+                                    workspaceDir = activeWorkspaceDir
+                                )
+                                if (file != null) {
+                                    viewModel.refreshTree()
+                                    viewModel.openFile(
+                                        FileNode(
+                                            uri = Uri.fromFile(file),
+                                            name = file.name,
+                                            isDirectory = false
+                                        )
+                                    )
+                                    isDailyChallengesOpen = false
+                                }
+                            }
+                        },
+                        onClose = { isDailyChallengesOpen = false }
+                    )
+                }
+
+                // Challenge Solved Celebration & Points Dialog
+                challengeRewardEvent?.let { reward ->
+                    ChallengeSolvedDialog(
+                        reward = reward,
+                        onBackToChallenges = {
+                            challengeViewModel.dismissRewardEvent()
+                            isDailyChallengesOpen = true
+                        },
+                        onKeepCoding = {
+                            challengeViewModel.dismissRewardEvent()
+                        }
                     )
                 }
 

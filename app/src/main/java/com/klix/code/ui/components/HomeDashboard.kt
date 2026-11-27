@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -59,10 +60,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.R
+import com.klix.code.data.challenges.ChallengeCatalog
+import com.klix.code.data.challenges.ChallengeProfileState
+import com.klix.code.data.challenges.CodingChallenge
 import com.klix.code.data.model.ProjectItem
 import com.klix.code.data.stats.DayActivity
 import com.klix.code.data.stats.StreakManager
 import com.klix.code.data.workspace.SandboxWorkspace
+import com.klix.code.ui.components.challenges.DailyChallengesFolderCard
 import com.klix.code.ui.components.glass.pressEffect
 import com.klix.code.ui.components.workspace.CreateWorkspaceDialog
 import com.klix.code.ui.theme.AccentError
@@ -80,9 +85,6 @@ import com.klix.code.ui.theme.LocalIsDarkTheme
 import com.klix.code.ui.theme.TextMuted
 import com.klix.code.ui.theme.TextPrimary
 import com.klix.code.ui.theme.TextSecondary
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
 /**
  * Screen 1: Sandbox Workspace Home (Neo-Bento Redesign)
@@ -135,6 +137,9 @@ fun HomeDashboard(
     isNavDockVisible: Boolean = true,
     monthActivities: List<DayActivity> = emptyList(),
     totalMonthRuns: Int = 0,
+    challenges: List<CodingChallenge> = ChallengeCatalog.dailyChallenges,
+    challengeProfile: ChallengeProfileState = ChallengeProfileState(),
+    onOpenDailyChallenges: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -161,49 +166,6 @@ fun HomeDashboard(
                 )
             }
         }
-    }
-
-    // Date & Month calculations (unmocked)
-    val calendar = remember { Calendar.getInstance() }
-    val currentMonthName = remember(calendar) {
-        SimpleDateFormat("MMMM", Locale.getDefault()).format(calendar.time)
-    }
-    val daysInMonth = remember(calendar) {
-        calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-    }
-
-    // Real activities for current month
-    val activities = remember(monthActivities, liveStreakState, daysInMonth) {
-        if (monthActivities.isNotEmpty() && monthActivities.size == daysInMonth) {
-            monthActivities
-        } else if (liveStreakState.monthActivities.isNotEmpty() && liveStreakState.monthActivities.size == daysInMonth) {
-            liveStreakState.monthActivities
-        } else {
-            StreakManager.getMonthActivities(context, calendar)
-        }
-    }
-
-    val runsSum = remember(totalMonthRuns, liveStreakState.totalMonthRuns, activities) {
-        if (totalMonthRuns > 0) {
-            totalMonthRuns
-        } else if (liveStreakState.totalMonthRuns > 0) {
-            liveStreakState.totalMonthRuns
-        } else {
-            activities.sumOf { it.runCount }
-        }
-    }
-
-    // Headline with Current Month Name
-    val monthHeadline = remember(runsSum, currentMonthName) {
-        when (runsSum) {
-            1 -> "1 run in $currentMonthName"
-            else -> "$runsSum runs in $currentMonthName"
-        }
-    }
-
-    // Partition days into weeks (Week 1, Week 2, Week 3, Week 4, Week 5)
-    val weeks = remember(activities) {
-        activities.chunked(7)
     }
 
     val displayStreakCount = if (streakCount > 0) streakCount else liveStreakState.streakCount
@@ -233,6 +195,12 @@ fun HomeDashboard(
                     Box(
                         modifier = Modifier
                             .size(44.dp)
+                            .shadow(
+                                elevation = 4.dp,
+                                shape = CircleShape,
+                                ambientColor = Color(0x180F172A),
+                                spotColor = Color(0x140F172A)
+                            )
                             .clip(CircleShape)
                             .background(if (isDark) Color(0xFF1E2638) else Color(0xFFFFFFFF))
                             .clickable(onClick = onOpenDrawer)
@@ -252,6 +220,12 @@ fun HomeDashboard(
                         Box(
                             modifier = Modifier
                                 .height(44.dp)
+                                .shadow(
+                                    elevation = 4.dp,
+                                    shape = RoundedCornerShape(22.dp),
+                                    ambientColor = Color(0x180F172A),
+                                    spotColor = Color(0x140F172A)
+                                )
                                 .clip(RoundedCornerShape(22.dp))
                                 .background(if (isDark) Color(0xFF1E2638) else Color(0xFFFFFFFF))
                                 .clickable { isWorkspaceMenuOpen = true }
@@ -406,6 +380,12 @@ fun HomeDashboard(
                     Box(
                         modifier = Modifier
                             .height(44.dp)
+                            .shadow(
+                                elevation = 4.dp,
+                                shape = RoundedCornerShape(22.dp),
+                                ambientColor = Color(0x180F172A),
+                                spotColor = Color(0x140F172A)
+                            )
                             .clip(RoundedCornerShape(22.dp))
                             .background(if (isDark) Color(0xFF1E2638) else Color(0xFFFFFFFF))
                             .clickable(onClick = onOpenStreak)
@@ -434,104 +414,13 @@ fun HomeDashboard(
                 }
             }
 
-            // 2. Middle Bento Card with Peeking Mascot and Unmocked Current Month Activity Grid
+            // 2. Interactive Daily Challenges Folder Card with Peeking Mascot
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 48.dp)
-                ) {
-                    // Peeking Klix Bot Mascot with Headphones behind top-right corner
-                    Image(
-                        painter = painterResource(id = R.drawable.mascot_corner_headphones),
-                        contentDescription = "Klix Bot Mascot with Headphones",
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(end = 18.dp)
-                            .offset(y = (-54).dp)
-                            .size(width = 96.dp, height = 71.dp)
-                    )
-
-                    // Card Container (Borderless 26.dp soft surface rendered in front of mascot)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(26.dp))
-                            .background(if (isDark) Color(0xFF1E2638) else Color(0xFFFFFFFF))
-                            .padding(horizontal = 20.dp, vertical = 22.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            // Header Texts
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(
-                                    text = "CODING ACTIVITY",
-                                    style = KlixTypography.caption.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.sp
-                                    ),
-                                    color = KlixInkSecondary
-                                )
-
-                                Text(
-                                    text = monthHeadline,
-                                    style = KlixTypography.screenTitle.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        letterSpacing = (-0.5).sp
-                                    ),
-                                    color = KlixInkPrimary
-                                )
-                            }
-
-                            // 30/31-day Activity Grid separated per week with noticeable gap
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(14.dp)
-                            ) {
-                                weeks.forEach { weekDays ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        weekDays.forEach { dayActivity ->
-                                            val tileColor = when (dayActivity.intensityLevel) {
-                                                1 -> if (isDark) Color(0xFF4E6E24) else Color(0xFFD4F87A)
-                                                2 -> if (isDark) Color(0xFF65A30D) else Color(0xFFA3E635)
-                                                3 -> if (isDark) Color(0xFF84CC16) else Color(0xFF4D7C0F)
-                                                else -> if (isDark) Color(0xFF262C40) else Color(0xFFE2EDF7)
-                                            }
-
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .height(28.dp)
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(tileColor)
-                                                    .clickable {
-                                                        val label = if (dayActivity.isFuture) {
-                                                            "${dayActivity.dateString}: Upcoming"
-                                                        } else {
-                                                            "${dayActivity.dateString}: ${dayActivity.runCount} ${if (dayActivity.runCount == 1) "run" else "runs"}"
-                                                        }
-                                                        Toast.makeText(context, label, Toast.LENGTH_SHORT).show()
-                                                    }
-                                                    .pressEffect(0.92f)
-                                            )
-                                        }
-
-                                        // Balance spacing for incomplete week (e.g. Week 5 with 2 or 3 days)
-                                        val emptySlots = 7 - weekDays.size
-                                        repeat(emptySlots) {
-                                            Spacer(modifier = Modifier.weight(1f))
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                DailyChallengesFolderCard(
+                    challenges = challenges,
+                    profileState = challengeProfile,
+                    onClick = onOpenDailyChallenges
+                )
             }
 
             // 3. Recent Workspaces Section
@@ -785,15 +674,15 @@ private fun RecentWorkspaceRow(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (isDark) Color(0xFFD5FB66).copy(alpha = 0.18f) else Color(0xFF4D7C0F).copy(alpha = 0.12f))
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                    .background(if (isDark) Color(0xFFD5FB66).copy(alpha = 0.18f) else Color(0xFFE6F7ED))
+                    .padding(horizontal = 11.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "Active",
                     style = KlixTypography.bodySecondary,
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) Color(0xFFD5FB66) else Color(0xFF4D7C0F)
+                    color = if (isDark) Color(0xFFD5FB66) else Color(0xFF15803D)
                 )
             }
         }
