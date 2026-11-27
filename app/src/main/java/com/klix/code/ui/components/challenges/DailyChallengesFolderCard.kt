@@ -158,7 +158,7 @@ fun DailyChallengesFolderCard(
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = secondChallenge?.shortTitle ?: "Rate Limiter",
+                        text = secondChallenge?.shortTitle ?: "Palindrome",
                         style = KlixTypography.caption,
                         fontWeight = FontWeight.Bold,
                         color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF0F766E),
@@ -193,7 +193,7 @@ fun DailyChallengesFolderCard(
                             .align(Alignment.TopEnd)
                     )
                     Text(
-                        text = thirdChallenge?.shortTitle ?: "LRU Cache",
+                        text = thirdChallenge?.shortTitle ?: "FizzBuzz",
                         style = KlixTypography.cardTitle,
                         fontSize = 13.sp,
                         color = KlixInkPrimary,

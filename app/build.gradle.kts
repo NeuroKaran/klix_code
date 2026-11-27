@@ -19,6 +19,7 @@ plugins {
 android {
     namespace = "com.klix.code"
     compileSdk = 35
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "com.klix.code"
@@ -28,6 +29,22 @@ android {
         versionName = "0.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
+        externalNativeBuild {
+            cmake {
+                arguments += "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.31.6"
+        }
     }
 
     signingConfigs {
@@ -73,6 +90,9 @@ android {
             useLegacyPackaging = true
         }
     }
+    androidResources {
+        noCompress += listOf("gz")
+    }
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
@@ -94,6 +114,7 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
+    implementation(libs.commons.compress)
 
     // Sora Editor
     implementation(libs.sora.editor)
@@ -103,6 +124,17 @@ dependencies {
     testImplementation(libs.mockito.core)
     testImplementation("org.json:json:20240303")
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.core.ktx)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation("org.json:json:20240303")
 }
 
 

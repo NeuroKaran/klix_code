@@ -57,13 +57,14 @@ class ChallengeSystemTest {
         val challenges = ChallengeCatalog.dailyChallenges
         assertEquals(3, challenges.size)
 
-        val easy = challenges.first { it.difficulty == ChallengeDifficulty.EASY }
-        val medium = challenges.first { it.difficulty == ChallengeDifficulty.MEDIUM }
-        val hard = challenges.first { it.difficulty == ChallengeDifficulty.HARD }
+        val easy = challenges.filter { it.difficulty == ChallengeDifficulty.EASY }
+        val medium = challenges.filter { it.difficulty == ChallengeDifficulty.MEDIUM }
 
-        assertEquals(50, easy.points)
-        assertEquals(100, medium.points)
-        assertEquals(200, hard.points)
+        assertEquals(2, easy.size)
+        assertEquals(1, medium.size)
+        assertTrue(easy.all { it.points == 50 })
+        assertTrue(medium.all { it.points == 100 })
+        assertEquals(200, ChallengeDifficulty.HARD.points)
 
         assertEquals(challenges.size, challenges.map { it.id }.toSet().size)
         assertEquals(challenges.size, challenges.map { it.fileName }.toSet().size)
@@ -217,8 +218,8 @@ class ChallengeSystemTest {
             override fun isAvailable(): Boolean = true
             override suspend fun runCommand(command: String, workingDir: String?): CommandResult {
                 return if (command.contains(".klix_verify_")) {
-                    val chId = if (command.contains("rate_limiter")) "rate_limiter"
-                    else if (command.contains("lru_cache_o1")) "lru_cache_o1"
+                    val chId = if (command.contains("palindrome")) "palindrome_check"
+                    else if (command.contains("fizz_buzz")) "fizz_buzz"
                     else "two_sum_on"
                     val ch = ChallengeCatalog.findById(chId)!!
                     val out = (0 until ch.testCases.size).joinToString("\n") { idx ->
@@ -300,10 +301,10 @@ class ChallengeSystemTest {
         assertEquals(50, vm.profileState.value.totalPoints)
         assertNull(vm.rewardEvent.value)
 
-        // 5. Solving Medium challenge ("rate_limiter" -> +100 pts) accumulates 150 total pts
-        val rateFile = vm.prepareChallengeFile("rate_limiter", workspaceDir)!!
+        // 5. Solving Medium challenge ("fizz_buzz" -> +100 pts) accumulates 150 total pts
+        val fizzFile = vm.prepareChallengeFile("fizz_buzz", workspaceDir)!!
         val medLatch = CountDownLatch(1)
-        vm.verifyAndRunChallenge("rate_limiter", "class RateLimiter: pass", rateFile, workspaceDir.absolutePath) {
+        vm.verifyAndRunChallenge("fizz_buzz", "def fizz_buzz(n): return []", fizzFile, workspaceDir.absolutePath) {
             medLatch.countDown()
         }
         assertTrue(medLatch.await(3, TimeUnit.SECONDS))
@@ -362,38 +363,25 @@ class ChallengeSystemTest {
                     return []
                 print(two_sum([2, 7, 11, 15], 9))
             """.trimIndent(),
-            "rate_limiter" to """
-                from collections import deque
-                class RateLimiter:
-                    def __init__(self, limit, window):
-                        self.limit = limit
-                        self.window = window
-                        self.q = deque()
-                    def allow(self, timestamp):
-                        while self.q and self.q[0] <= timestamp - self.window:
-                            self.q.popleft()
-                        if len(self.q) < self.limit:
-                            self.q.append(timestamp)
-                            return True
-                        return False
+            "palindrome_check" to """
+                def is_palindrome(word):
+                    return word == word[::-1]
+                print(is_palindrome("racecar"))
             """.trimIndent(),
-            "lru_cache_o1" to """
-                from collections import OrderedDict
-                class LRUCache:
-                    def __init__(self, capacity):
-                        self.capacity = capacity
-                        self.cache = OrderedDict()
-                    def get(self, key):
-                        if key not in self.cache:
-                            return -1
-                        self.cache.move_to_end(key)
-                        return self.cache[key]
-                    def put(self, key, value):
-                        if key in self.cache:
-                            self.cache.move_to_end(key)
-                        self.cache[key] = value
-                        if len(self.cache) > self.capacity:
-                            self.cache.popitem(last=False)
+            "fizz_buzz" to """
+                def fizz_buzz(n):
+                    res = []
+                    for i in range(1, n + 1):
+                        if i % 15 == 0:
+                            res.append("FizzBuzz")
+                        elif i % 3 == 0:
+                            res.append("Fizz")
+                        elif i % 5 == 0:
+                            res.append("Buzz")
+                        else:
+                            res.append(str(i))
+                    return res
+                print(fizz_buzz(5))
             """.trimIndent()
         )
 
@@ -417,26 +405,12 @@ class ChallengeSystemTest {
     fun testManualTerminalRunTracksOutputAndAwardsPoints() {
         val storageFile = File(tempRoot, "terminal_track_progress.json")
         val repo = ChallengeRepositoryImpl(mockApp, storageFile)
-        val hardChallenge = ChallengeCatalog.findById("lru_cache_o1")!!
-        val targetFile = File(workspaceDir, hardChallenge.relativeWorkspacePath)
+        val fizzChallenge = ChallengeCatalog.findById("fizz_buzz")!!
+        val targetFile = File(workspaceDir, fizzChallenge.relativeWorkspacePath)
         targetFile.parentFile?.mkdirs()
         val solvedCode = """
-            from collections import OrderedDict
-            class LRUCache:
-                def __init__(self, capacity):
-                    self.capacity = capacity
-                    self.cache = OrderedDict()
-                def get(self, key):
-                    if key not in self.cache:
-                        return -1
-                    self.cache.move_to_end(key)
-                    return self.cache[key]
-                def put(self, key, value):
-                    if key in self.cache:
-                        self.cache.move_to_end(key)
-                    self.cache[key] = value
-                    if len(self.cache) > self.capacity:
-                        self.cache.popitem(last=False)
+            def fizz_buzz(n):
+                return ["FizzBuzz" if i % 15 == 0 else "Fizz" if i % 3 == 0 else "Buzz" if i % 5 == 0 else str(i) for i in range(1, n + 1)]
         """.trimIndent()
         targetFile.writeText(solvedCode, Charsets.UTF_8)
 
@@ -444,7 +418,7 @@ class ChallengeSystemTest {
             override fun getTierName(): String = "Fake"
             override fun isAvailable(): Boolean = true
             override suspend fun runCommand(command: String, workingDir: String?): CommandResult {
-                val out = (0 until hardChallenge.testCases.size).joinToString("\n") { idx ->
+                val out = (0 until fizzChallenge.testCases.size).joinToString("\n") { idx ->
                     "__KLIX_TEST_JSON__:{\"idx\":$idx,\"ok\":true,\"actual\":\"ok\"}"
                 }
                 return CommandResult(exitCode = 0, stdout = out, stderr = "", executionTimeMs = 9L)
@@ -460,9 +434,9 @@ class ChallengeSystemTest {
 
         val latch = CountDownLatch(1)
         vm.onTerminalCommandCompleted(
-            command = "python3 challenges/lru_cache.py",
+            command = "python3 challenges/fizz_buzz.py",
             workingDir = workspaceDir.absolutePath,
-            stdout = "-1 20",
+            stdout = "['1', '2', 'Fizz', '4', 'Buzz']",
             stderr = "",
             exitCode = 0,
             executionTimeMs = 15L,
@@ -473,10 +447,10 @@ class ChallengeSystemTest {
         assertTrue(latch.await(3, TimeUnit.SECONDS))
 
         val state = vm.profileState.value
-        assertEquals(200, state.totalPoints)
+        assertEquals(100, state.totalPoints)
         assertEquals(1, state.solvedCount)
-        assertEquals("-1 20", state.progressById["lru_cache_o1"]?.lastOutput)
-        assertEquals(solvedCode, state.progressById["lru_cache_o1"]?.trackedCode)
-        assertEquals(200, vm.rewardEvent.value?.pointsAwarded)
+        assertEquals("['1', '2', 'Fizz', '4', 'Buzz']", state.progressById["fizz_buzz"]?.lastOutput)
+        assertEquals(solvedCode, state.progressById["fizz_buzz"]?.trackedCode)
+        assertEquals(100, vm.rewardEvent.value?.pointsAwarded)
     }
 }

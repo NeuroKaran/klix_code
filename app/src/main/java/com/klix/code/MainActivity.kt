@@ -94,6 +94,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.klix.code.data.sandbox.LanguageRunner
 import com.klix.code.data.sandbox.SandboxStatus
 import com.klix.code.data.stats.StreakManager
 import com.klix.code.data.agent.session.flattenFileTree
@@ -751,10 +752,7 @@ class MainActivity : ComponentActivity() {
                                                     .clip(RoundedCornerShape(10.dp))
                                                     .background(LimeBrandColor)
                                                     .clickable {
-                                                        if (activeTab?.isModified == true) {
-                                                            viewModel.saveActiveTab()
-                                                        }
-                                                        activeTab?.let { tab ->
+                                                        fun executeRunForTab(tab: com.klix.code.data.model.EditorTab) {
                                                             val matchedChallenge = challengeViewModel.getChallengeForUri(tab.uri)
                                                             if (matchedChallenge != null) {
                                                                 val challengeFile = File(activeWorkspaceDir, matchedChallenge.relativeWorkspacePath)
@@ -783,23 +781,45 @@ class MainActivity : ComponentActivity() {
                                                                     }
                                                                 )
                                                             } else {
-                                                                val relPath = tab.uri.path?.let { rawPath ->
-                                                                    val wsPrefix = activeWorkspaceDir.absolutePath.trimEnd(File.separatorChar) + File.separator
-                                                                    if (rawPath.startsWith(wsPrefix)) {
-                                                                        rawPath.removePrefix(wsPrefix).replace('\\', '/')
-                                                                    } else {
-                                                                        tab.name
+                                                                val resolution = LanguageRunner.resolveRunCommand(
+                                                                    tab = tab,
+                                                                    workspace = activeWorkspace,
+                                                                    sandboxManager = terminalViewModel.sandboxManager
+                                                                )
+                                                                when {
+                                                                    resolution.requiresSetup -> {
+                                                                        Toast.makeText(
+                                                                            applicationContext,
+                                                                            resolution.errorMessage ?: "Sandbox toolchain setup required.",
+                                                                            Toast.LENGTH_LONG
+                                                                        ).show()
+                                                                        terminalViewModel.openSetupDialog()
                                                                     }
-                                                                } ?: tab.name
-                                                                val cmd = when (tab.extension.lowercase()) {
-                                                                    "py" -> "python3 \"$relPath\""
-                                                                    "js" -> "node \"$relPath\""
-                                                                    "sh" -> "sh \"$relPath\""
-                                                                    else -> "./\"$relPath\""
+                                                                    resolution.command == null -> {
+                                                                        Toast.makeText(
+                                                                            applicationContext,
+                                                                            resolution.errorMessage ?: "Cannot run '${tab.name}'.",
+                                                                            Toast.LENGTH_LONG
+                                                                        ).show()
+                                                                    }
+                                                                    else -> {
+                                                                        StreakManager.recordActivityRun(applicationContext)
+                                                                        terminalViewModel.executeCommand(resolution.command)
+                                                                        isTerminalOpen = true
+                                                                    }
                                                                 }
-                                                                StreakManager.recordActivityRun(applicationContext)
-                                                                terminalViewModel.executeCommand(cmd)
-                                                                isTerminalOpen = true
+                                                            }
+                                                        }
+
+                                                        activeTab?.let { tab ->
+                                                            if (tab.isModified) {
+                                                                viewModel.saveActiveTab {
+                                                                    val savedTab = viewModel.openTabs.value.find { it.uri == tab.uri }
+                                                                        ?: tab.copy(isModified = false)
+                                                                    executeRunForTab(savedTab)
+                                                                }
+                                                            } else {
+                                                                executeRunForTab(tab)
                                                             }
                                                         }
                                                     }

@@ -166,7 +166,7 @@ fun SandboxConfigurationCard(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (isBentoCard) "On-device unrooted Alpine Linux environment" else "Your local on-device environment",
+                        text = if (isBentoCard) "On-device Bionic 16 KB environment" else "Your local on-device environment",
                         style = KlixTypography.bodySecondary,
                         color = KlixInkSecondary
                     )
@@ -249,7 +249,7 @@ fun SandboxConfigurationCard(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = if (status == SandboxStatus.READY) "Alpine Linux Active" else "Alpine Linux Setup",
+                            text = if (status == SandboxStatus.READY) "Bionic Runtime Active" else "Bionic Runtime Setup",
                             style = KlixTypography.sheetHeader,
                             color = KlixInkPrimary
                         )
@@ -345,7 +345,7 @@ fun SandboxConfigurationCard(
                     return
                 }
                 if (status != SandboxStatus.READY) {
-                    Toast.makeText(context, "Please install Alpine Linux RootFS first", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Please install Sandbox RootFS first", Toast.LENGTH_SHORT).show()
                     return
                 }
                 val cmd = if (isInstalled) reinstallCmd else installCmd
@@ -365,8 +365,8 @@ fun SandboxConfigurationCard(
                         onClick = {
                             handleToolClick(
                                 toolId = "nodejs",
-                                installCmd = "apk add nodejs npm",
-                                reinstallCmd = "apk add --upgrade nodejs npm",
+                                installCmd = "node --version",
+                                reinstallCmd = "node --version",
                                 isInstalled = isNodeInstalled
                             )
                         },
@@ -380,8 +380,8 @@ fun SandboxConfigurationCard(
                         onClick = {
                             handleToolClick(
                                 toolId = "python3",
-                                installCmd = "apk add python3 py3-pip",
-                                reinstallCmd = "apk add --upgrade python3 py3-pip",
+                                installCmd = "python3 --version",
+                                reinstallCmd = "python3 --version",
                                 isInstalled = isPythonInstalled
                             )
                         },
@@ -400,8 +400,8 @@ fun SandboxConfigurationCard(
                         onClick = {
                             handleToolClick(
                                 toolId = "git",
-                                installCmd = "apk add git",
-                                reinstallCmd = "apk add --upgrade git",
+                                installCmd = "git --version",
+                                reinstallCmd = "git --version",
                                 isInstalled = isGitInstalled
                             )
                         },
@@ -415,8 +415,8 @@ fun SandboxConfigurationCard(
                         onClick = {
                             handleToolClick(
                                 toolId = "c/c++",
-                                installCmd = "apk add build-base",
-                                reinstallCmd = "apk add --upgrade build-base",
+                                installCmd = "clang --version",
+                                reinstallCmd = "clang --version",
                                 isInstalled = isCppInstalled
                             )
                         },
@@ -437,18 +437,18 @@ fun SandboxConfigurationCard(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = "Install Different Tools",
+                            text = "Run Toolchain Diagnostics",
                             style = KlixTypography.cardTitle,
                             color = KlixInkPrimary
                         )
                         Text(
-                            text = "Run in Linux terminal to install other Alpine packages:",
+                            text = "Run in Linux terminal to verify Bionic compilers & runtimes:",
                             style = KlixTypography.bodySecondary,
                             color = KlixInkSecondary
                         )
                     }
 
-                    val commandText = "apk add <package>"
+                    val commandText = "clang --version && python3 --version && node --version"
 
                     Box(
                         modifier = Modifier
@@ -529,9 +529,9 @@ fun SandboxConfigurationCard(
                                         .border(1.dp, KlixBorderHairline, RoundedCornerShape(8.dp))
                                         .clickable {
                                             if (status != SandboxStatus.READY) {
-                                                Toast.makeText(context, "Please install Alpine Linux RootFS first", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Please install Sandbox RootFS first", Toast.LENGTH_SHORT).show()
                                             } else {
-                                                onRunCommandInTerminal("apk add ")
+                                                onRunCommandInTerminal(commandText)
                                             }
                                         }
                                         .pressEffect(0.92f)
@@ -560,9 +560,9 @@ fun SandboxConfigurationCard(
                         }
                     }
 
-                    // Helper note supporting both apk add and apk get
+                    // Helper note
                     Text(
-                        text = "Tip: You can also run \"apk get <package>\" directly in terminal.",
+                        text = "All Bionic 16 KB toolchains are bundled offline inside the app.",
                         style = KlixTypography.bodySecondary,
                         color = KlixInkSecondary,
                         fontSize = 11.sp

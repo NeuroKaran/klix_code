@@ -61,6 +61,8 @@ import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -292,6 +294,7 @@ fun TerminalView(
         }
 
         // 3. Terminal Viewport Card (RoundedCornerShape(24.dp), flexible weight)
+        val density = LocalDensity.current
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -300,6 +303,13 @@ fun TerminalView(
                 .background(if (isDark) Color(0xFF0C0F1A) else Color(0xFF121622))
                 .border(1.dp, if (isDark) Color(0xFF2E364F) else Color(0xFF475569), RoundedCornerShape(24.dp))
                 .padding(16.dp)
+                .onSizeChanged { size ->
+                    val charWidthPx = with(density) { 8.dp.toPx() }.coerceAtLeast(1f)
+                    val lineHeightPx = with(density) { 18.dp.toPx() }.coerceAtLeast(1f)
+                    val cols = (size.width / charWidthPx).toInt().coerceIn(20, 240)
+                    val rows = (size.height / lineHeightPx).toInt().coerceIn(8, 120)
+                    viewModel.resizeTerminal(rows, cols)
+                }
         ) {
             LazyColumn(
                 state = listState,
@@ -401,7 +411,11 @@ fun TerminalView(
                 ShortcutKeycap(
                     label = "ESC",
                     isHighlight = false,
-                    onClick = { }
+                    onClick = {
+                        if (isExecuting) {
+                            viewModel.sendRawBytes(byteArrayOf(0x1B))
+                        }
+                    }
                 )
 
                 // Key 3: TAB

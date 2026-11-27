@@ -552,13 +552,21 @@ class TerminalViewModel @JvmOverloads constructor(
         val rawSegments = text.split('\n')
         synchronized(session) {
             for (i in rawSegments.indices) {
-                val segment = rawSegments[i]
+                val rawSegment = rawSegments[i]
                 val isLastSegment = (i == rawSegments.size - 1)
 
                 // Trailing empty segment from text ending with '\n'
-                if (isLastSegment && segment.isEmpty()) {
+                if (isLastSegment && rawSegment.isEmpty()) {
                     session.lastLineHadNewline = true
                     break
+                }
+
+                // Handle carriage return (\r) progress overwrites while preserving line endings
+                val segment = if (rawSegment.contains('\r')) {
+                    val trimmedCr = rawSegment.trimEnd('\r')
+                    if (trimmedCr.contains('\r')) trimmedCr.substringAfterLast('\r') else trimmedCr
+                } else {
+                    rawSegment
                 }
 
                 val parsed = parseAnsiLine(segment, isStdout)
@@ -579,6 +587,18 @@ class TerminalViewModel @JvmOverloads constructor(
         if (session.id == _activeTerminalId.value) {
             _terminalLines.value = session.lines.toList()
         }
+    }
+
+    fun resizeTerminal(rows: Int, cols: Int, terminalId: String? = null) {
+        val sessions = getCurrentSessions()
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        session.executionProvider.resizeTerminal(rows, cols)
+    }
+
+    fun sendRawBytes(bytes: ByteArray, terminalId: String? = null) {
+        val sessions = getCurrentSessions()
+        val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
+        session.executionProvider.sendRawBytes(bytes)
     }
 
     fun sendInput(input: String, terminalId: String? = null) {
@@ -695,11 +715,12 @@ class TerminalViewModel @JvmOverloads constructor(
         val status = sandboxManager.status.value
         val installed = sandboxManager.isInstalled()
         val arch = sandboxManager.detectArch()
-        val prootAvailable = session.executionProvider.findProotExecutable() != null
+        val ptyReady = session.executionProvider.isPtyAvailable()
+        val dashReady = sandboxManager.getExecutablePath("dash") != null
         val lines = listOf(
-            TerminalLine(text = "Alpine Sandbox Status: $status", color = if (installed) TerminalColors.Secondary else TerminalColors.Warning),
+            TerminalLine(text = "Bionic 16 KB Sandbox Status: $status", color = if (installed) TerminalColors.Secondary else TerminalColors.Warning),
             TerminalLine(text = "Sandbox Installed: $installed", color = if (installed) TerminalColors.Secondary else TerminalColors.Warning),
-            TerminalLine(text = "PRoot Engine: ${if (prootAvailable) "Ready (native)" else "Not detected"}", color = if (prootAvailable) TerminalColors.Secondary else TerminalColors.Warning),
+            TerminalLine(text = "JNI PTY Engine: ${if (ptyReady) "Ready (16 KB)" else "Fallback"} | Shell: ${if (dashReady) "dash" else "sh"}", color = if (ptyReady) TerminalColors.Secondary else TerminalColors.Warning),
             TerminalLine(text = "Detected Architecture: $arch", color = TerminalColors.TextSecondary),
             TerminalLine(text = "RootFS Path: ${sandboxManager.getRootfsDir().absolutePath}", color = TerminalColors.TextMuted)
         )
@@ -722,7 +743,7 @@ class TerminalViewModel @JvmOverloads constructor(
             color = TerminalColors.Primary
         }
 
-        val cleanText = rawLine.replace(Regex("\u001B\\[[;\\d]*m"), "")
+        val cleanText = rawLine.replace(Regex("\u001B\\[[;?0-9]*[A-Za-z]"), "")
         return TerminalLine(
             text = cleanText,
             color = color,

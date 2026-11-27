@@ -43,23 +43,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.klix.code.R
-import com.klix.code.ui.components.glass.GlassCard
-import com.klix.code.ui.components.glass.glassBorder
 import com.klix.code.ui.components.glass.pressEffect
-import com.klix.code.ui.components.glass.tintedGlassBorder
-import com.klix.code.ui.theme.DarkBorder
-import com.klix.code.ui.theme.DarkSurface
-import com.klix.code.ui.theme.DarkSurfaceVariant
-import com.klix.code.ui.theme.GlassSurfaceColor
-import com.klix.code.ui.theme.GlassSurfaceElevatedColor
 import com.klix.code.ui.theme.KlixInkPrimary
 import com.klix.code.ui.theme.KlixSurfaceCardItem
+import com.klix.code.ui.theme.KlixTypography
 import com.klix.code.ui.theme.LimeBrand
-import com.klix.code.ui.theme.LimeGlow
 import com.klix.code.ui.theme.LocalIsDarkTheme
-import com.klix.code.ui.theme.TextMuted
-import com.klix.code.ui.theme.TextPrimary
-import com.klix.code.ui.theme.TextSecondary
+import com.klix.code.ui.theme.PlusJakartaSans
 
 private val FlameOrange = Color(0xFFFF9800)
 private val FlameRed = Color(0xFFFF5722)
@@ -72,8 +62,8 @@ private val StreakActiveColor: Color
     get() = if (LocalIsDarkTheme.current) LimeBrand else Color(0xFF15803D)
 
 /**
- * Compact Glass Streak Pill Button for the TopAppBar.
- * Displays the flame and streak count, with a glowing pulse when today's streak is ready to claim.
+ * Compact Borderless Soft-Tonal Streak Pill Button for the TopAppBar.
+ * Displays the flame and streak count, with a warm tonal fill and pulse when today's streak is ready to claim.
  */
 @Composable
 fun StreakPillButton(
@@ -82,10 +72,11 @@ fun StreakPillButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = LocalIsDarkTheme.current
     val infiniteTransition = rememberInfiniteTransition(label = "streak_pill_pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1.0f,
-        targetValue = if (!isClaimedToday) 1.15f else 1.04f,
+        targetValue = if (!isClaimedToday) 1.15f else 1.0f,
         animationSpec = infiniteRepeatable(
             animation = tween(900, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -93,32 +84,27 @@ fun StreakPillButton(
         label = "pulse_scale"
     )
 
-    val borderGlow by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = if (!isClaimedToday) 0.95f else 0.5f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "border_glow"
-    )
+    val pillShape = CircleShape
+    val containerColor = when {
+        !isClaimedToday && isDark -> Color(0xFF2D2218)
+        !isClaimedToday && !isDark -> Color(0xFFFFF3E0)
+        else -> KlixSurfaceCardItem
+    }
 
-    val pillShape = RoundedCornerShape(10.dp)
     Box(
         modifier = modifier
             .height(34.dp)
-            .clip(pillShape)
-            .background(KlixSurfaceCardItem)
-            .then(
-                if (!isClaimedToday) {
-                    Modifier.tintedGlassBorder(FlameOrange, pillShape, strokeWidth = 1.dp, highlightAlpha = borderGlow)
-                } else {
-                    Modifier.glassBorder(pillShape, strokeWidth = 1.dp, highlightAlpha = 0.28f, midAlpha = 0.10f)
-                }
+            .shadow(
+                elevation = if (isClaimedToday) 3.dp else 5.dp,
+                shape = pillShape,
+                ambientColor = if (!isClaimedToday) FlameOrange.copy(alpha = 0.24f) else Color(0x180F172A),
+                spotColor = if (!isClaimedToday) FlameOrange.copy(alpha = 0.18f) else Color(0x140F172A)
             )
+            .clip(pillShape)
+            .background(containerColor)
             .pressEffect(targetScale = 0.92f)
             .clickable(onClick = onClick)
-            .padding(horizontal = 9.dp),
+            .padding(horizontal = 11.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -136,14 +122,14 @@ fun StreakPillButton(
 
             Text(
                 text = "$streakCount",
-                fontSize = 12.sp,
+                style = KlixTypography.cardTitle,
+                fontSize = 13.sp,
+                fontFamily = PlusJakartaSans,
                 fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
                 color = if (isClaimedToday) KlixInkPrimary else FlameOrange
             )
 
             if (!isClaimedToday) {
-                // Subtle glowing notification dot
                 Box(
                     modifier = Modifier
                         .size(5.dp)

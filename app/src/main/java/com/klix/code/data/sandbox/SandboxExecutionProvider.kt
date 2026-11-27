@@ -1,213 +1,140 @@
 package com.klix.code.data.sandbox
 
 import android.content.Context
-import android.os.Build
 import android.system.Os
 import android.system.OsConstants
 import com.klix.code.data.agent.execution.CommandResult
 import com.klix.code.data.agent.execution.ExecutionProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
-import java.util.ArrayDeque
+import java.nio.ByteBuffer
+import java.nio.CharBuffer
+import java.nio.charset.CodingErrorAction
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
 
-class SandboxExecutionProvider(
+class SandboxExecutionProvider @JvmOverloads constructor(
     private val context: Context,
-    val sandboxManager: SandboxManager = SandboxManager(context)
+    val sandboxManager: SandboxManager = SandboxManager(context),
+    private val ptyTransport: PtyTransport = PtyBridge
 ) : ExecutionProvider {
 
-    override fun getTierName(): String = "Alpine Linux Sandbox (On-Device)"
+    override fun getTierName(): String = "Bionic 16 KB Sandbox (On-Device)"
 
     override fun isAvailable(): Boolean = true
+
+    fun isPtyAvailable(): Boolean = ptyTransport.isAvailable
 
     override suspend fun runCommand(command: String, workingDir: String?): CommandResult {
         return runStreamingCommand(command, workingDir) { _, _ -> }
     }
 
     @Volatile
-    private var activeProcess: Process? = null
+    private var activePtySession: PtySession? = null
 
     @Volatile
-    private var activeShellPid: Int? = null
+    private var activeFallbackProcess: Process? = null
+
+    @Volatile
+    private var currentRows: Int = 24
+
+    @Volatile
+    private var currentCols: Int = 80
+
+    fun resizeTerminal(rows: Int, cols: Int) {
+        if (rows <= 0 || cols <= 0) return
+        currentRows = rows
+        currentCols = cols
+        val session = activePtySession ?: return
+        if (ptyTransport.isAvailable && session.masterFd >= 0) {
+            try {
+                ptyTransport.resizePty(session.masterFd, rows, cols)
+            } catch (_: Throwable) {}
+        }
+    }
 
     fun sendInput(input: String) {
+        sendRawBytes((input + "\n").toByteArray(Charsets.UTF_8))
+    }
+
+    fun sendRawBytes(bytes: ByteArray) {
+        if (bytes.isEmpty()) return
+        val session = activePtySession
+        if (session != null && ptyTransport.isAvailable && session.masterFd >= 0) {
+            try {
+                ptyTransport.writePty(session.masterFd, bytes)
+            } catch (_: Throwable) {}
+            return
+        }
+        val proc = activeFallbackProcess ?: return
         try {
-            val proc = activeProcess ?: return
-            val out = proc.outputStream
-            val bytes = (input + "\n").toByteArray(Charsets.UTF_8)
-            out.write(bytes)
-            out.flush()
-        } catch (_: Exception) {}
+            proc.outputStream.write(bytes)
+            proc.outputStream.flush()
+        } catch (_: Throwable) {}
     }
 
     fun cancelActiveProcess() {
-        val proc = activeProcess ?: return
-        val rootPid = getProcessPid(proc)
-        val shellPid = activeShellPid
+        val session = activePtySession
+        if (session != null && ptyTransport.isAvailable && session.pid > 0) {
+            val targetPid = session.pid
+            if (session.masterFd >= 0) {
+                try {
+                    ptyTransport.writePty(session.masterFd, byteArrayOf(3))
+                } catch (_: Throwable) {}
+            }
+            try {
+                ptyTransport.sendSignal(targetPid, OsConstants.SIGINT)
+            } catch (_: Throwable) {}
 
-        val targets = mutableSetOf<Int>()
-        rootPid?.let { targets.add(it) }
-        shellPid?.let { targets.add(it) }
+            Thread {
+                try {
+                    Thread.sleep(120)
+                    if (activePtySession?.pid == targetPid) {
+                        ptyTransport.sendSignal(targetPid, OsConstants.SIGTERM)
+                    }
+                    Thread.sleep(150)
+                    if (activePtySession?.pid == targetPid) {
+                        ptyTransport.sendSignal(targetPid, OsConstants.SIGKILL)
+                    }
+                } catch (_: Throwable) {}
+            }.start()
+            return
+        }
 
-        // Discover all descendant processes (node, python, child workers, etc.)
-        val descendants = findDescendantPids(targets)
-
-        // Try writing ETX (Ctrl+C byte 3) into process stdin stream
+        val proc = activeFallbackProcess ?: return
         try {
             proc.outputStream.write(3)
             proc.outputStream.flush()
         } catch (_: Throwable) {}
-
-        // Immediately send SIGINT to all descendants, shell, root process, and process group
-        for (pid in descendants) {
-            sendSignal(pid, OsConstants.SIGINT)
-        }
-        shellPid?.let { sendSignal(it, OsConstants.SIGINT) }
+        val rootPid = getProcessPid(proc)
         rootPid?.let {
-            sendSignal(it, OsConstants.SIGINT)
-            sendGroupSignal(it, OsConstants.SIGINT)
+            try { Os.kill(-it, OsConstants.SIGINT) } catch (_: Throwable) {}
+            try { Os.kill(it, OsConstants.SIGINT) } catch (_: Throwable) {}
         }
-
-        // Asynchronously escalate to SIGTERM and SIGKILL so UI remains fast
         Thread {
             try {
                 Thread.sleep(120)
-                for (pid in descendants) {
-                    sendSignal(pid, OsConstants.SIGTERM)
-                }
-                shellPid?.let { sendSignal(it, OsConstants.SIGTERM) }
                 rootPid?.let {
-                    sendSignal(it, OsConstants.SIGTERM)
-                    sendGroupSignal(it, OsConstants.SIGTERM)
+                    try { Os.kill(-it, OsConstants.SIGTERM) } catch (_: Throwable) {}
+                    try { Os.kill(it, OsConstants.SIGTERM) } catch (_: Throwable) {}
                 }
-
                 Thread.sleep(150)
-                for (pid in descendants) {
-                    sendSignal(pid, OsConstants.SIGKILL)
-                }
-                shellPid?.let { sendSignal(it, OsConstants.SIGKILL) }
-                rootPid?.let {
-                    sendSignal(it, OsConstants.SIGKILL)
-                    sendGroupSignal(it, OsConstants.SIGKILL)
-                }
-
-                // Sweep any newly forked descendants
-                val remaining = findDescendantPids(targets)
-                for (pid in remaining) {
-                    sendSignal(pid, OsConstants.SIGKILL)
-                }
-
                 proc.destroyForcibly()
             } catch (_: Throwable) {}
         }.start()
     }
 
     private fun getProcessPid(process: Process): Int? {
-        try {
+        return try {
             val pidMethod = process.javaClass.getMethod("pid")
-            return (pidMethod.invoke(process) as? Number)?.toInt()
-        } catch (_: Throwable) {}
-        try {
-            val pidField = process.javaClass.getDeclaredField("pid")
-            pidField.isAccessible = true
-            return pidField.getInt(process)
-        } catch (_: Throwable) {}
-        try {
-            val idField = process.javaClass.getDeclaredField("id")
-            idField.isAccessible = true
-            return idField.getInt(process)
-        } catch (_: Throwable) {}
-        return null
-    }
-
-    private fun findDescendantPids(targetPids: Set<Int>): Set<Int> {
-        val descendants = mutableSetOf<Int>()
-        val toScan = ArrayDeque<Int>()
-        toScan.addAll(targetPids.filter { it > 0 })
-
-        try {
-            val procDir = File("/proc")
-            val entries = procDir.listFiles() ?: return descendants
-            val parentToChildren = mutableMapOf<Int, MutableList<Int>>()
-
-            for (entry in entries) {
-                val pid = entry.name.toIntOrNull() ?: continue
-                if (pid <= 0) continue
-                val ppid = getParentPid(entry) ?: continue
-                parentToChildren.getOrPut(ppid) { mutableListOf() }.add(pid)
-            }
-
-            while (toScan.isNotEmpty()) {
-                val parent = toScan.removeFirst()
-                val children = parentToChildren[parent] ?: continue
-                for (child in children) {
-                    if (descendants.add(child)) {
-                        toScan.add(child)
-                    }
-                }
-            }
-        } catch (_: Throwable) {}
-
-        return descendants
-    }
-
-    private fun getParentPid(procEntry: File): Int? {
-        try {
-            val statFile = File(procEntry, "stat")
-            if (statFile.canRead()) {
-                val content = statFile.readText()
-                val rParen = content.lastIndexOf(')')
-                if (rParen != -1 && rParen + 2 < content.length) {
-                    val after = content.substring(rParen + 2).trim()
-                    val parts = after.split(Regex("\\s+"))
-                    return parts.getOrNull(1)?.toIntOrNull()
-                }
-            }
-        } catch (_: Throwable) {}
-
-        try {
-            val statusFile = File(procEntry, "status")
-            if (statusFile.canRead()) {
-                statusFile.useLines { lines ->
-                    for (line in lines) {
-                        if (line.startsWith("PPid:")) {
-                            return line.substring(5).trim().toIntOrNull()
-                        }
-                    }
-                }
-            }
-        } catch (_: Throwable) {}
-
-        return null
-    }
-
-    private fun sendSignal(pid: Int, signal: Int) {
-        if (pid <= 0) return
-        var success = false
-        try {
-            Os.kill(pid, signal)
-            success = true
-        } catch (_: Throwable) {}
-        if (!success) {
-            try {
-                val sigName = when (signal) {
-                    OsConstants.SIGINT -> "-INT"
-                    OsConstants.SIGTERM -> "-TERM"
-                    else -> "-9"
-                }
-                Runtime.getRuntime().exec(arrayOf("kill", sigName, pid.toString())).waitFor()
-            } catch (_: Throwable) {}
+            (pidMethod.invoke(process) as? Number)?.toInt()
+        } catch (_: Throwable) {
+            null
         }
-    }
-
-    private fun sendGroupSignal(pgid: Int, signal: Int) {
-        if (pgid <= 1) return
-        try {
-            Os.kill(-pgid, signal)
-        } catch (_: Throwable) {}
     }
 
     suspend fun runStreamingCommand(
@@ -223,201 +150,69 @@ class SandboxExecutionProvider(
             val rootfsDir = sandboxManager.getRootfsDir()
             val isSandboxReady = sandboxManager.isInstalled()
 
-            val currentDir = if (!workingDir.isNullOrBlank()) workingDir else "/workspaces/default"
-            val effectiveCommand = if (command.trim().startsWith("apk get ") || command.trim() == "apk get") {
-                command.replaceFirst("apk get", "apk add")
-            } else {
-                command
-            }
-            val wrappedCommand = "echo \"__KLIX_PID:\$\$\"; cd \"$currentDir\" 2>/dev/null; $effectiveCommand; __KLIX_STATUS=$?; echo \"__KLIX_PWD:\$(pwd):STATUS:\$__KLIX_STATUS\"; exit \$__KLIX_STATUS"
-
-            val effectiveWorkingDir = if (!workingDir.isNullOrBlank() && File(workingDir).exists()) {
-                File(workingDir)
-            } else if (!workingDir.isNullOrBlank()) {
-                File(rootfsDir, workingDir.removePrefix("/")).apply { if (!exists()) mkdirs() }
-            } else {
-                File(rootfsDir, "workspaces/default").apply { if (!exists()) mkdirs() }
-            }
-
-            // Command builder
-            val processBuilder = ProcessBuilder()
-            val env = processBuilder.environment()
-
-            if (isSandboxReady) {
-                val prootBin = findProotExecutable()
-                val loaderBin = findLoaderExecutable()
-
-                if (prootBin != null) {
-                    val cmdList = mutableListOf(
-                        prootBin.absolutePath,
-                        "-r", rootfsDir.absolutePath,
-                        "-0", // Emulate root (UID 0) for apk and package installations
-                        "-b", "/dev",
-                        "-b", "/proc",
-                        "-b", "/sys",
-                        "-b", "${rootfsDir.absolutePath}/tmp:/dev/shm",
-                        "-w", currentDir,
-                        "/bin/sh", "-c", wrappedCommand
-                    )
-                    processBuilder.command(cmdList)
-
-                    if (loaderBin != null) {
-                        env["PROOT_LOADER"] = loaderBin.absolutePath
-                    }
-                    env["PROOT_TMP_DIR"] = "${rootfsDir.absolutePath}/tmp"
-                    env["PROOT_NO_SECCOMP"] = "1"
-                    env["HOME"] = "/root"
-                    env["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-                    env["TERM"] = "xterm-256color"
-                    env["LANG"] = "C.UTF-8"
-                    env["TMPDIR"] = "/tmp"
-                    env["USER"] = "root"
-                    env["PYTHONUNBUFFERED"] = "1"
-                } else {
-                    // Direct userland fallback if proot is missing
-                    val alpineSh = File(rootfsDir, "bin/sh")
-                    if (alpineSh.exists() && alpineSh.canExecute()) {
-                        processBuilder.command(alpineSh.absolutePath, "-c", wrappedCommand)
-                    } else {
-                        processBuilder.command("sh", "-c", wrappedCommand)
-                    }
-                    env["PATH"] = "${rootfsDir.absolutePath}/bin:${rootfsDir.absolutePath}/usr/bin:${rootfsDir.absolutePath}/sbin:/system/bin:/system/xbin"
-                    env["HOME"] = "${rootfsDir.absolutePath}/root"
-                    env["TERM"] = "xterm-256color"
-                    env["LANG"] = "C.UTF-8"
-                    env["TMPDIR"] = "${rootfsDir.absolutePath}/tmp"
-                    env["PYTHONUNBUFFERED"] = "1"
-                }
-            } else {
-                // If user runs apk or linux package commands before sandbox is installed
-                val trimmedCmd = command.trim()
-                if (trimmedCmd.startsWith("apk ") || trimmedCmd == "apk") {
-                    val notice = "[Klix Sandbox]: Alpine Linux is not installed yet.\n" +
-                            "Please tap ⚙ (Settings) or type 'sandbox-setup' to download and install Alpine Linux (~5MB).\n"
-                    onOutputLine(notice, false)
-                    stderrBuilder.append(notice)
-                    return@withContext CommandResult(
-                        exitCode = 127,
-                        stdout = "",
-                        stderr = notice.trim(),
-                        executionTimeMs = System.currentTimeMillis() - startTime
-                    )
-                }
-
-                val notice = "[Sandbox note: Alpine Linux rootfs not installed. Running in host fallback userland.]\n"
-                onOutputLine(notice, true)
-                stdoutBuilder.append(notice)
-                processBuilder.command("sh", "-c", wrappedCommand)
-                env["PATH"] = "/system/bin:/system/xbin"
-                env["HOME"] = context.filesDir.absolutePath
-                env["TERM"] = "xterm-256color"
-                env["LANG"] = "C.UTF-8"
-                env["PYTHONUNBUFFERED"] = "1"
-            }
-
-            if (effectiveWorkingDir.exists()) {
-                processBuilder.directory(effectiveWorkingDir)
-            }
-
-            val process = processBuilder.start()
-            activeProcess = process
-            var capturedNewCwd: String? = null
-            var capturedExitCode: Int? = null
-
-            val outThread = Thread {
-                try {
-                    val reader = InputStreamReader(process.inputStream, Charsets.UTF_8)
-                    val buffer = CharArray(1024)
-                    var count: Int
-                    val pendingText = java.lang.StringBuilder()
-
-                    while (reader.read(buffer).also { count = it } != -1) {
-                        pendingText.append(buffer, 0, count)
-
-                        while (true) {
-                            val newlineIndex = pendingText.indexOf("\n")
-                            if (newlineIndex == -1) break
-
-                            val fullLine = pendingText.substring(0, newlineIndex).trimEnd('\r')
-                            pendingText.delete(0, newlineIndex + 1)
-
-                            if (fullLine.startsWith("__KLIX_PID:")) {
-                                activeShellPid = fullLine.removePrefix("__KLIX_PID:").trim().toIntOrNull()
-                            } else if (fullLine.startsWith("__KLIX_PWD:") && fullLine.contains(":STATUS:")) {
-                                val parts = fullLine.removePrefix("__KLIX_PWD:").split(":STATUS:")
-                                capturedNewCwd = parts.getOrNull(0)?.trim()
-                                capturedExitCode = parts.getOrNull(1)?.trim()?.toIntOrNull()
-                            } else {
-                                stdoutBuilder.append(fullLine).append("\n")
-                                onOutputLine(fullLine + "\n", true)
-                            }
-                        }
-
-                        // Emit interactive prompts without waiting for a newline
-                        if (pendingText.isNotEmpty() && !pendingText.startsWith("__KLIX_")) {
-                            val partial = pendingText.toString()
-                            stdoutBuilder.append(partial)
-                            onOutputLine(partial, true)
-                            pendingText.setLength(0)
-                        }
-                    }
-
-                    if (pendingText.isNotEmpty()) {
-                        val remaining = pendingText.toString().trimEnd('\r')
-                        if (remaining.startsWith("__KLIX_PID:")) {
-                            activeShellPid = remaining.removePrefix("__KLIX_PID:").trim().toIntOrNull()
-                        } else if (remaining.startsWith("__KLIX_PWD:") && remaining.contains(":STATUS:")) {
-                            val parts = remaining.removePrefix("__KLIX_PWD:").split(":STATUS:")
-                            capturedNewCwd = parts.getOrNull(0)?.trim()
-                            capturedExitCode = parts.getOrNull(1)?.trim()?.toIntOrNull()
-                        } else {
-                            stdoutBuilder.append(remaining)
-                            onOutputLine(remaining, true)
-                        }
-                    }
-                } catch (_: Exception) {}
-            }
-
-            val errThread = Thread {
-                try {
-                    val reader = InputStreamReader(process.errorStream, Charsets.UTF_8)
-                    val buffer = CharArray(1024)
-                    var count: Int
-                    while (reader.read(buffer).also { count = it } != -1) {
-                        val chunk = String(buffer, 0, count)
-                        stderrBuilder.append(chunk)
-                        onOutputLine(chunk, false)
-                    }
-                } catch (_: Exception) {}
-            }
-
-            outThread.start()
-            errThread.start()
-
-            val finished = process.waitFor(600, TimeUnit.SECONDS)
-            if (!finished) {
-                cancelActiveProcess()
-                val timeoutMsg = "Command timed out after 600 seconds."
-                onOutputLine(timeoutMsg, false)
+            if (!isSandboxReady && requiresSandboxToolchain(command)) {
+                val notice = "Klix Bionic sandbox is not installed yet. Please open Sandbox Setup to initialize the environment.\n"
+                onOutputLine(notice, false)
+                stderrBuilder.append(notice)
                 return@withContext CommandResult(
-                    exitCode = -1,
-                    stdout = stdoutBuilder.toString().trim(),
-                    stderr = timeoutMsg,
+                    exitCode = 127,
+                    stdout = "",
+                    stderr = notice.trim(),
                     executionTimeMs = System.currentTimeMillis() - startTime
                 )
             }
 
-            outThread.join(1000)
-            errThread.join(1000)
+            val effectiveWorkingDir = resolveWorkingDirectory(rootfsDir, workingDir)
+            val envMap = sandboxManager.getToolchainEnv(effectiveWorkingDir).toMutableMap()
+            val dashExe = if (isSandboxReady) sandboxManager.getExecutablePath("dash") else null
 
-            val exitVal = capturedExitCode ?: process.exitValue()
-            CommandResult(
-                exitCode = exitVal,
-                stdout = stdoutBuilder.toString().trim(),
-                stderr = stderrBuilder.toString().trim(),
-                executionTimeMs = System.currentTimeMillis() - startTime,
-                newCwd = if (exitVal == 0) capturedNewCwd else null
-            )
+            val envScript = File(rootfsDir, "etc/klix_env.sh")
+            val sourcePreamble = if (dashExe != null && envScript.exists()) {
+                ". ${LanguageRunner.posixQuote(envScript.absolutePath)}\n"
+            } else {
+                ""
+            }
+
+            val wrappedCommand = buildString {
+                append("cd ")
+                append(LanguageRunner.posixQuote(effectiveWorkingDir.absolutePath))
+                append(" 2>/dev/null || true\n")
+                append(sourcePreamble)
+                append(command)
+                append("\n__KLIX_STATUS=$?\n")
+                append("printf '\\n__KLIX_PWD:%s:STATUS:%d\\n' \"\$PWD\" \"\$__KLIX_STATUS\"\n")
+                append("exit \$__KLIX_STATUS\n")
+            }
+
+            val shellPath = dashExe ?: "/system/bin/sh"
+            val argv = arrayOf(shellPath, "-c", wrappedCommand)
+
+            if (ptyTransport.isAvailable) {
+                runViaPty(
+                    argv = argv,
+                    envMap = envMap,
+                    cwd = effectiveWorkingDir,
+                    rootfsDir = rootfsDir,
+                    startTime = startTime,
+                    stdoutBuilder = stdoutBuilder,
+                    stderrBuilder = stderrBuilder,
+                    onOutputLine = onOutputLine
+                )
+            } else {
+                runViaFallbackProcess(
+                    argv = argv,
+                    envMap = envMap,
+                    cwd = effectiveWorkingDir,
+                    rootfsDir = rootfsDir,
+                    startTime = startTime,
+                    stdoutBuilder = stdoutBuilder,
+                    stderrBuilder = stderrBuilder,
+                    onOutputLine = onOutputLine
+                )
+            }
+        } catch (e: CancellationException) {
+            cancelActiveProcess()
+            throw e
         } catch (e: Exception) {
             val err = "Execution error: ${e.message}"
             onOutputLine(err, false)
@@ -427,69 +222,296 @@ class SandboxExecutionProvider(
                 stderr = err,
                 executionTimeMs = System.currentTimeMillis() - startTime
             )
-        } finally {
-            val p = activeProcess
-            if (p != null && p.isAlive) {
+        }
+    }
+
+    private suspend fun runViaPty(
+        argv: Array<String>,
+        envMap: Map<String, String>,
+        cwd: File,
+        rootfsDir: File,
+        startTime: Long,
+        stdoutBuilder: StringBuilder,
+        stderrBuilder: StringBuilder,
+        onOutputLine: (line: String, isStdout: Boolean) -> Unit
+    ): CommandResult {
+        val envp = envMap.entries.map { "${it.key}=${it.value}" }.toTypedArray()
+        val session = ptyTransport.openAndForkPty(
+            argv = argv,
+            envp = envp,
+            cwd = cwd.absolutePath,
+            rows = currentRows,
+            cols = currentCols
+        )
+        if (session.pid <= 0 || session.masterFd < 0) {
+            val err = "Failed to launch PTY session for ${argv.firstOrNull()}"
+            onOutputLine(err, false)
+            return CommandResult(
+                exitCode = -1,
+                stdout = "",
+                stderr = err,
+                executionTimeMs = System.currentTimeMillis() - startTime
+            )
+        }
+
+        activePtySession = session
+        var capturedNewCwd: String? = null
+        var capturedExitCode: Int? = null
+        val pendingText = StringBuilder()
+
+        val decoder = Charsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPLACE)
+            .onUnmappableCharacter(CodingErrorAction.REPLACE)
+        val byteBuf = ByteArray(4096)
+        var carryBytes = ByteArray(0)
+
+        fun emitCleanSegment(text: String) {
+            if (text.isEmpty()) return
+            stdoutBuilder.append(text)
+            onOutputLine(text, true)
+        }
+
+        fun drainCompleteLines(flushPartial: Boolean) {
+            while (true) {
+                val nlIdx = pendingText.indexOf("\n")
+                if (nlIdx == -1) break
+                val rawLine = pendingText.substring(0, nlIdx).trimEnd('\r')
+                pendingText.delete(0, nlIdx + 1)
+
+                if (rawLine.startsWith("__KLIX_PWD:") && rawLine.contains(":STATUS:")) {
+                    val parts = rawLine.removePrefix("__KLIX_PWD:").split(":STATUS:")
+                    capturedNewCwd = normalizeDisplayCwd(parts.getOrNull(0)?.trim(), rootfsDir)
+                    capturedExitCode = parts.getOrNull(1)?.trim()?.toIntOrNull()
+                } else {
+                    emitCleanSegment(rawLine + "\n")
+                }
+            }
+
+            if (pendingText.isNotEmpty()) {
+                val cur = pendingText.toString()
+                val couldBeMarker = "__KLIX_PWD:".startsWith(cur) || cur.startsWith("__KLIX_")
+                if (flushPartial && cur.startsWith("__KLIX_PWD:") && cur.contains(":STATUS:")) {
+                    val parts = cur.trimEnd('\r').removePrefix("__KLIX_PWD:").split(":STATUS:")
+                    capturedNewCwd = normalizeDisplayCwd(parts.getOrNull(0)?.trim(), rootfsDir)
+                    capturedExitCode = parts.getOrNull(1)?.trim()?.toIntOrNull()
+                    pendingText.setLength(0)
+                } else if (flushPartial || !couldBeMarker) {
+                    emitCleanSegment(cur)
+                    pendingText.setLength(0)
+                }
+            }
+        }
+
+        try {
+            val timeoutMs = 600_000L
+            while (coroutineContext.isActive) {
+                if (System.currentTimeMillis() - startTime > timeoutMs) {
+                    cancelActiveProcess()
+                    val timeoutMsg = "Command timed out after 600 seconds."
+                    onOutputLine(timeoutMsg, false)
+                    return CommandResult(
+                        exitCode = -1,
+                        stdout = stdoutBuilder.toString().trim(),
+                        stderr = timeoutMsg,
+                        executionTimeMs = System.currentTimeMillis() - startTime
+                    )
+                }
+
+                val n = ptyTransport.readPty(session.masterFd, byteBuf)
+                if (n > 0) {
+                    val combined = if (carryBytes.isEmpty()) {
+                        byteBuf.copyOf(n)
+                    } else {
+                        carryBytes + byteBuf.copyOf(n)
+                    }
+                    val inBb = ByteBuffer.wrap(combined)
+                    val outCb = CharBuffer.allocate(combined.size + 4)
+                    decoder.decode(inBb, outCb, false)
+                    outCb.flip()
+                    if (outCb.hasRemaining()) {
+                        pendingText.append(outCb.toString())
+                    }
+                    carryBytes = if (inBb.hasRemaining()) {
+                        val rem = ByteArray(inBb.remaining())
+                        inBb.get(rem)
+                        rem
+                    } else {
+                        ByteArray(0)
+                    }
+                    drainCompleteLines(flushPartial = false)
+                } else if (n == 0) {
+                    break
+                } else {
+                    // Timeout with no bytes yet; check if anything pending can flush
+                    drainCompleteLines(flushPartial = false)
+                }
+            }
+
+            if (!coroutineContext.isActive) {
                 cancelActiveProcess()
+                throw CancellationException("Command cancelled")
             }
-            activeProcess = null
-            activeShellPid = null
+
+            // Flush remaining decoded chars
+            if (carryBytes.isNotEmpty()) {
+                val inBb = ByteBuffer.wrap(carryBytes)
+                val outCb = CharBuffer.allocate(carryBytes.size + 4)
+                decoder.decode(inBb, outCb, true)
+                decoder.flush(outCb)
+                outCb.flip()
+                if (outCb.hasRemaining()) pendingText.append(outCb.toString())
+            }
+            drainCompleteLines(flushPartial = true)
+
+            val waitStatus = ptyTransport.waitPid(session.pid)
+            val exitVal = capturedExitCode ?: waitStatus
+            return CommandResult(
+                exitCode = exitVal,
+                stdout = stdoutBuilder.toString().trim(),
+                stderr = stderrBuilder.toString().trim(),
+                executionTimeMs = System.currentTimeMillis() - startTime,
+                newCwd = if (exitVal == 0) capturedNewCwd else null
+            )
+        } finally {
+            if (activePtySession?.pid == session.pid) {
+                activePtySession = null
+            }
+            if (session.masterFd >= 0) {
+                try {
+                    ptyTransport.closeFd(session.masterFd)
+                } catch (_: Throwable) {}
+            }
         }
     }
 
-    fun findProotExecutable(): File? {
-        // 1. Check application's nativeLibraryDir (standard for bundled native binaries in Android)
-        try {
-            val nativeLibDir = context.applicationInfo.nativeLibraryDir
-            val nativeProot = File(nativeLibDir, "libproot.so")
-            if (nativeProot.exists()) {
-                if (!nativeProot.canExecute()) {
-                    nativeProot.setExecutable(true, false)
+    private fun runViaFallbackProcess(
+        argv: Array<String>,
+        envMap: Map<String, String>,
+        cwd: File,
+        rootfsDir: File,
+        startTime: Long,
+        stdoutBuilder: StringBuilder,
+        stderrBuilder: StringBuilder,
+        onOutputLine: (line: String, isStdout: Boolean) -> Unit
+    ): CommandResult {
+        val processBuilder = ProcessBuilder(*argv)
+        processBuilder.environment().putAll(envMap)
+        if (cwd.exists()) {
+            processBuilder.directory(cwd)
+        }
+        val process = processBuilder.start()
+        activeFallbackProcess = process
+
+        var capturedNewCwd: String? = null
+        var capturedExitCode: Int? = null
+
+        val outThread = Thread {
+            try {
+                val reader = InputStreamReader(process.inputStream, Charsets.UTF_8)
+                val buf = CharArray(1024)
+                val pending = StringBuilder()
+                var count: Int
+                while (reader.read(buf).also { count = it } != -1) {
+                    pending.append(buf, 0, count)
+                    while (true) {
+                        val nl = pending.indexOf("\n")
+                        if (nl == -1) break
+                        val line = pending.substring(0, nl).trimEnd('\r')
+                        pending.delete(0, nl + 1)
+                        if (line.startsWith("__KLIX_PWD:") && line.contains(":STATUS:")) {
+                            val parts = line.removePrefix("__KLIX_PWD:").split(":STATUS:")
+                            capturedNewCwd = normalizeDisplayCwd(parts.getOrNull(0)?.trim(), rootfsDir)
+                            capturedExitCode = parts.getOrNull(1)?.trim()?.toIntOrNull()
+                        } else {
+                            stdoutBuilder.append(line).append("\n")
+                            onOutputLine(line + "\n", true)
+                        }
+                    }
+                    if (pending.isNotEmpty() && !pending.startsWith("__KLIX_")) {
+                        val partial = pending.toString()
+                        stdoutBuilder.append(partial)
+                        onOutputLine(partial, true)
+                        pending.setLength(0)
+                    }
                 }
-                return nativeProot
+            } catch (_: Exception) {}
+        }
+
+        val errThread = Thread {
+            try {
+                val reader = InputStreamReader(process.errorStream, Charsets.UTF_8)
+                val buf = CharArray(1024)
+                var count: Int
+                while (reader.read(buf).also { count = it } != -1) {
+                    val chunk = String(buf, 0, count)
+                    stderrBuilder.append(chunk)
+                    onOutputLine(chunk, false)
+                }
+            } catch (_: Exception) {}
+        }
+
+        outThread.start()
+        errThread.start()
+
+        try {
+            val finished = process.waitFor(600, TimeUnit.SECONDS)
+            if (!finished) {
+                cancelActiveProcess()
+                val timeoutMsg = "Command timed out after 600 seconds."
+                onOutputLine(timeoutMsg, false)
+                return CommandResult(-1, stdoutBuilder.toString().trim(), timeoutMsg, System.currentTimeMillis() - startTime)
             }
-        } catch (_: Throwable) {}
-
-        // 2. Check sandbox/bin directory
-        val sandboxBin = File(sandboxManager.getBinDir(), "proot")
-        if (sandboxBin.exists()) {
-            sandboxBin.setExecutable(true, false)
-            return sandboxBin
+            outThread.join(1000)
+            errThread.join(1000)
+            val exitVal = capturedExitCode ?: process.exitValue()
+            return CommandResult(
+                exitCode = exitVal,
+                stdout = stdoutBuilder.toString().trim(),
+                stderr = stderrBuilder.toString().trim(),
+                executionTimeMs = System.currentTimeMillis() - startTime,
+                newCwd = if (exitVal == 0) capturedNewCwd else null
+            )
+        } finally {
+            if (activeFallbackProcess === process) {
+                activeFallbackProcess = null
+            }
         }
-
-        val sandboxLib = File(sandboxManager.getBinDir(), "libproot.so")
-        if (sandboxLib.exists()) {
-            sandboxLib.setExecutable(true, false)
-            return sandboxLib
-        }
-
-        return null
     }
 
-    fun findLoaderExecutable(): File? {
-        try {
-            val nativeLibDir = context.applicationInfo.nativeLibraryDir
-            val nativeLoader = File(nativeLibDir, "libloader.so")
-            if (nativeLoader.exists()) {
-                if (!nativeLoader.canExecute()) {
-                    nativeLoader.setExecutable(true, false)
-                }
-                return nativeLoader
+    private fun resolveWorkingDirectory(rootfsDir: File, workingDir: String?): File {
+        if (!workingDir.isNullOrBlank()) {
+            val direct = File(workingDir)
+            if (direct.exists() && direct.isDirectory) {
+                return direct
             }
-        } catch (_: Throwable) {}
-
-        val sandboxLoader = File(sandboxManager.getBinDir(), "loader")
-        if (sandboxLoader.exists()) {
-            sandboxLoader.setExecutable(true, false)
-            return sandboxLoader
+            val insideRootfs = File(rootfsDir, workingDir.removePrefix("/"))
+            if (!insideRootfs.exists()) {
+                insideRootfs.mkdirs()
+            }
+            return insideRootfs
         }
+        return File(rootfsDir, "workspaces/default").apply { if (!exists()) mkdirs() }
+    }
 
-        val sandboxLoaderSo = File(sandboxManager.getBinDir(), "libloader.so")
-        if (sandboxLoaderSo.exists()) {
-            sandboxLoaderSo.setExecutable(true, false)
-            return sandboxLoaderSo
+    private fun normalizeDisplayCwd(rawCwd: String?, rootfsDir: File): String? {
+        if (rawCwd.isNullOrBlank()) return null
+        val rootPrefix = rootfsDir.absolutePath.trimEnd(File.separatorChar) + File.separator
+        val canonicalPrefix = try {
+            rootfsDir.canonicalPath.trimEnd(File.separatorChar) + File.separator
+        } catch (_: Throwable) {
+            rootPrefix
         }
+        val rel = when {
+            rawCwd.startsWith(canonicalPrefix) -> rawCwd.removePrefix(canonicalPrefix)
+            rawCwd.startsWith(rootPrefix) -> rawCwd.removePrefix(rootPrefix)
+            else -> return rawCwd
+        }.replace('\\', '/')
+        return if (rel.startsWith("workspaces/")) "/$rel" else rawCwd
+    }
 
-        return null
+    private fun requiresSandboxToolchain(command: String): Boolean {
+        val tokens = command.trim().split(Regex("\\s+"))
+        val first = tokens.firstOrNull()?.substringAfterLast('/')?.lowercase() ?: return false
+        return first in setOf("node", "nodejs", "python", "python3", "clang", "clang++", "gcc", "g++", "lld")
     }
 }

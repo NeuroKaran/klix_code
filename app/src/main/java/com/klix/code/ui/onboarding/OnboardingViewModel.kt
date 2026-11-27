@@ -4,13 +4,20 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.klix.code.R
+import com.klix.code.data.agent.execution.ExecutionProvider
 import com.klix.code.data.agent.model.ModelProvider
 import com.klix.code.data.sandbox.SandboxExecutionProvider
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.sandbox.SandboxStatus
 import com.klix.code.data.security.KeyManager
 import com.klix.code.data.security.KeyManagerImpl
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,41 +25,47 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 
 enum class ToolchainOption(
     val id: String,
     val title: String,
     val subtitle: String,
     val logoRes: Int,
-    val packages: List<String>
+    val packages: List<String>,
+    val verifyCommand: String
 ) {
     PYTHON(
         id = "python3",
         title = "Python 3",
-        subtitle = "python3 • pip",
+        subtitle = "python3 • stdlib",
         logoRes = R.drawable.ic_logo_python,
-        packages = listOf("python3", "py3-pip")
+        packages = listOf("python3"),
+        verifyCommand = "python3 --version"
     ),
     NODEJS(
         id = "nodejs",
         title = "Node.js",
-        subtitle = "nodejs • npm",
+        subtitle = "nodejs • v24 LTS",
         logoRes = R.drawable.ic_logo_nodejs,
-        packages = listOf("nodejs", "npm")
+        packages = listOf("nodejs"),
+        verifyCommand = "node --version"
     ),
     GIT(
         id = "git",
         title = "Git",
-        subtitle = "git • ssh",
+        subtitle = "git • cli",
         logoRes = R.drawable.ic_logo_git,
-        packages = listOf("git", "openssh")
+        packages = listOf("git"),
+        verifyCommand = "git --version"
     ),
     CPP(
         id = "c/c++",
         title = "C / C++",
-        subtitle = "build-base",
+        subtitle = "clang • lld",
         logoRes = R.drawable.ic_logo_cpp,
-        packages = listOf("build-base")
+        packages = listOf("clang", "lld"),
+        verifyCommand = "clang --version"
     )
 }
 
@@ -69,7 +82,16 @@ sealed class SandboxInstallState {
     data class Error(val message: String) : SandboxInstallState()
 }
 
-class OnboardingViewModel : ViewModel() {
+class OnboardingViewModel @JvmOverloads constructor(
+    private val executionProviderFactory: (Context, SandboxManager) -> ExecutionProvider = { context, sandboxManager ->
+        SandboxExecutionProvider(context, sandboxManager)
+    },
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val coroutineScopeOverride: CoroutineScope? = null
+) : ViewModel() {
+
+    internal var activeInstallJob: Job? = null
+    private val installInProgress = AtomicBoolean(false)
 
     // Page 2: Selected Toolchains (Python 3 selected by default as in screenshot)
     private val _selectedTools = MutableStateFlow<Set<ToolchainOption>>(setOf(ToolchainOption.PYTHON))
@@ -110,30 +132,77 @@ class OnboardingViewModel : ViewModel() {
         _showKeyInputDialog.value = show
     }
 
+    private fun isInProgressInstallState(state: SandboxInstallState): Boolean {
+        return state is SandboxInstallState.DownloadingRootFs ||
+            state is SandboxInstallState.ExtractingRootFs ||
+            state is SandboxInstallState.InstallingPackages
+    }
+
     fun installSelectedPackages(
         context: Context,
         sandboxManager: SandboxManager,
         onSuccess: () -> Unit
     ) {
-        if (_installState.value is SandboxInstallState.DownloadingRootFs ||
-            _installState.value is SandboxInstallState.ExtractingRootFs ||
-            _installState.value is SandboxInstallState.InstallingPackages
-        ) {
+        if (activeInstallJob?.isActive == true || !installInProgress.compareAndSet(false, true)) {
             return
         }
 
-        viewModelScope.launch {
-            try {
-                // Step 1: Install Alpine RootFS if not already present
-                if (!sandboxManager.isInstalled()) {
-                    _installState.value = SandboxInstallState.DownloadingRootFs(0.05f, "Connecting to Alpine Linux repository...")
+        val scope = coroutineScopeOverride ?: viewModelScope
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            performInstallSelectedPackagesInternal(context, sandboxManager, onSuccess)
+        }
+        activeInstallJob = job
+        job.invokeOnCompletion { cause ->
+            if (cause is CancellationException && isInProgressInstallState(_installState.value)) {
+                _installState.value = SandboxInstallState.Idle
+            }
+            if (activeInstallJob === job) {
+                activeInstallJob = null
+            }
+            installInProgress.set(false)
+        }
+        job.start()
+    }
+
+    internal suspend fun performInstallSelectedPackages(
+        context: Context,
+        sandboxManager: SandboxManager,
+        onSuccess: () -> Unit
+    ) {
+        if (!installInProgress.compareAndSet(false, true)) {
+            return
+        }
+        try {
+            performInstallSelectedPackagesInternal(context, sandboxManager, onSuccess)
+        } finally {
+            installInProgress.set(false)
+        }
+    }
+
+    private suspend fun performInstallSelectedPackagesInternal(
+        context: Context,
+        sandboxManager: SandboxManager,
+        onSuccess: () -> Unit
+    ) {
+        try {
+            coroutineScope {
+                // Step 1: Install Bionic 16 KB Sandbox if not already present
+                val alreadyInstalled = withContext(ioDispatcher) { sandboxManager.isInstalled() }
+                if (!alreadyInstalled) {
+                    _installState.value = SandboxInstallState.DownloadingRootFs(
+                        0.05f,
+                        "Preparing Bionic 16 KB runtime..."
+                    )
 
                     // Launch monitoring coroutine for progress & statusMessage
                     val monitorJob = launch {
                         while (isActive) {
-                            val status = sandboxManager.status.value
-                            val prog = sandboxManager.progress.value
-                            val msg = sandboxManager.statusMessage.value
+                            val statusFlow: StateFlow<SandboxStatus>? = sandboxManager.status
+                            val progressFlow: StateFlow<Float>? = sandboxManager.progress
+                            val messageFlow: StateFlow<String>? = sandboxManager.statusMessage
+                            val status = statusFlow?.value
+                            val prog = progressFlow?.value ?: 0f
+                            val msg = messageFlow?.value ?: ""
                             when (status) {
                                 SandboxStatus.DOWNLOADING -> {
                                     _installState.value = SandboxInstallState.DownloadingRootFs(prog, msg)
@@ -142,7 +211,9 @@ class OnboardingViewModel : ViewModel() {
                                     _installState.value = SandboxInstallState.ExtractingRootFs(prog, msg)
                                 }
                                 SandboxStatus.ERROR -> {
-                                    _installState.value = SandboxInstallState.Error(msg)
+                                    _installState.value = SandboxInstallState.Error(
+                                        msg.ifBlank { "Failed to initialize Bionic runtime" }
+                                    )
                                     return@launch
                                 }
                                 else -> {}
@@ -151,42 +222,80 @@ class OnboardingViewModel : ViewModel() {
                         }
                     }
 
-                    val installResult = withContext(Dispatchers.IO) {
-                        sandboxManager.installSandbox()
+                    val installResult = try {
+                        withContext(ioDispatcher) {
+                            sandboxManager.installSandbox()
+                        }
+                    } finally {
+                        monitorJob.cancel()
                     }
-                    monitorJob.cancel()
 
                     if (installResult.isFailure) {
-                        val errorMsg = installResult.exceptionOrNull()?.message ?: "Failed to install Alpine Linux"
+                        val errorMsg = installResult.exceptionOrNull()?.message
+                            ?: "Failed to initialize Bionic runtime"
                         _installState.value = SandboxInstallState.Error(errorMsg)
-                        return@launch
+                        return@coroutineScope
+                    }
+
+                    val rootFsVerified = withContext(ioDispatcher) { sandboxManager.isInstalled() }
+                    if (!rootFsVerified) {
+                        _installState.value = SandboxInstallState.Error(
+                            "Sandbox installation completed but verification failed"
+                        )
+                        return@coroutineScope
                     }
                 }
 
-                // Step 2: Install selected packages inside RootFS via PRoot
+                // Step 2: Verify selected Bionic toolchains inside sandbox
                 val toolsToInstall = _selectedTools.value.toList()
                 if (toolsToInstall.isNotEmpty()) {
-                    val executionProvider = SandboxExecutionProvider(context, sandboxManager)
+                    val executionProvider = executionProviderFactory(context, sandboxManager)
                     val totalTools = toolsToInstall.size
 
                     for ((index, tool) in toolsToInstall.withIndex()) {
-                        val baseProgress = (index.toFloat() / totalTools)
+                        val baseProgress = index.toFloat() / totalTools
                         val pkgList = tool.packages.joinToString(" ")
                         _installState.value = SandboxInstallState.InstallingPackages(
                             currentPackage = tool.title,
                             progress = baseProgress + 0.05f,
-                            statusMessage = "Installing ${tool.title} ($pkgList)..."
+                            statusMessage = "Configuring ${tool.title} ($pkgList)..."
                         )
 
-                        // Run apk add inside sandbox
-                        val cmd = "apk add $pkgList"
-                        val result = withContext(Dispatchers.IO) {
+                        val cmd = tool.verifyCommand
+                        val result = withContext(ioDispatcher) {
                             executionProvider.runCommand(cmd)
+                        }
+
+                        if (!result.isSuccess || result.exitCode != 0) {
+                            val detail = when {
+                                result.stderr.isNotBlank() -> result.stderr.trim()
+                                result.stdout.isNotBlank() -> result.stdout.trim()
+                                else -> "Command exited with code ${result.exitCode}"
+                            }
+                            withContext(ioDispatcher) { sandboxManager.refreshInstalledTools() }
+                            _installState.value = SandboxInstallState.Error(
+                                "Failed to install ${tool.title}: ${detail.take(300)}"
+                            )
+                            return@coroutineScope
+                        }
+
+                        val isVerified = withContext(ioDispatcher) {
+                            sandboxManager.isToolInstalled(tool.id)
+                        }
+                        if (!isVerified) {
+                            val stderrNote = result.stderr.trim().takeIf { it.isNotEmpty() }
+                                ?.let { " (${it.take(200)})" }
+                                ?: ""
+                            withContext(ioDispatcher) { sandboxManager.refreshInstalledTools() }
+                            _installState.value = SandboxInstallState.Error(
+                                "Failed to verify ${tool.title} installation$stderrNote"
+                            )
+                            return@coroutineScope
                         }
 
                         _installState.value = SandboxInstallState.InstallingPackages(
                             currentPackage = tool.title,
-                            progress = ((index + 1).toFloat() / totalTools),
+                            progress = (index + 1).toFloat() / totalTools,
                             statusMessage = "Configured ${tool.title}"
                         )
                         delay(200)
@@ -194,16 +303,21 @@ class OnboardingViewModel : ViewModel() {
                 }
 
                 // Refresh sandbox installed tools map so other screens update immediately
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     sandboxManager.refreshInstalledTools()
                 }
 
                 _installState.value = SandboxInstallState.Completed
                 delay(300)
                 onSuccess()
-            } catch (e: Exception) {
-                _installState.value = SandboxInstallState.Error(e.message ?: "Installation error occurred")
             }
+        } catch (e: CancellationException) {
+            if (isInProgressInstallState(_installState.value)) {
+                _installState.value = SandboxInstallState.Idle
+            }
+            throw e
+        } catch (e: Exception) {
+            _installState.value = SandboxInstallState.Error(e.message ?: "Installation error occurred")
         }
     }
 
@@ -212,6 +326,12 @@ class OnboardingViewModel : ViewModel() {
         sandboxManager: SandboxManager,
         onSuccess: () -> Unit
     ) {
+        if (installInProgress.get() ||
+            activeInstallJob?.isActive == true ||
+            isInProgressInstallState(_installState.value)
+        ) {
+            return
+        }
         _installState.value = SandboxInstallState.Idle
         installSelectedPackages(context, sandboxManager, onSuccess)
     }
