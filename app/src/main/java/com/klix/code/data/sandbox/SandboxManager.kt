@@ -446,7 +446,7 @@ class SandboxManager(private val context: Context) {
         }
     }
 
-    private fun setupBasicEnvironment(rootfsDir: File) {
+    internal fun setupBasicEnvironment(rootfsDir: File) {
         val etcDir = File(rootfsDir, "etc").apply { if (!exists()) mkdirs() }
         File(etcDir, "klix-bionic-release").writeText("klix-bionic-16kb=1\n")
 
@@ -484,7 +484,6 @@ class SandboxManager(private val context: Context) {
             "python3" to "python3",
             "python" to "python3",
             "clang" to "clang",
-            "clang++" to "clang",
             "lld" to "lld",
             "ld.lld" to "lld"
         )
@@ -496,6 +495,40 @@ class SandboxManager(private val context: Context) {
                     linkFile.delete()
                 }
                 Os.symlink(targetPath, linkFile.absolutePath)
+            } catch (_: Throwable) {}
+        }
+
+        // Create an executable dash wrapper for clang++ (POSIX shells forbid '+' in function names,
+        // and wrapper script ensures C++ driver flags work both in PATH subprocesses and dash).
+        val dashPath = getExecutablePath("dash")
+        val clangPath = getExecutablePath("clang")
+        val clangXxFile = File(binDir, "clang++")
+        if (clangPath != null) {
+            try {
+                if (clangXxFile.exists() || isSymlink(clangXxFile)) {
+                    clangXxFile.delete()
+                }
+                if (dashPath != null) {
+                    clangXxFile.writeText(
+                        """
+                        #!$dashPath
+                        exec "${'$'}KLIX_NATIVE_LIB_DIR/libclang.so" --driver-mode=g++ \
+                            --target="${'$'}KLIX_CLANG_TARGET" \
+                            --sysroot="${'$'}KLIX_SYSROOT" \
+                            -resource-dir "${'$'}KLIX_RESOURCE_DIR" \
+                            -B "${'$'}KLIX_BIN_DIR" \
+                            -fuse-ld=lld \
+                            -rtlib=compiler-rt \
+                            -stdlib=libc++ \
+                            -Wl,-z,max-page-size=16384 \
+                            -L"${'$'}KLIX_NATIVE_LIB_DIR" \
+                            "${'$'}@"
+                        """.trimIndent() + "\n"
+                    )
+                    Os.chmod(clangXxFile.absolutePath, 0b111_101_101)
+                } else {
+                    Os.symlink(clangPath, clangXxFile.absolutePath)
+                }
             } catch (_: Throwable) {}
         }
 
@@ -524,7 +557,7 @@ class SandboxManager(private val context: Context) {
                     -L"${'$'}KLIX_NATIVE_LIB_DIR" \
                     "${'$'}@"
             }
-            clang++() {
+            clangxx() {
                 "${'$'}KLIX_NATIVE_LIB_DIR/libclang.so" --driver-mode=g++ \
                     --target="${'$'}KLIX_CLANG_TARGET" \
                     --sysroot="${'$'}KLIX_SYSROOT" \
@@ -537,6 +570,7 @@ class SandboxManager(private val context: Context) {
                     -L"${'$'}KLIX_NATIVE_LIB_DIR" \
                     "${'$'}@"
             }
+            alias clang++='clangxx'
             """.trimIndent() + "\n"
         )
     }

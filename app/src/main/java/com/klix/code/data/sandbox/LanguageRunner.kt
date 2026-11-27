@@ -103,7 +103,7 @@ object LanguageRunner {
         val quotedSrc = posixQuote(sourceRelPath)
         val quotedOut = posixQuote(outputBin)
         val libsPart = if (extraLibs.isNotBlank()) " $extraLibs" else ""
-        return "mkdir -p ${posixQuote(buildDir.absolutePath)} && $compiler $flags $quotedSrc -o $quotedOut$libsPart && $quotedOut"
+        return "mkdir -p ${posixQuote(buildDir.absolutePath)} && $compiler $flags $quotedSrc -o $quotedOut$libsPart && /system/bin/linker64 $quotedOut"
     }
 
     private fun resolveWorkspaceRelativePath(

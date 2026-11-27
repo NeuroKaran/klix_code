@@ -131,9 +131,12 @@ class EditorViewModel @JvmOverloads constructor(
         _isLoading.value = true
         _statusMessage.value = "Opening workspace ${workspace.name}..."
         try {
+            val isInitialWorkspaceLoad = _currentProject.value == null
             _currentProject.value = ProjectItem(workspace.rootUri, workspace.name, workspace.lastOpened)
-            _openTabs.value = workspaceTabsMap[workspace.id] ?: emptyList()
-            _activeTabUri.value = workspaceActiveTabMap[workspace.id]
+            if (!isInitialWorkspaceLoad || _openTabs.value.isEmpty()) {
+                _openTabs.value = workspaceTabsMap[workspace.id] ?: emptyList()
+                _activeTabUri.value = workspaceActiveTabMap[workspace.id]
+            }
             val tree = repository.loadTree(workspace.rootUri)
             _fileTree.value = tree
             _statusMessage.value = "Workspace loaded"

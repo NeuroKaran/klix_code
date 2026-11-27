@@ -41,7 +41,7 @@ class Tier3PairwiseIntegrationE2ETest {
     @Before
     fun setUp() {
         val ctx = E2ETestHelpers.targetContext()
-        sandboxManager = SandboxManager(ctx)
+        sandboxManager = E2ETestHelpers.ensureSandboxInstalled(ctx)
         provider = SandboxExecutionProvider(ctx, sandboxManager)
         val wsDir = E2ETestHelpers.getDefaultWorkspaceDir(ctx)
         testSubdir = File(wsDir, "t3_pair_${System.nanoTime()}").apply { mkdirs() }
@@ -284,8 +284,13 @@ class Tier3PairwiseIntegrationE2ETest {
         vm.activeInstallJob?.join()
         assertEquals(SandboxInstallState.Completed, vm.installState.value)
 
+        val provisionedScript = E2ETestHelpers.seedWorkspaceFile(
+            "app.py",
+            """print("RECOVERED_T3_08")""",
+            E2ETestHelpers.getDefaultWorkspaceDir(readyCtx)
+        )
         val postRes = E2ETestHelpers.resolveAndExecuteFile(
-            script,
+            provisionedScript,
             E2ETestHelpers.defaultWorkspaceObject(readyCtx),
             readyMgr,
             SandboxExecutionProvider(readyCtx, readyMgr)

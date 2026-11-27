@@ -360,7 +360,7 @@ fun TerminalView(
                 }
 
                 if (isExecuting) {
-                    item {
+                    item(key = "terminal_running_indicator") {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),

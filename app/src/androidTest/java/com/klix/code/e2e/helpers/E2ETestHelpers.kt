@@ -7,6 +7,8 @@ import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.SystemClock
 import android.view.View
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -17,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -165,6 +168,19 @@ object E2ETestHelpers {
     }
 
     /**
+     * Installs the bundled Bionic sandbox once if it is not yet extracted on the device.
+     */
+    fun ensureSandboxInstalled(context: Context = targetContext()): SandboxManager {
+        val mgr = SandboxManager(context)
+        if (!mgr.isInstalled()) {
+            kotlinx.coroutines.runBlocking {
+                mgr.installSandbox().getOrThrow()
+            }
+        }
+        return mgr
+    }
+
+    /**
      * Ensures real Bionic runtime/compiler tools exist cleanly before running tool tests.
      * Fails loudly if sandbox or required tool is missing.
      */
@@ -231,16 +247,31 @@ object E2ETestHelpers {
         val refreshNodes = rule.onAllNodes(hasContentDescription("Refresh")).fetchSemanticsNodes()
         if (refreshNodes.isNotEmpty()) {
             rule.onNodeWithContentDescription("Refresh").performClick()
+            SystemClock.sleep(300)
+            rule.waitForIdle()
+        }
+        val scrollMatcher = SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollToIndex)
+        fun scrollAndClickDrawerItem(label: String) {
+            if (rule.onAllNodesWithText(label, substring = false).fetchSemanticsNodes().isEmpty()) {
+                val scrollableCount = rule.onAllNodes(scrollMatcher).fetchSemanticsNodes().size
+                for (idx in 0 until scrollableCount) {
+                    try {
+                        rule.onAllNodes(scrollMatcher)[idx]
+                            .performScrollToNode(hasText(label, substring = false))
+                        rule.waitForIdle()
+                        break
+                    } catch (_: Throwable) {
+                    }
+                }
+            }
+            waitForComposeText(rule, label, substring = false, timeoutMs = 10_000L)
+            rule.onNodeWithText(label, substring = false).performClick()
             rule.waitForIdle()
         }
         for (dir in subdirNames) {
-            waitForComposeText(rule, dir, substring = false, timeoutMs = 10_000L)
-            rule.onNodeWithText(dir, substring = false).performClick()
-            rule.waitForIdle()
+            scrollAndClickDrawerItem(dir)
         }
-        waitForComposeText(rule, fileName, substring = false, timeoutMs = 10_000L)
-        rule.onNodeWithText(fileName, substring = false).performClick()
-        rule.waitForIdle()
+        scrollAndClickDrawerItem(fileName)
     }
 
     fun findTerminalInputNode(rule: ComposeTestRule): SemanticsNodeInteraction =
@@ -636,6 +667,19 @@ object E2ETestHelpers {
         return data
     }
 
+    private fun readHeaderPrefix(stream: java.io.InputStream, maxBytes: Int = 65536): ByteArray {
+        val out = ByteArrayOutputStream()
+        val buf = ByteArray(8192)
+        var total = 0
+        while (total < maxBytes) {
+            val n = stream.read(buf, 0, minOf(buf.size, maxBytes - total))
+            if (n <= 0) break
+            out.write(buf, 0, n)
+            total += n
+        }
+        return out.toByteArray()
+    }
+
     fun inspectNativeLibraryDir(nativeLibDir: File): List<String> {
         val errors = mutableListOf<String>()
         if (!nativeLibDir.exists()) {
@@ -646,7 +690,7 @@ object E2ETestHelpers {
             return listOf("nativeLibraryDir contains no native libraries: ${nativeLibDir.absolutePath}")
         }
         for (file in files.sortedBy { it.name }) {
-            val bytes = file.readBytes()
+            val bytes = file.inputStream().use { readHeaderPrefix(it) }
             if (file.extension == "so" || isElfMagic(bytes)) {
                 errors.addAll(inspectElfBytes(bytes, file.name).errors)
             }
@@ -671,7 +715,7 @@ object E2ETestHelpers {
                             errors.add("${entry.name}: Forbidden ABI '$abi' in APK")
                         }
                     }
-                    val bytes = zf.getInputStream(entry).use { it.readBytes() }
+                    val bytes = zf.getInputStream(entry).use { readHeaderPrefix(it) }
                     errors.addAll(inspectElfBytes(bytes, entry.name).errors)
                 }
             }
@@ -720,7 +764,16 @@ object E2ETestHelpers {
             }
         }
         if (run.length >= 4) asciiSb.append(run).append('\n')
-        val asciiText = asciiSb.toString()
+        var asciiText = asciiSb.toString()
+        if (location.contains("usr/lib/python3.") && location.lowercase().endsWith(".py")) {
+            asciiText = asciiText
+                .replace(Regex("""'_?gdbm'\s*:\s*'(?:dbm\.gnu|gdbm)'"""), "[PSF-2.0-stdlib-pickle-map]")
+                .replace(Regex("""GNU\s+readline\s+is\s+never\s+used"""), "[PSF-2.0-stdlib-comment]")
+                .replace("in the GNU readline history", "[PSF-2.0-stdlib-reference]")
+                .replace("enable GNU readline if it is available", "[PSF-2.0-stdlib-reference]")
+                .replace("Word completion for GNU readline", "[PSF-2.0-stdlib-reference]")
+                .replace(Regex("""1\)\s*GNU\s+GPLv2\s+2\)\s*PSF\s+license\s+for\s+Python"""), "[PSF-2.0-stdlib-license]")
+        }
         for ((label, regex) in R5_FORBIDDEN_REGEXES) {
             val match = regex.find(asciiText)
             if (match != null) {

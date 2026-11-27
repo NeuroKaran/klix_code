@@ -331,14 +331,15 @@ class TerminalViewModel @JvmOverloads constructor(
             isCommand = true,
             isPrompt = true
         )
-        synchronized(session) {
+        val snapshot = synchronized(session) {
             session.lines.clear()
             session.lines.addAll(banner)
             session.lines.add(promptLine)
             session.lastLineHadNewline = true
+            session.lines.toList()
         }
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
+            _terminalLines.value = snapshot
         }
     }
 
@@ -349,7 +350,7 @@ class TerminalViewModel @JvmOverloads constructor(
         if (session.id == _activeTerminalId.value) {
             _currentCwd.value = path
         }
-        synchronized(session) {
+        val snapshot = synchronized(session) {
             if (session.lines.isNotEmpty() && session.lines.last().isPrompt) {
                 session.lines[session.lines.size - 1] = TerminalLine(
                     text = "klix@mobile:${path}$",
@@ -358,9 +359,10 @@ class TerminalViewModel @JvmOverloads constructor(
                     isPrompt = true
                 )
             }
+            session.lines.toList()
         }
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
+            _terminalLines.value = snapshot
         }
         updateTabsState()
     }
@@ -383,15 +385,15 @@ class TerminalViewModel @JvmOverloads constructor(
         val sessions = getCurrentSessions()
         val session = (if (terminalId != null) sessions.find { it.id == terminalId } else getActiveSession()) ?: return
 
-        // Add to history
-        synchronized(session) {
+        val histSnapshot = synchronized(session) {
             if (session.commandHistory.isEmpty() || session.commandHistory.last() != trimmed) {
                 session.commandHistory.add(trimmed)
             }
             session.historyIndex = -1
+            session.commandHistory.toList()
         }
         if (session.id == _activeTerminalId.value) {
-            _commandHistory.value = session.commandHistory.toList()
+            _commandHistory.value = histSnapshot
         }
 
         // Print command prompt
@@ -401,15 +403,16 @@ class TerminalViewModel @JvmOverloads constructor(
             isCommand = true,
             isPrompt = false
         )
-        synchronized(session) {
+        val updatedLines = synchronized(session) {
             if (session.lines.isNotEmpty() && session.lines.last().isPrompt) {
                 session.lines[session.lines.size - 1] = promptLine
             } else {
                 session.lines.add(promptLine)
             }
+            session.lines.toList()
         }
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
+            _terminalLines.value = updatedLines
         }
 
         // Handle internal commands
@@ -499,11 +502,12 @@ class TerminalViewModel @JvmOverloads constructor(
     }
 
     private fun appendTerminalLine(session: TerminalSession, line: TerminalLine) {
-        synchronized(session) {
+        val snapshot = synchronized(session) {
             session.lines.add(line)
+            session.lines.toList()
         }
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
+            _terminalLines.value = snapshot
         }
     }
 
@@ -521,16 +525,17 @@ class TerminalViewModel @JvmOverloads constructor(
             isCommand = true,
             isPrompt = false
         )
-        synchronized(session) {
+        val snapshot = synchronized(session) {
             if (session.lines.isNotEmpty() && session.lines.last().isPrompt) {
                 session.lines[session.lines.size - 1] = cmdLine
             } else {
                 session.lines.add(cmdLine)
             }
             session.lastLineHadNewline = true
+            session.lines.toList()
         }
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
+            _terminalLines.value = snapshot
         }
         if (stdout.isNotBlank()) {
             appendSessionOutput(session, if (stdout.endsWith("\n")) stdout else "$stdout\n", isStdout = true)
@@ -550,7 +555,7 @@ class TerminalViewModel @JvmOverloads constructor(
         if (text.isEmpty()) return
 
         val rawSegments = text.split('\n')
-        synchronized(session) {
+        val snapshot = synchronized(session) {
             for (i in rawSegments.indices) {
                 val rawSegment = rawSegments[i]
                 val isLastSegment = (i == rawSegments.size - 1)
@@ -582,10 +587,11 @@ class TerminalViewModel @JvmOverloads constructor(
 
                 session.lastLineHadNewline = !isLastSegment
             }
+            session.lines.toList()
         }
 
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
+            _terminalLines.value = snapshot
         }
     }
 
@@ -637,13 +643,14 @@ class TerminalViewModel @JvmOverloads constructor(
             isCommand = true,
             isPrompt = true
         )
-        synchronized(session) {
+        val snapshot = synchronized(session) {
             session.lines.clear()
             session.lines.add(promptLine)
             session.lastLineHadNewline = true
+            session.lines.toList()
         }
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
+            _terminalLines.value = snapshot
         }
     }
 
@@ -654,14 +661,15 @@ class TerminalViewModel @JvmOverloads constructor(
             isCommand = true,
             isPrompt = true
         )
-        synchronized(session) {
+        val snapshot = synchronized(session) {
             if (session.lines.isEmpty() || !session.lines.last().isPrompt) {
                 session.lines.add(idlePrompt)
                 session.lastLineHadNewline = true
             }
+            session.lines.toList()
         }
         if (session.id == _activeTerminalId.value) {
-            _terminalLines.value = session.lines.toList()
+            _terminalLines.value = snapshot
         }
     }
 

@@ -246,6 +246,19 @@ class SandboxManagerTest {
     }
 
     @Test
+    fun testSetupBasicEnvironmentGeneratesPosixValidKlixEnv() {
+        val rootfs = sandboxManager.getRootfsDir().apply { mkdirs() }
+        sandboxManager.setupBasicEnvironment(rootfs)
+
+        val envFile = File(rootfs, "etc/klix_env.sh")
+        assertTrue("Expected klix_env.sh to be generated", envFile.exists())
+        val content = envFile.readText()
+        assertFalse("POSIX dash forbids '+' in function names", content.contains("clang++()"))
+        assertTrue("Expected POSIX-valid clangxx function", content.contains("clangxx()"))
+        assertTrue("Expected clang++ alias to clangxx", content.contains("alias clang++='clangxx'"))
+    }
+
+    @Test
     fun testExtractTarGzHandlesLongPathsViaPaxGnuAndUstarPrefix() = runBlocking {
         // 1. PAX long path (>100 chars) + long symlink target (>100 chars)
         val paxLongPath = "a".repeat(55) + "/" + "b".repeat(55) + "/" + "c".repeat(45) + "/pax_file.txt"

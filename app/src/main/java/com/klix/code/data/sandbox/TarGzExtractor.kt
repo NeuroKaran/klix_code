@@ -1,7 +1,9 @@
 package com.klix.code.data.sandbox
 
 import android.os.Build
+import android.system.ErrnoException
 import android.system.Os
+import android.system.OsConstants
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
@@ -20,6 +22,7 @@ import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermission
@@ -103,8 +106,19 @@ internal object SystemTarPlatformOps : TarPlatformOps {
 
     override fun createHardLink(linkPath: Path, targetPath: Path) {
         if (isAndroidRuntime()) {
-            Os.link(targetPath.toAbsolutePath().toString(), linkPath.toAbsolutePath().toString())
-            return
+            try {
+                Os.link(targetPath.toAbsolutePath().toString(), linkPath.toAbsolutePath().toString())
+                return
+            } catch (e: ErrnoException) {
+                // Android untrusted_app SELinux blocks link(2) on app_data_file with EACCES/EPERM.
+                if (e.errno != OsConstants.EACCES && e.errno != OsConstants.EPERM) {
+                    throw e
+                }
+                Files.copy(targetPath, linkPath, StandardCopyOption.REPLACE_EXISTING)
+                val targetMode = Os.stat(targetPath.toAbsolutePath().toString()).st_mode and 0x1FF
+                Os.chmod(linkPath.toAbsolutePath().toString(), targetMode)
+                return
+            }
         }
         Files.createLink(linkPath, targetPath)
     }
@@ -549,7 +563,7 @@ internal class TarGzExtractor(
                     if (Files.isDirectory(item.targetPath, LinkOption.NOFOLLOW_LINKS)) {
                         throw IOException("Hardlink target is a directory: ${item.rawLinkName} -> ${item.rawTargetName}")
                     }
-                    if (!item.targetPath.toRealPath(LinkOption.NOFOLLOW_LINKS).startsWith(destRealRoot)) {
+                    if (!item.targetPath.toRealPath().startsWith(destRealRoot)) {
                         throw SecurityException("Hardlink target resolves outside destination: ${item.rawLinkName} -> ${item.rawTargetName}")
                     }
 

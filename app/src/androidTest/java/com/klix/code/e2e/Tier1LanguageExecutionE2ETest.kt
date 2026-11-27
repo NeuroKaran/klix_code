@@ -31,7 +31,7 @@ class Tier1LanguageExecutionE2ETest {
     @Before
     fun setUp() {
         val ctx = E2ETestHelpers.targetContext()
-        sandboxManager = SandboxManager(ctx)
+        sandboxManager = E2ETestHelpers.ensureSandboxInstalled(ctx)
         provider = SandboxExecutionProvider(ctx, sandboxManager)
         val wsDir = E2ETestHelpers.getDefaultWorkspaceDir(ctx)
         testSubdir = File(wsDir, "t1_lang_${System.nanoTime()}").apply { mkdirs() }

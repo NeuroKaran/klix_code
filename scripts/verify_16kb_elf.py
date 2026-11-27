@@ -81,6 +81,8 @@ def parse_elf_bytes(data: bytes, location: str) -> ElfInspectionResult:
         e_phnum = struct.unpack_from(f"{endian}H", data, 56)[0]
         p_align_offset = 48
         p_align_fmt = f"{endian}Q"
+        p_offset_off = 8
+        p_vaddr_off = 16
         min_phentsize = 56
     else:
         return ElfInspectionResult(location, ei_class, [], [f"{location}: Unknown ELF class ({ei_class})"])
@@ -107,6 +109,14 @@ def parse_elf_bytes(data: bytes, location: str) -> ElfInspectionResult:
                 errors.append(
                     f"{location}: PT_LOAD[{len(pt_load_aligns) - 1}] p_align=0x{p_align:x} ({p_align}) < 0x{MIN_PAGE_ALIGN:x} ({MIN_PAGE_ALIGN})"
                 )
+            if ei_class == ELFCLASS64:
+                p_offset = struct.unpack_from(f"{endian}Q", data, off + p_offset_off)[0]
+                p_vaddr = struct.unpack_from(f"{endian}Q", data, off + p_vaddr_off)[0]
+                if (p_offset % MIN_PAGE_ALIGN) != (p_vaddr % MIN_PAGE_ALIGN):
+                    errors.append(
+                        f"{location}: PT_LOAD[{len(pt_load_aligns) - 1}] p_offset=0x{p_offset:x} (mod 0x{p_offset % MIN_PAGE_ALIGN:x}) "
+                        f"!= p_vaddr=0x{p_vaddr:x} (mod 0x{p_vaddr % MIN_PAGE_ALIGN:x}) mod 0x{MIN_PAGE_ALIGN:x}"
+                    )
 
     if not pt_load_aligns:
         errors.append(f"{location}: No PT_LOAD segments found")
@@ -297,7 +307,7 @@ def check_apk(apk_path: Path, cross_check: bool) -> Tuple[int, List[str]]:
     return checked, errors
 
 
-def build_synthetic_elf64(p_align: int) -> bytes:
+def build_synthetic_elf64(p_align: int, p_offset: int = 0, p_vaddr: int = 0) -> bytes:
     """Builds a minimal valid ELF64 header + 1 PT_LOAD program header with specified p_align."""
     ehdr = bytearray(64)
     ehdr[0:4] = ELF_MAGIC
@@ -314,13 +324,13 @@ def build_synthetic_elf64(p_align: int) -> bytes:
 
     phdr = bytearray(56)
     struct.pack_into("<I", phdr, 0, PT_LOAD)
-    struct.pack_into("<I", phdr, 4, 5)        # PF_R | PF_X
-    struct.pack_into("<Q", phdr, 8, 0)        # p_offset
-    struct.pack_into("<Q", phdr, 16, 0)       # p_vaddr
-    struct.pack_into("<Q", phdr, 24, 0)       # p_paddr
-    struct.pack_into("<Q", phdr, 32, 120)     # p_filesz
-    struct.pack_into("<Q", phdr, 40, 120)     # p_memsz
-    struct.pack_into("<Q", phdr, 48, p_align) # p_align
+    struct.pack_into("<I", phdr, 4, 5)          # PF_R | PF_X
+    struct.pack_into("<Q", phdr, 8, p_offset)   # p_offset
+    struct.pack_into("<Q", phdr, 16, p_vaddr)   # p_vaddr
+    struct.pack_into("<Q", phdr, 24, p_vaddr)   # p_paddr
+    struct.pack_into("<Q", phdr, 32, 120)       # p_filesz
+    struct.pack_into("<Q", phdr, 40, 120)       # p_memsz
+    struct.pack_into("<Q", phdr, 48, p_align)   # p_align
     return bytes(ehdr + phdr)
 
 
@@ -338,6 +348,16 @@ def run_self_test() -> int:
             print("[SELF-TEST FAIL] 0x1000 synthetic ELF produced zero errors (false-pass)!", file=sys.stderr)
             return 1
         print(f"[SELF-TEST OK] Synthetic 0x1000 ELF caught: {bad_errors[0]}")
+
+        # 1b. Negative test: p_align=0x4000 with p_offset % 0x4000 != p_vaddr % 0x4000 MUST fail
+        bad_mod = root / "bad_mod" / "x86_64"
+        bad_mod.mkdir(parents=True)
+        (bad_mod / "libbad_mod.so").write_bytes(build_synthetic_elf64(0x4000, p_offset=0x1000, p_vaddr=0x4000))
+        _, mod_errors = check_jni_libs(root / "bad_mod", cross_check=False)
+        if not mod_errors:
+            print("[SELF-TEST FAIL] Incongruent p_offset/p_vaddr mod 0x4000 produced zero errors!", file=sys.stderr)
+            return 1
+        print(f"[SELF-TEST OK] Incongruent p_offset/p_vaddr caught: {mod_errors[0]}")
 
         # 2. Negative test: synthetic 0x1000 ELF inside assets .tar.gz MUST fail non-zero
         assets_bad = root / "assets_bad"

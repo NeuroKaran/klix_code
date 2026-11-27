@@ -46,6 +46,7 @@ class Tier1PipelinePtyProvisioningE2ETest {
 
     @Before
     fun setUp() {
+        E2ETestHelpers.ensureSandboxInstalled()
         tempDirs = mutableListOf()
     }
 
@@ -286,7 +287,7 @@ class Tier1PipelinePtyProvisioningE2ETest {
     @Test
     fun t1_f6_05_ptyBridgeSendSignalSigintTerminatesForegroundProcessQuickly() {
         val session = ContractBridges.openAndForkPty(
-            argv = arrayOf("/system/bin/sh", "-c", "echo STARTED; sleep 30"),
+            argv = arrayOf("/system/bin/sh", "-c", "echo STARTED; exec sleep 30"),
             envp = arrayOf("PATH=/system/bin:/system/xbin", "TERM=xterm-256color"),
             cwd = E2ETestHelpers.targetContext().filesDir.absolutePath,
             rows = 24,
@@ -422,7 +423,10 @@ class Tier1PipelinePtyProvisioningE2ETest {
     private fun prepareInstalledSandboxContext(toolPresent: Boolean): Pair<E2ETestHelpers.IsolatedSandboxContext, SandboxManager> {
         val ctx = E2ETestHelpers.targetContext()
         val isoFiles = newTempDir("onb_files")
-        val isoNative = if (toolPresent) null else newTempDir("onb_empty_native")
+        val isoNative = if (toolPresent) null else newTempDir("onb_empty_native").apply {
+            // Keep shell available so isInstalled() is true while Python/other toolchains are absent
+            File(this, "libdash.so").writeText("elf")
+        }
         val isoCtx = E2ETestHelpers.IsolatedSandboxContext(ctx, isoFiles, isoNative)
 
         val realSandbox = File(ctx.filesDir, "sandbox")
@@ -620,7 +624,11 @@ class Tier1PipelinePtyProvisioningE2ETest {
                 val entry = entries.nextElement()
                 if (!entry.isDirectory && entry.name.startsWith("lib/") && entry.method == java.util.zip.ZipEntry.STORED) {
                     // For uncompressed STORED .so files, Android requires 16384-byte data alignment in APK
-                    val bytes = zf.getInputStream(entry).use { it.readBytes() }
+                    val bytes = zf.getInputStream(entry).use { stream ->
+                        val buf = ByteArray(65536)
+                        val n = stream.read(buf)
+                        if (n > 0) buf.copyOf(n) else ByteArray(0)
+                    }
                     zipErrors.addAll(E2ETestHelpers.inspectElfBytes(bytes, entry.name).errors)
                 }
             }
@@ -656,8 +664,32 @@ class Tier1PipelinePtyProvisioningE2ETest {
                 } else {
                     try {
                         assetManager.open(rel).use { stream ->
-                            val bytes = stream.readBytes()
-                            violations.addAll(E2ETestHelpers.scanR5TextOrBinary(bytes, "assets/$rel", rel))
+                            if (rel.lowercase().endsWith(".tgz") || rel.lowercase().endsWith(".tar.gz")) {
+                                org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream(
+                                    java.io.BufferedInputStream(stream),
+                                    true
+                                ).use { gz ->
+                                    org.apache.commons.compress.archivers.tar.TarArchiveInputStream(gz).use { tar ->
+                                        var entry = tar.nextEntry
+                                        while (entry != null) {
+                                            if (entry.isFile) {
+                                                val content = tar.readBytes()
+                                                violations.addAll(
+                                                    E2ETestHelpers.scanR5TextOrBinary(
+                                                        content,
+                                                        "assets/$rel!${entry.name}",
+                                                        entry.name
+                                                    )
+                                                )
+                                            }
+                                            entry = tar.nextEntry
+                                        }
+                                    }
+                                }
+                            } else {
+                                val bytes = stream.readBytes()
+                                violations.addAll(E2ETestHelpers.scanR5TextOrBinary(bytes, "assets/$rel", rel))
+                            }
                         }
                     } catch (_: Exception) {
                     }
