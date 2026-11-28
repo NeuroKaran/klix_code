@@ -138,6 +138,7 @@ fun SandboxConfigurationCard(
     val isInstallingAll by sandboxManager.isInstallingAll.collectAsState()
     val installAllProgress by sandboxManager.installAllProgress.collectAsState()
     val installAllMessage by sandboxManager.installAllMessage.collectAsState()
+    val activeDownload by sandboxManager.activeDownload.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val isDark = LocalIsDarkTheme.current
@@ -249,12 +250,12 @@ fun SandboxConfigurationCard(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = if (status == SandboxStatus.READY) "Bionic Runtime Active" else "Bionic Runtime Setup",
+                            text = if (status == SandboxStatus.READY) "Python 3 Runtime Active" else "Python 3 Runtime Setup",
                             style = KlixTypography.sheetHeader,
                             color = KlixInkPrimary
                         )
                         Text(
-                            text = "On-device unrooted runtime",
+                            text = "Python 3 built-in • Node & C++ on-demand",
                             style = KlixTypography.bodySecondary,
                             color = KlixInkSecondary
                         )
@@ -300,8 +301,15 @@ fun SandboxConfigurationCard(
                 }
             }
 
-            // Progress if downloading RootFS or running Download All
-            if (isInstallingAll || status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING) {
+            // Progress if downloading RootFS, running Download All, or downloading an on-demand toolchain
+            if (activeDownload != null && !isInstallingAll) {
+                ActiveDownloadBentoCard(
+                    downloadState = activeDownload,
+                    visible = true,
+                    onCancel = { sandboxManager.cancelActiveDownload() },
+                    onDismiss = { sandboxManager.dismissDownloadBanner() }
+                )
+            } else if (isInstallingAll || status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING) {
                 val activeProgress = if (isInstallingAll) installAllProgress else progress
                 val activeMessage = if (isInstallingAll) {
                     installAllMessage ?: "Downloading all components..."
@@ -327,32 +335,87 @@ fun SandboxConfigurationCard(
                 }
             }
 
-            // 3. Pre-Configured Toolchains (2x2 Grid)
+            // 3. Toolchains (2x2 Bento Grid: Python 3 & Dash built-in; Node.js & C/C++ on-demand)
             Text(
-                text = "Pre-Configured Toolchains",
+                text = "Runtimes & On-Demand Toolchains",
                 style = KlixTypography.sectionHeader,
                 color = KlixInkPrimary
             )
 
             val isNodeInstalled = installedTools["nodejs"] == true
             val isPythonInstalled = installedTools["python3"] == true
-            val isGitInstalled = installedTools["git"] == true
+            val isDashInstalled = installedTools["dash"] == true
             val isCppInstalled = installedTools["c/c++"] == true
 
-            fun handleToolClick(toolId: String, installCmd: String, reinstallCmd: String, isInstalled: Boolean) {
+            fun handleToolClick(toolId: String, verifyCmd: String, isInstalled: Boolean) {
                 if (isInstallingAll) {
                     Toast.makeText(context, "Download All is currently in progress", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (status != SandboxStatus.READY) {
-                    Toast.makeText(context, "Please install Sandbox RootFS first", Toast.LENGTH_SHORT).show()
+                if (sandboxManager.isOnDemandToolchain(toolId) && (!isInstalled || installingTools.contains(toolId))) {
+                    sandboxManager.launchInstallToolchain(toolId) { result ->
+                        result.onSuccess {
+                            Toast.makeText(context, "${sandboxManager.getOnDemandSpec(toolId)?.displayName ?: toolId} ready!", Toast.LENGTH_SHORT).show()
+                        }.onFailure { err ->
+                            Toast.makeText(context, err.message ?: "Download failed", Toast.LENGTH_LONG).show()
+                        }
+                    }
                     return
                 }
-                val cmd = if (isInstalled) reinstallCmd else installCmd
-                onRunCommandInTerminal(cmd)
+                if (status != SandboxStatus.READY) {
+                    scope.launch { sandboxManager.installSandbox() }
+                    return
+                }
+                if (sandboxManager.isOnDemandToolchain(toolId) && isInstalled) {
+                    // Reinstall on-demand toolchain if tapped while already installed
+                    sandboxManager.launchInstallToolchain(toolId) { result ->
+                        result.onSuccess {
+                            Toast.makeText(context, "${sandboxManager.getOnDemandSpec(toolId)?.displayName ?: toolId} updated!", Toast.LENGTH_SHORT).show()
+                        }.onFailure { err ->
+                            Toast.makeText(context, err.message ?: "Reinstall failed", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    return
+                }
+                onRunCommandInTerminal(verifyCmd)
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ToolchainCard(
+                        name = "Python 3",
+                        logoRes = R.drawable.ic_logo_python,
+                        isInstalled = isPythonInstalled,
+                        isInstalling = installingTools.contains("python3"),
+                        subtitle = "Built-in • Bundled",
+                        onClick = {
+                            handleToolClick(
+                                toolId = "python3",
+                                verifyCmd = "python3 --version",
+                                isInstalled = isPythonInstalled
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ToolchainCard(
+                        name = "Dash Shell",
+                        logoRes = R.drawable.ic_icon_terminal_prompt,
+                        isInstalled = isDashInstalled,
+                        isInstalling = installingTools.contains("dash"),
+                        subtitle = "Built-in • POSIX sh",
+                        onClick = {
+                            handleToolClick(
+                                toolId = "dash",
+                                verifyCmd = "echo \$0 && pwd",
+                                isInstalled = isDashInstalled
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -362,47 +425,12 @@ fun SandboxConfigurationCard(
                         logoRes = R.drawable.ic_logo_nodejs,
                         isInstalled = isNodeInstalled,
                         isInstalling = installingTools.contains("nodejs"),
+                        subtitle = if (isNodeInstalled) "On-Demand • Ready" else "On-Demand • 30.5 MB",
                         onClick = {
                             handleToolClick(
                                 toolId = "nodejs",
-                                installCmd = "node --version",
-                                reinstallCmd = "node --version",
+                                verifyCmd = "node --version",
                                 isInstalled = isNodeInstalled
-                            )
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                    ToolchainCard(
-                        name = "Python 3",
-                        logoRes = R.drawable.ic_logo_python,
-                        isInstalled = isPythonInstalled,
-                        isInstalling = installingTools.contains("python3"),
-                        onClick = {
-                            handleToolClick(
-                                toolId = "python3",
-                                installCmd = "python3 --version",
-                                reinstallCmd = "python3 --version",
-                                isInstalled = isPythonInstalled
-                            )
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    ToolchainCard(
-                        name = "Git",
-                        logoRes = R.drawable.ic_logo_git,
-                        isInstalled = isGitInstalled,
-                        isInstalling = installingTools.contains("git"),
-                        onClick = {
-                            handleToolClick(
-                                toolId = "git",
-                                installCmd = "git --version",
-                                reinstallCmd = "git --version",
-                                isInstalled = isGitInstalled
                             )
                         },
                         modifier = Modifier.weight(1f)
@@ -412,11 +440,11 @@ fun SandboxConfigurationCard(
                         logoRes = R.drawable.ic_logo_cpp,
                         isInstalled = isCppInstalled,
                         isInstalling = installingTools.contains("c/c++"),
+                        subtitle = if (isCppInstalled) "On-Demand • Ready" else "On-Demand • 71.2 MB",
                         onClick = {
                             handleToolClick(
                                 toolId = "c/c++",
-                                installCmd = "clang --version",
-                                reinstallCmd = "clang --version",
+                                verifyCmd = "clang --version",
                                 isInstalled = isCppInstalled
                             )
                         },
@@ -448,7 +476,11 @@ fun SandboxConfigurationCard(
                         )
                     }
 
-                    val commandText = "clang --version && python3 --version && node --version"
+                    val commandText = buildList {
+                        add("python3 --version")
+                        if (isNodeInstalled) add("node --version")
+                        if (isCppInstalled) add("clang --version")
+                    }.joinToString(" && ")
 
                     Box(
                         modifier = Modifier
@@ -562,7 +594,7 @@ fun SandboxConfigurationCard(
 
                     // Helper note
                     Text(
-                        text = "All Bionic 16 KB toolchains are bundled offline inside the app.",
+                        text = "Python 3 ships built-in. Node.js (30.5 MB) and C/C++ (71.2 MB) download on-demand.",
                         style = KlixTypography.bodySecondary,
                         color = KlixInkSecondary,
                         fontSize = 11.sp
@@ -572,8 +604,8 @@ fun SandboxConfigurationCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // 5. Primary CTA: Download All (RootFS + all pre-configured toolchains)
-            val allToolsInstalled = isNodeInstalled && isPythonInstalled && isGitInstalled && isCppInstalled
+            // 5. Primary CTA: Download All (Python base + all on-demand toolchains)
+            val allToolsInstalled = isNodeInstalled && isPythonInstalled && isDashInstalled && isCppInstalled
             val everythingReady = status == SandboxStatus.READY && allToolsInstalled
             val isRootFsBusy = status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING
 
@@ -708,6 +740,7 @@ fun ToolchainCard(
     logoRes: Int,
     isInstalled: Boolean,
     isInstalling: Boolean = false,
+    subtitle: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -770,6 +803,15 @@ fun ToolchainCard(
                         )
                     }
                 }
+            }
+
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = KlixTypography.bodySecondary,
+                    fontSize = 11.sp,
+                    color = KlixInkSecondary
+                )
             }
 
             Row(

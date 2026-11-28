@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
+import com.klix.code.data.sandbox.DownloadPhase
+import com.klix.code.data.sandbox.OnDemandToolchainSpec
 import com.klix.code.data.sandbox.SandboxManager
 import com.klix.code.data.sandbox.SandboxStatus
 import com.klix.code.data.sandbox.SystemTarPlatformOps
@@ -1102,6 +1104,120 @@ class SandboxManagerTest {
         override fun createHardLink(linkPath: Path, targetPath: Path) {
             hardLinks.add(linkPath to targetPath)
             delegate.createHardLink(linkPath, targetPath)
+        }
+    }
+
+    private fun startOneShotByteServer(payload: ByteArray): Pair<java.net.ServerSocket, Thread> {
+        val server = java.net.ServerSocket(0, 1, java.net.InetAddress.getByName("127.0.0.1"))
+        val thread = Thread {
+            try {
+                server.accept().use { socket ->
+                    val reader = socket.getInputStream().bufferedReader()
+                    while (true) {
+                        val line = reader.readLine() ?: break
+                        if (line.isEmpty()) break
+                    }
+                    val out = socket.getOutputStream()
+                    val headers = "HTTP/1.1 200 OK\r\nContent-Length: ${payload.size}\r\nConnection: close\r\n\r\n"
+                    out.write(headers.toByteArray(Charsets.US_ASCII))
+                    out.write(payload)
+                    out.flush()
+                }
+            } catch (_: Throwable) {}
+        }.apply { isDaemon = true; start() }
+        return server to thread
+    }
+
+    @Test
+    fun testOnDemandToolchainDownloadVerifiesSha256AndExtracts() = runBlocking {
+        // Prepare installed base rootfs
+        val rootfs = sandboxManager.getRootfsDir().apply { mkdirs() }
+        File(rootfs, "etc").mkdirs()
+        File(rootfs, "etc/klix-bionic-release").writeText("klix-bionic-16kb=1\n")
+        File(rootfs, "bin").mkdirs()
+        File(rootfs, "bin/sh").writeText("#!/bin/sh\n")
+
+        // Build mock .tar.gz archive containing lib/libnode.so
+        val archiveFile = File(tempDir, "mock-nodejs.tar.gz")
+        val payload = "mock-elf-node".toByteArray(Charsets.UTF_8)
+        TarArchiveOutputStream(GzipCompressorOutputStream(FileOutputStream(archiveFile))).use { tos ->
+            val entry = TarArchiveEntry("lib/libnode.so").apply {
+                size = payload.size.toLong()
+                mode = 0b111_101_101
+            }
+            tos.putArchiveEntry(entry)
+            tos.write(payload)
+            tos.closeArchiveEntry()
+        }
+        val archiveBytes = archiveFile.readBytes()
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(archiveBytes)
+        val expectedSha = digest.joinToString("") { "%02x".format(it) }
+
+        val (server, thread) = startOneShotByteServer(archiveBytes)
+        try {
+            val port = server.localPort
+            sandboxManager.onDemandSpecsOverride = mapOf(
+                "nodejs" to OnDemandToolchainSpec(
+                    id = "nodejs",
+                    dirName = "nodejs",
+                    displayName = "Node.js",
+                    subtitle = "Test Node.js",
+                    archiveFileName = "klix-toolchain-nodejs-arm64-v8a.tar.gz",
+                    downloadUrl = "http://127.0.0.1:$port/nodejs.tar.gz",
+                    expectedBytes = archiveBytes.size.toLong(),
+                    expectedSha256 = expectedSha,
+                    approxSizeLabel = "1 KB"
+                )
+            )
+
+            assertFalse(sandboxManager.isToolInstalled("nodejs"))
+            val result = sandboxManager.installToolchain("nodejs")
+            assertTrue("Expected installToolchain to succeed: ${result.exceptionOrNull()}", result.isSuccess)
+            assertTrue(sandboxManager.isToolInstalled("nodejs"))
+            assertTrue(File(sandboxManager.getToolchainLibDir("nodejs"), "libnode.so").exists())
+            assertTrue(File(rootfs, "etc/klix_env.sh").readText().contains("/system/bin/linker64"))
+        } finally {
+            server.close()
+            thread.join(1000)
+        }
+    }
+
+    @Test
+    fun testOnDemandToolchainRejectsSha256MismatchAndEmitsFailedState() = runBlocking {
+        val rootfs = sandboxManager.getRootfsDir().apply { mkdirs() }
+        File(rootfs, "etc").mkdirs()
+        File(rootfs, "etc/klix-bionic-release").writeText("klix-bionic-16kb=1\n")
+        File(rootfs, "bin").mkdirs()
+        File(rootfs, "bin/sh").writeText("#!/bin/sh\n")
+
+        val badBytes = "corrupted-payload".toByteArray(Charsets.UTF_8)
+        val (server, thread) = startOneShotByteServer(badBytes)
+        try {
+            val port = server.localPort
+            sandboxManager.onDemandSpecsOverride = mapOf(
+                "nodejs" to OnDemandToolchainSpec(
+                    id = "nodejs",
+                    dirName = "nodejs",
+                    displayName = "Node.js",
+                    subtitle = "Test Node.js",
+                    archiveFileName = "klix-toolchain-nodejs-arm64-v8a.tar.gz",
+                    downloadUrl = "http://127.0.0.1:$port/bad.tar.gz",
+                    expectedBytes = badBytes.size.toLong(),
+                    expectedSha256 = "0000000000000000000000000000000000000000000000000000000000000000",
+                    approxSizeLabel = "1 KB"
+                )
+            )
+
+            val result = sandboxManager.installToolchain("nodejs")
+            assertTrue(result.isFailure)
+            assertFalse(sandboxManager.isToolInstalled("nodejs"))
+            val dlState = sandboxManager.activeDownload.value
+            assertNotNull(dlState)
+            assertEquals(DownloadPhase.FAILED, dlState?.phase)
+            assertTrue(dlState?.errorMessage?.contains("Checksum mismatch") == true)
+        } finally {
+            server.close()
+            thread.join(1000)
         }
     }
 }

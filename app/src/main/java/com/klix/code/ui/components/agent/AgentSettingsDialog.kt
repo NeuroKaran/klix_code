@@ -108,6 +108,7 @@ import com.klix.code.data.sandbox.SandboxStatus
 import com.klix.code.ui.components.KlixPeekingMascotScaffold
 import com.klix.code.ui.components.KlixPrimaryPillButton
 import com.klix.code.ui.components.glass.pressEffect
+import com.klix.code.ui.components.sandbox.ActiveDownloadBentoCard
 import com.klix.code.ui.components.sandbox.SandboxSetupUiHelper
 import com.klix.code.ui.components.sandbox.ToolchainCard
 import com.klix.code.ui.theme.KlixBorderHairline
@@ -424,7 +425,7 @@ private fun SettingsHubPanel(
                 val isSandboxReady = sandboxStatus == SandboxStatus.READY
                 SettingsBentoTile(
                     title = "Local Sandbox",
-                    subtitle = "Alpine Linux • Toolchains & apk",
+                    subtitle = "Python 3 built-in • Node & C++ on-demand",
                     badgeText = if (isSandboxReady) "Active" else "Setup",
                     badgeIsPositive = isSandboxReady,
                     badgePositiveBg = if (isDark) Color(0xFF16302B) else Color(0xFFC6F6D5),
@@ -1240,6 +1241,7 @@ private fun LocalSandboxSettingsPanel(
     val isInstallingAll by sandboxManager.isInstallingAll.collectAsState()
     val installAllProgress by sandboxManager.installAllProgress.collectAsState()
     val installAllMessage by sandboxManager.installAllMessage.collectAsState()
+    val activeDownload by sandboxManager.activeDownload.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val isDark = LocalIsDarkTheme.current
@@ -1252,23 +1254,34 @@ private fun LocalSandboxSettingsPanel(
     val isReady = status == SandboxStatus.READY
     val isNodeInstalled = installedTools["nodejs"] == true
     val isPythonInstalled = installedTools["python3"] == true
-    val isGitInstalled = installedTools["git"] == true
+    val isDashInstalled = installedTools["dash"] == true
     val isCppInstalled = installedTools["c/c++"] == true
-    val allToolsInstalled = isNodeInstalled && isPythonInstalled && isGitInstalled && isCppInstalled
+    val allToolsInstalled = isNodeInstalled && isPythonInstalled && isDashInstalled && isCppInstalled
     val everythingReady = isReady && allToolsInstalled
     val isRootFsBusy = status == SandboxStatus.DOWNLOADING || status == SandboxStatus.EXTRACTING
-    val isInstalling = isInstallingAll || isRootFsBusy
+    val isInstalling = isInstallingAll || isRootFsBusy || activeDownload != null
 
-    fun handleToolClick(installCmd: String, reinstallCmd: String, isInstalled: Boolean) {
+    fun handleToolClick(toolId: String, verifyCmd: String, isInstalled: Boolean) {
         if (isInstallingAll) {
             Toast.makeText(context, "Download All is currently in progress", Toast.LENGTH_SHORT).show()
             return
         }
-        if (!isReady) {
-            Toast.makeText(context, "Please install Alpine Linux RootFS first", Toast.LENGTH_SHORT).show()
+        if (sandboxManager.isOnDemandToolchain(toolId)) {
+            sandboxManager.launchInstallToolchain(toolId) { result ->
+                result.onSuccess {
+                    val label = sandboxManager.getOnDemandSpec(toolId)?.displayName ?: toolId
+                    Toast.makeText(context, if (isInstalled) "$label updated!" else "$label ready!", Toast.LENGTH_SHORT).show()
+                }.onFailure { err ->
+                    Toast.makeText(context, err.message ?: "Download failed", Toast.LENGTH_LONG).show()
+                }
+            }
             return
         }
-        onRunCommandInTerminal(if (isInstalled) reinstallCmd else installCmd)
+        if (!isReady) {
+            scope.launch { sandboxManager.installSandbox() }
+            return
+        }
+        onRunCommandInTerminal(verifyCmd)
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1323,13 +1336,13 @@ private fun LocalSandboxSettingsPanel(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = if (isReady) "Alpine Linux Active" else "Alpine Linux Setup",
+                                text = if (isReady) "Python 3 Runtime Active" else "Python 3 Runtime Setup",
                                 style = KlixTypography.cardTitle,
                                 fontWeight = FontWeight.Bold,
                                 color = KlixInkPrimary
                             )
                             Text(
-                                text = "On-device unrooted runtime",
+                                text = "Python 3 built-in • Node & C++ on-demand",
                                 style = KlixTypography.bodySecondary,
                                 color = KlixInkSecondary
                             )
@@ -1370,7 +1383,14 @@ private fun LocalSandboxSettingsPanel(
                         }
                     }
 
-                    if (isInstalling) {
+                    if (activeDownload != null && !isInstallingAll) {
+                        ActiveDownloadBentoCard(
+                            downloadState = activeDownload,
+                            visible = true,
+                            onCancel = { sandboxManager.cancelActiveDownload() },
+                            onDismiss = { sandboxManager.dismissDownloadBanner() }
+                        )
+                    } else if (isInstallingAll || isRootFsBusy) {
                         val activeProgress = if (isInstallingAll) installAllProgress else progress
                         val activeMessage = if (isInstallingAll) {
                             installAllMessage ?: "Downloading all components..."
@@ -1398,9 +1418,45 @@ private fun LocalSandboxSettingsPanel(
                 }
             }
 
-            // Pre-Configured Toolchains 2x2 Grid
+            // Runtimes & On-Demand Toolchains 2x2 Grid
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionLabel(text = "PRE-CONFIGURED TOOLCHAINS")
+                SectionLabel(text = "RUNTIMES & ON-DEMAND TOOLCHAINS")
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    ToolchainCard(
+                        name = "Python 3",
+                        logoRes = R.drawable.ic_logo_python,
+                        isInstalled = isPythonInstalled,
+                        isInstalling = installingTools.contains("python3"),
+                        subtitle = "Built-in • Bundled",
+                        onClick = {
+                            handleToolClick(
+                                toolId = "python3",
+                                verifyCmd = "python3 --version",
+                                isInstalled = isPythonInstalled
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ToolchainCard(
+                        name = "Dash Shell",
+                        logoRes = R.drawable.ic_icon_terminal_prompt,
+                        isInstalled = isDashInstalled,
+                        isInstalling = installingTools.contains("dash"),
+                        subtitle = "Built-in • POSIX sh",
+                        onClick = {
+                            handleToolClick(
+                                toolId = "dash",
+                                verifyCmd = "echo \$0 && pwd",
+                                isInstalled = isDashInstalled
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1411,45 +1467,12 @@ private fun LocalSandboxSettingsPanel(
                         logoRes = R.drawable.ic_logo_nodejs,
                         isInstalled = isNodeInstalled,
                         isInstalling = installingTools.contains("nodejs"),
+                        subtitle = if (isNodeInstalled) "On-Demand • Ready" else "On-Demand • 30.5 MB",
                         onClick = {
                             handleToolClick(
-                                installCmd = "apk add nodejs npm",
-                                reinstallCmd = "apk add --upgrade nodejs npm",
+                                toolId = "nodejs",
+                                verifyCmd = "node --version",
                                 isInstalled = isNodeInstalled
-                            )
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                    ToolchainCard(
-                        name = "Python 3",
-                        logoRes = R.drawable.ic_logo_python,
-                        isInstalled = isPythonInstalled,
-                        isInstalling = installingTools.contains("python3"),
-                        onClick = {
-                            handleToolClick(
-                                installCmd = "apk add python3 py3-pip",
-                                reinstallCmd = "apk add --upgrade python3 py3-pip",
-                                isInstalled = isPythonInstalled
-                            )
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    ToolchainCard(
-                        name = "Git",
-                        logoRes = R.drawable.ic_logo_git,
-                        isInstalled = isGitInstalled,
-                        isInstalling = installingTools.contains("git"),
-                        onClick = {
-                            handleToolClick(
-                                installCmd = "apk add git",
-                                reinstallCmd = "apk add --upgrade git",
-                                isInstalled = isGitInstalled
                             )
                         },
                         modifier = Modifier.weight(1f)
@@ -1459,10 +1482,11 @@ private fun LocalSandboxSettingsPanel(
                         logoRes = R.drawable.ic_logo_cpp,
                         isInstalled = isCppInstalled,
                         isInstalling = installingTools.contains("c/c++"),
+                        subtitle = if (isCppInstalled) "On-Demand • Ready" else "On-Demand • 71.2 MB",
                         onClick = {
                             handleToolClick(
-                                installCmd = "apk add build-base",
-                                reinstallCmd = "apk add --upgrade build-base",
+                                toolId = "c/c++",
+                                verifyCmd = "clang --version",
                                 isInstalled = isCppInstalled
                             )
                         },
@@ -1471,11 +1495,15 @@ private fun LocalSandboxSettingsPanel(
                 }
             }
 
-            // Custom Packages Command Bar
+            // Runtime Diagnostics Bar
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionLabel(text = "CUSTOM PACKAGES")
+                SectionLabel(text = "RUNTIME DIAGNOSTICS")
 
-                val commandText = "apk add <package>"
+                val commandText = buildList {
+                    add("python3 --version")
+                    if (isNodeInstalled) add("node --version")
+                    if (isCppInstalled) add("clang --version")
+                }.joinToString(" && ")
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1550,9 +1578,9 @@ private fun LocalSandboxSettingsPanel(
                                 .background(KlixSurfaceBentoGroup)
                                 .clickable {
                                     if (!isReady) {
-                                        Toast.makeText(context, "Please install Alpine Linux RootFS first", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Please set up Python 3 RootFS first", Toast.LENGTH_SHORT).show()
                                     } else {
-                                        onRunCommandInTerminal("apk add ")
+                                        onRunCommandInTerminal(commandText)
                                     }
                                 }
                                 .pressEffect(0.92f)

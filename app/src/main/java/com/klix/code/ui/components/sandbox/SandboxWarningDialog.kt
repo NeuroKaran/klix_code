@@ -122,9 +122,9 @@ fun SandboxWarningDialog(
 
                         Spacer(modifier = Modifier.height(18.dp))
 
-                        // Title: "Relax, It's Only 5 MB."
+                        // Title: "Relax, It's Only 2.4 MB."
                         Text(
-                            text = "Relax, It's Only 5 MB.",
+                            text = "Relax, It's Only 2.4 MB.",
                             color = if (isDark) Color(0xFFF1F5F9) else Color(0xFF0F172A),
                             fontFamily = BricolageGrotesque,
                             fontSize = 22.sp,
@@ -137,7 +137,7 @@ fun SandboxWarningDialog(
 
                         // Subtitle
                         Text(
-                            text = "Smaller than one selfie—yet gives your phone a real Linux brain to run code offline.",
+                            text = "Bundled right inside the app—extracts Python 3 & Dash offline so you can code right away.",
                             color = if (isDark) Color(0xFF94A3B8) else Color(0xFF475569),
                             fontFamily = PlusJakartaSans,
                             fontSize = 14.sp,
@@ -148,7 +148,7 @@ fun SandboxWarningDialog(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Bento Inner Card (Alpine Linux Row)
+                        // Bento Inner Card (Python 3 Bionic Row)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -165,18 +165,18 @@ fun SandboxWarningDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Left: Alpine Icon + Label
+                                // Left: Python Icon + Label
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Image(
-                                        painter = painterResource(id = R.drawable.ic_logo_alpine),
-                                        contentDescription = "Alpine Linux",
+                                        painter = painterResource(id = R.drawable.ic_logo_python),
+                                        contentDescription = "Python 3 Bionic Runtime",
                                         modifier = Modifier.size(26.dp)
                                     )
                                     Text(
-                                        text = "Alpine Linux",
+                                        text = "Python 3 + Dash",
                                         fontFamily = PlusJakartaSans,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
@@ -184,7 +184,7 @@ fun SandboxWarningDialog(
                                     )
                                 }
 
-                                // Right: "5 MB • Unrooted" Tag
+                                // Right: "2.4 MB • Bundled" Tag
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
@@ -192,7 +192,7 @@ fun SandboxWarningDialog(
                                         .padding(horizontal = 9.dp, vertical = 5.dp)
                                 ) {
                                     Text(
-                                        text = "5 MB • Unrooted",
+                                        text = "2.4 MB • Bundled",
                                         fontFamily = PlusJakartaSans,
                                         fontWeight = FontWeight.SemiBold,
                                         fontSize = 12.sp,
@@ -204,7 +204,7 @@ fun SandboxWarningDialog(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Primary Action Button: "Install Linux (5 MB)"
+                        // Primary Action Button: "Set Up Python 3 (2.4 MB)"
                         Button(
                             onClick = onInstallSandbox,
                             colors = ButtonDefaults.buttonColors(
@@ -229,7 +229,7 @@ fun SandboxWarningDialog(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Install Linux (5 MB)",
+                                    text = "Set Up Python 3 (2.4 MB)",
                                     fontFamily = PlusJakartaSans,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,

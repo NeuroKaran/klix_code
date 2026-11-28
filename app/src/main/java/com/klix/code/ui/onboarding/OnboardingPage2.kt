@@ -221,17 +221,17 @@ fun OnboardingPage2(
                             )
                         }
 
-                        // Row 2: Git and C / C++
+                        // Row 2: Dash Shell and C / C++
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             ToolchainCard(
-                                tool = ToolchainOption.GIT,
-                                isSelected = selectedTools.contains(ToolchainOption.GIT),
+                                tool = ToolchainOption.DASH,
+                                isSelected = selectedTools.contains(ToolchainOption.DASH),
                                 isDark = isDark,
                                 isEnabled = !isInstalling,
-                                onToggle = { onToggleTool(ToolchainOption.GIT) },
+                                onToggle = { onToggleTool(ToolchainOption.DASH) },
                                 modifier = Modifier.weight(1f)
                             )
                             ToolchainCard(

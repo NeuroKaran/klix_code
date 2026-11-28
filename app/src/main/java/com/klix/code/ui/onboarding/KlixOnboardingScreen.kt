@@ -230,7 +230,7 @@ fun KlixOnboardingScreen(
             ) {
                 val ctaText = when (currentPage) {
                     0 -> "Prove Me Wrong"
-                    1 -> if (isInstalling) "Provisioning Alpine..." else "Install & Continue"
+                    1 -> if (isInstalling) "Setting Up Runtimes..." else "Install & Continue"
                     2 -> "Connect My Key"
                     else -> "Let's Ship Something"
                 }

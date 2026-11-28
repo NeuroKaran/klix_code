@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -101,8 +102,10 @@ import com.klix.code.data.agent.session.flattenFileTree
 import com.klix.code.ui.components.agent.AgentChatPanel
 import com.klix.code.ui.components.agent.AgentSettingsDialog
 import com.klix.code.ui.components.agent.CustomSlashCommandsDialog
+import com.klix.code.ui.components.sandbox.ActiveDownloadBentoCard
 import com.klix.code.ui.components.sandbox.SandboxSetupDialog
 import com.klix.code.ui.components.sandbox.SandboxWarningDialog
+import com.klix.code.ui.components.sandbox.ToolchainDownloadDialog
 import com.klix.code.ui.components.terminal.TerminalView
 import com.klix.code.ui.terminal.TerminalViewModel
 import com.klix.code.ui.viewmodel.AgentViewModel
@@ -327,8 +330,11 @@ class MainActivity : ComponentActivity() {
                 val showSandboxSetup by terminalViewModel.showSetupDialog.collectAsState()
 
                 val sandboxStatus by terminalViewModel.sandboxManager.status.collectAsState()
+                val activeDownload by terminalViewModel.sandboxManager.activeDownload.collectAsState()
                 val isSandboxInstalled = sandboxStatus == SandboxStatus.READY && terminalViewModel.sandboxManager.isInstalled()
                 var showSandboxWarningDialog by rememberSaveable { mutableStateOf(false) }
+                var pendingToolchainPromptId by remember { mutableStateOf<String?>(null) }
+                var pendingRunTabAfterDownload by remember { mutableStateOf<com.klix.code.data.model.EditorTab?>(null) }
 
                 val prefs = remember { getSharedPreferences("klix_prefs", Context.MODE_PRIVATE) }
                 var isOnboardingCompleted by rememberSaveable {
@@ -788,12 +794,9 @@ class MainActivity : ComponentActivity() {
                                                                 )
                                                                 when {
                                                                     resolution.requiresSetup -> {
-                                                                        Toast.makeText(
-                                                                            applicationContext,
-                                                                            resolution.errorMessage ?: "Sandbox toolchain setup required.",
-                                                                            Toast.LENGTH_LONG
-                                                                        ).show()
-                                                                        terminalViewModel.openSetupDialog()
+                                                                        val neededTool = resolution.missingToolId ?: "python3"
+                                                                        pendingRunTabAfterDownload = tab
+                                                                        pendingToolchainPromptId = terminalViewModel.sandboxManager.normalizeToolId(neededTool)
                                                                     }
                                                                     resolution.command == null -> {
                                                                         Toast.makeText(
@@ -1541,6 +1544,72 @@ class MainActivity : ComponentActivity() {
                             terminalViewModel.openSetupDialog()
                         }
                     )
+                }
+
+                // On-Demand Toolchain Download Bento Dialog (when running JS/C/C++ or setting up Python)
+                pendingToolchainPromptId?.let { promptToolId ->
+                    ToolchainDownloadDialog(
+                        toolId = promptToolId,
+                        spec = terminalViewModel.sandboxManager.getOnDemandSpec(promptToolId),
+                        downloadState = activeDownload,
+                        onStartDownload = {
+                            terminalViewModel.sandboxManager.launchInstallToolchain(promptToolId) { result ->
+                                result.onSuccess {
+                                    val tabToRun = pendingRunTabAfterDownload
+                                    pendingToolchainPromptId = null
+                                    pendingRunTabAfterDownload = null
+                                    if (tabToRun != null) {
+                                        val rerun = LanguageRunner.resolveRunCommand(
+                                            tab = tabToRun,
+                                            workspace = activeWorkspace,
+                                            sandboxManager = terminalViewModel.sandboxManager
+                                        )
+                                        if (rerun.command != null) {
+                                            StreakManager.recordActivityRun(applicationContext)
+                                            terminalViewModel.executeCommand(rerun.command)
+                                            isTerminalOpen = true
+                                        }
+                                    }
+                                }.onFailure { err ->
+                                    Toast.makeText(
+                                        applicationContext,
+                                        err.message ?: "Failed to install runtime",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        },
+                        onCancelDownload = {
+                            terminalViewModel.sandboxManager.cancelActiveDownload()
+                            pendingToolchainPromptId = null
+                            pendingRunTabAfterDownload = null
+                        },
+                        onDismiss = {
+                            pendingToolchainPromptId = null
+                            pendingRunTabAfterDownload = null
+                            terminalViewModel.sandboxManager.dismissDownloadBanner()
+                        }
+                    )
+                }
+
+                // Global Floating Bento Download Card (visible whenever any download runs outside the modal/settings)
+                if (activeDownload != null &&
+                    pendingToolchainPromptId == null &&
+                    !showSandboxSetup &&
+                    !isAgentSettingsOpen
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        ActiveDownloadBentoCard(
+                            downloadState = activeDownload,
+                            visible = true,
+                            onCancel = { terminalViewModel.sandboxManager.cancelActiveDownload() },
+                            onDismiss = { terminalViewModel.sandboxManager.dismissDownloadBanner() },
+                            modifier = Modifier.statusBarsPadding()
+                        )
+                    }
                 }
 
                 // In-App Update Dialog

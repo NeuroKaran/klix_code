@@ -38,7 +38,7 @@ enum class ToolchainOption(
     PYTHON(
         id = "python3",
         title = "Python 3",
-        subtitle = "python3 • stdlib",
+        subtitle = "python3 • Built-in",
         logoRes = R.drawable.ic_logo_python,
         packages = listOf("python3"),
         verifyCommand = "python3 --version"
@@ -46,23 +46,23 @@ enum class ToolchainOption(
     NODEJS(
         id = "nodejs",
         title = "Node.js",
-        subtitle = "nodejs • v24 LTS",
+        subtitle = "30.5 MB • On-Demand",
         logoRes = R.drawable.ic_logo_nodejs,
         packages = listOf("nodejs"),
         verifyCommand = "node --version"
     ),
-    GIT(
-        id = "git",
-        title = "Git",
-        subtitle = "git • cli",
-        logoRes = R.drawable.ic_logo_git,
-        packages = listOf("git"),
-        verifyCommand = "git --version"
+    DASH(
+        id = "dash",
+        title = "Dash Shell",
+        subtitle = "sh • Built-in",
+        logoRes = R.drawable.ic_icon_terminal_prompt,
+        packages = listOf("dash"),
+        verifyCommand = "echo \$0"
     ),
     CPP(
         id = "c/c++",
         title = "C / C++",
-        subtitle = "clang • lld",
+        subtitle = "71.2 MB • On-Demand",
         logoRes = R.drawable.ic_logo_cpp,
         packages = listOf("clang", "lld"),
         verifyCommand = "clang --version"
@@ -246,7 +246,7 @@ class OnboardingViewModel @JvmOverloads constructor(
                     }
                 }
 
-                // Step 2: Verify selected Bionic toolchains inside sandbox
+                // Step 2: Install on-demand or verify bundled Bionic toolchains inside sandbox
                 val toolsToInstall = _selectedTools.value.toList()
                 if (toolsToInstall.isNotEmpty()) {
                     val executionProvider = executionProviderFactory(context, sandboxManager)
@@ -255,42 +255,78 @@ class OnboardingViewModel @JvmOverloads constructor(
                     for ((index, tool) in toolsToInstall.withIndex()) {
                         val baseProgress = index.toFloat() / totalTools
                         val pkgList = tool.packages.joinToString(" ")
-                        _installState.value = SandboxInstallState.InstallingPackages(
-                            currentPackage = tool.title,
-                            progress = baseProgress + 0.05f,
-                            statusMessage = "Configuring ${tool.title} ($pkgList)..."
-                        )
-
-                        val cmd = tool.verifyCommand
-                        val result = withContext(ioDispatcher) {
-                            executionProvider.runCommand(cmd)
+                        val isOnDemand = withContext(ioDispatcher) {
+                            sandboxManager.isOnDemandToolchain(tool.id) && !sandboxManager.isToolInstalled(tool.id)
                         }
 
-                        if (!result.isSuccess || result.exitCode != 0) {
-                            val detail = when {
-                                result.stderr.isNotBlank() -> result.stderr.trim()
-                                result.stdout.isNotBlank() -> result.stdout.trim()
-                                else -> "Command exited with code ${result.exitCode}"
+                        if (isOnDemand) {
+                            val monitorJob = launch {
+                                while (isActive) {
+                                    val dl = sandboxManager.activeDownload.value
+                                    if (dl != null && dl.toolId == tool.id) {
+                                        val stepProgress = baseProgress + (dl.progress / totalTools)
+                                        _installState.value = SandboxInstallState.DownloadingRootFs(
+                                            progress = stepProgress.coerceIn(0f, 1f),
+                                            statusMessage = "${dl.statusMessage} (${(dl.progress * 100).toInt()}%)"
+                                        )
+                                    }
+                                    delay(80)
+                                }
                             }
-                            withContext(ioDispatcher) { sandboxManager.refreshInstalledTools() }
-                            _installState.value = SandboxInstallState.Error(
-                                "Failed to install ${tool.title}: ${detail.take(300)}"
-                            )
-                            return@coroutineScope
-                        }
+                            val dlResult = try {
+                                withContext(ioDispatcher) {
+                                    sandboxManager.installToolchain(tool.id)
+                                }
+                            } finally {
+                                monitorJob.cancel()
+                            }
 
-                        val isVerified = withContext(ioDispatcher) {
-                            sandboxManager.isToolInstalled(tool.id)
-                        }
-                        if (!isVerified) {
-                            val stderrNote = result.stderr.trim().takeIf { it.isNotEmpty() }
-                                ?.let { " (${it.take(200)})" }
-                                ?: ""
-                            withContext(ioDispatcher) { sandboxManager.refreshInstalledTools() }
-                            _installState.value = SandboxInstallState.Error(
-                                "Failed to verify ${tool.title} installation$stderrNote"
+                            if (dlResult.isFailure) {
+                                val detail = dlResult.exceptionOrNull()?.message ?: "Download failed"
+                                withContext(ioDispatcher) { sandboxManager.refreshInstalledTools() }
+                                _installState.value = SandboxInstallState.Error(
+                                    "Failed to install ${tool.title}: ${detail.take(300)}"
+                                )
+                                return@coroutineScope
+                            }
+                        } else {
+                            _installState.value = SandboxInstallState.InstallingPackages(
+                                currentPackage = tool.title,
+                                progress = baseProgress + 0.05f,
+                                statusMessage = "Configuring ${tool.title} ($pkgList)..."
                             )
-                            return@coroutineScope
+
+                            val cmd = tool.verifyCommand
+                            val result = withContext(ioDispatcher) {
+                                executionProvider.runCommand(cmd)
+                            }
+
+                            if (!result.isSuccess || result.exitCode != 0) {
+                                val detail = when {
+                                    result.stderr.isNotBlank() -> result.stderr.trim()
+                                    result.stdout.isNotBlank() -> result.stdout.trim()
+                                    else -> "Command exited with code ${result.exitCode}"
+                                }
+                                withContext(ioDispatcher) { sandboxManager.refreshInstalledTools() }
+                                _installState.value = SandboxInstallState.Error(
+                                    "Failed to install ${tool.title}: ${detail.take(300)}"
+                                )
+                                return@coroutineScope
+                            }
+
+                            val isVerified = withContext(ioDispatcher) {
+                                sandboxManager.isToolInstalled(tool.id)
+                            }
+                            if (!isVerified) {
+                                val stderrNote = result.stderr.trim().takeIf { it.isNotEmpty() }
+                                    ?.let { " (${it.take(200)})" }
+                                    ?: ""
+                                withContext(ioDispatcher) { sandboxManager.refreshInstalledTools() }
+                                _installState.value = SandboxInstallState.Error(
+                                    "Failed to verify ${tool.title} installation$stderrNote"
+                                )
+                                return@coroutineScope
+                            }
                         }
 
                         _installState.value = SandboxInstallState.InstallingPackages(

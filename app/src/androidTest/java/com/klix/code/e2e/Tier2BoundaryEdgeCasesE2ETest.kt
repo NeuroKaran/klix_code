@@ -1158,9 +1158,9 @@ class Tier2BoundaryEdgeCasesE2ETest {
     }
 
     @Test
-    fun t2_f9_04_apkBundlesParityToolchainsAcrossArm64AndX86_64() {
+    fun t2_f9_04_apkBundlesArm64PythonBaseAndNoX86_64() {
         val apkPath = E2ETestHelpers.targetContext().applicationInfo.sourceDir
-        val requiredLibs = listOf("libklix_pty.so", "libdash.so", "libnode.so", "libpython3.so", "libclang.so", "liblld.so")
+        val requiredBaseLibs = listOf("libklix_pty.so", "libdash.so", "libpython3.so")
         val abiLibs = mutableMapOf<String, MutableSet<String>>()
 
         ZipFile(apkPath).use { zf ->
@@ -1176,12 +1176,10 @@ class Tier2BoundaryEdgeCasesE2ETest {
             }
         }
         assertTrue("Expected arm64-v8a in APK lib/, found: ${abiLibs.keys}", abiLibs.containsKey("arm64-v8a"))
-        assertTrue("Expected x86_64 in APK lib/, found: ${abiLibs.keys}", abiLibs.containsKey("x86_64"))
-        for (abi in listOf("arm64-v8a", "x86_64")) {
-            val libs = abiLibs[abi] ?: emptySet()
-            for (req in requiredLibs) {
-                assertTrue("Missing $req in APK lib/$abi/", libs.contains(req))
-            }
+        assertFalse("Expected x86_64 to be excluded from phone APK, found: ${abiLibs.keys}", abiLibs.containsKey("x86_64"))
+        val libs = abiLibs["arm64-v8a"] ?: emptySet()
+        for (req in requiredBaseLibs) {
+            assertTrue("Missing $req in APK lib/arm64-v8a/", libs.contains(req))
         }
     }
 

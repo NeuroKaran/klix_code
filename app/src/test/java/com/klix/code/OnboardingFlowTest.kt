@@ -97,8 +97,8 @@ class OnboardingFlowTest {
         assertTrue(viewModel.selectedTools.value.contains(ToolchainOption.NODEJS))
         assertEquals(1, viewModel.selectedTools.value.size)
 
-        // Toggle Git and C++ on
-        viewModel.toggleTool(ToolchainOption.GIT)
+        // Toggle Dash and C++ on
+        viewModel.toggleTool(ToolchainOption.DASH)
         viewModel.toggleTool(ToolchainOption.CPP)
         assertEquals(3, viewModel.selectedTools.value.size)
     }
@@ -313,7 +313,7 @@ class OnboardingFlowTest {
             ioDispatcher = Dispatchers.Unconfined,
             coroutineScopeOverride = this
         )
-        vm.toggleTool(ToolchainOption.GIT) // PYTHON + GIT
+        vm.toggleTool(ToolchainOption.DASH) // PYTHON + DASH
 
         var onSuccessCalled = false
         vm.installSelectedPackages(mockContext, mockSandboxManager) {
@@ -322,7 +322,7 @@ class OnboardingFlowTest {
         vm.activeInstallJob?.join()
 
         assertFalse(onSuccessCalled)
-        assertEquals(1, executedCommands.size) // fail-fast: GIT never ran
+        assertEquals(1, executedCommands.size) // fail-fast: DASH never ran
         val finalState = vm.installState.value
         assertTrue("Expected Error state but got $finalState", finalState is SandboxInstallState.Error)
         assertTrue((finalState as SandboxInstallState.Error).message.contains("verify", ignoreCase = true))
@@ -332,7 +332,9 @@ class OnboardingFlowTest {
     fun testInstallSelectedPackagesSucceedsAcrossAllToolchainsWithVerification() = runBlocking {
         val filesDir = createTempFilesDir()
         `when`(mockContext.filesDir).thenReturn(filesDir)
-        val sandboxManager = SandboxManager(mockContext)
+        val sandboxManager = SandboxManager(mockContext).apply {
+            onDemandSpecsOverride = emptyMap()
+        }
         val rootfs = sandboxManager.getRootfsDir()
         File(rootfs, "bin").mkdirs()
         File(rootfs, "bin/sh").writeText("#!/bin/sh\n")
@@ -347,7 +349,7 @@ class OnboardingFlowTest {
                 when {
                     command.contains("python3") -> File(rootfs, "usr/bin/python3").writeText("")
                     command.contains("node") -> File(rootfs, "usr/bin/node").writeText("")
-                    command.contains("git") -> File(rootfs, "usr/bin/git").writeText("")
+                    command.contains("echo") -> File(rootfs, "bin/sh").writeText("")
                     command.contains("clang") || command.contains("build-base") -> File(rootfs, "usr/bin/clang").writeText("")
                 }
                 return CommandResult(exitCode = 0, stdout = "OK", stderr = "")
@@ -360,7 +362,7 @@ class OnboardingFlowTest {
             coroutineScopeOverride = this
         )
         vm.toggleTool(ToolchainOption.NODEJS)
-        vm.toggleTool(ToolchainOption.GIT)
+        vm.toggleTool(ToolchainOption.DASH)
         vm.toggleTool(ToolchainOption.CPP)
 
         var onSuccessCalled = false
@@ -374,7 +376,7 @@ class OnboardingFlowTest {
         assertEquals(SandboxInstallState.Completed, vm.installState.value)
         assertEquals(true, sandboxManager.installedTools.value["python3"])
         assertEquals(true, sandboxManager.installedTools.value["nodejs"])
-        assertEquals(true, sandboxManager.installedTools.value["git"])
+        assertEquals(true, sandboxManager.installedTools.value["dash"])
         assertEquals(true, sandboxManager.installedTools.value["c/c++"])
     }
 
@@ -382,7 +384,9 @@ class OnboardingFlowTest {
     fun testRetryInstallationRecoversFromErrorToCompleted() = runBlocking {
         val filesDir = createTempFilesDir()
         `when`(mockContext.filesDir).thenReturn(filesDir)
-        val sandboxManager = SandboxManager(mockContext)
+        val sandboxManager = SandboxManager(mockContext).apply {
+            onDemandSpecsOverride = emptyMap()
+        }
         val rootfs = sandboxManager.getRootfsDir()
         File(rootfs, "bin").mkdirs()
         File(rootfs, "bin/sh").writeText("#!/bin/sh\n")

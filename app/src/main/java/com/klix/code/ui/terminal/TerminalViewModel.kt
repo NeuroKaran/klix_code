@@ -445,6 +445,42 @@ class TerminalViewModel @JvmOverloads constructor(
             }
         }
 
+        // Handle on-demand toolchain install aliases (apk add / klix install)
+        val requestedTool = parseOnDemandInstallCommand(trimmed)
+        if (requestedTool != null) {
+            session.activeJob = scope.launch {
+                setSessionExecuting(session, true)
+                try {
+                    val label = sandboxManager.getOnDemandSpec(requestedTool)?.displayName ?: requestedTool
+                    appendTerminalLine(
+                        session,
+                        TerminalLine(text = "Installing $label (progress shown in Bento download card)...", color = TerminalColors.Primary)
+                    )
+                    val res = sandboxManager.installToolchain(requestedTool)
+                    if (res.isSuccess) {
+                        appendTerminalLine(
+                            session,
+                            TerminalLine(text = "✓ $label installed and ready.", color = TerminalColors.Secondary)
+                        )
+                    } else {
+                        appendTerminalLine(
+                            session,
+                            TerminalLine(
+                                text = "✗ Failed to install $label: ${res.exceptionOrNull()?.message ?: "Unknown error"}",
+                                color = TerminalColors.Error,
+                                isError = true
+                            )
+                        )
+                    }
+                } finally {
+                    setSessionExecuting(session, false)
+                    appendIdlePrompt(session)
+                    sandboxManager.refreshInstalledTools()
+                }
+            }
+            return
+        }
+
         // Run in sandbox via provider
         session.lastLineHadNewline = true
         session.activeJob = scope.launch {
@@ -702,16 +738,34 @@ class TerminalViewModel @JvmOverloads constructor(
         }
     }
 
+    private fun parseOnDemandInstallCommand(command: String): String? {
+        val tokens = command.trim().split(Regex("\\s+")).map { it.lowercase() }
+        val pkgTokens = when {
+            tokens.size >= 3 && tokens[0] == "apk" && (tokens[1] == "add" || tokens[1] == "get") ->
+                tokens.drop(2).filterNot { it.startsWith("-") }
+            tokens.size >= 3 && tokens[0] == "klix" && tokens[1] == "install" ->
+                tokens.drop(2).filterNot { it.startsWith("-") }
+            else -> return null
+        }
+        for (pkg in pkgTokens) {
+            when (pkg) {
+                "node", "nodejs", "npm" -> return "nodejs"
+                "c", "cpp", "c++", "c/c++", "clang", "clang++", "build-base", "gcc", "g++" -> return "c/c++"
+                "python", "python3", "py3-pip" -> return "python3"
+            }
+        }
+        return null
+    }
+
     private fun printHelp(session: TerminalSession) {
         val helpLines = listOf(
             TerminalLine(text = "Available Klix Terminal Commands:", color = TerminalColors.Primary),
-            TerminalLine(text = "  clear            Clear the terminal screen", color = TerminalColors.TextSecondary),
-            TerminalLine(text = "  sandbox-setup    Open Alpine Linux sandbox installer & package manager", color = TerminalColors.TextSecondary),
-            TerminalLine(text = "  sandbox-status   View rootfs status and installation state", color = TerminalColors.TextSecondary),
-            TerminalLine(text = "  apk add <pkg>    Install tools (e.g. nodejs, npm, python3, git)", color = TerminalColors.TextSecondary),
-            TerminalLine(text = "  apk get <pkg>    Alias for apk add", color = TerminalColors.TextSecondary),
-            TerminalLine(text = "  help             Display this help guide", color = TerminalColors.TextSecondary),
-            TerminalLine(text = "All standard Linux commands (ls, cat, grep, find, etc.) execute inside Alpine userland.", color = TerminalColors.TextMuted)
+            TerminalLine(text = "  clear                Clear the terminal screen", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  sandbox-setup        Open runtime manager & on-demand installer", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  sandbox-status       View Bionic 16 KB runtime status", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  klix install <tool>  Install on-demand runtime (nodejs, cpp)", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "  help                 Display this help guide", color = TerminalColors.TextSecondary),
+            TerminalLine(text = "Python 3 & Dash ship built-in; Node.js and C/C++ download on-demand.", color = TerminalColors.TextMuted)
         )
         synchronized(session) {
             session.lines.addAll(helpLines)
